@@ -1,0 +1,117 @@
+-*- org -*-
+
+#+TITLE: #5 crossbar MDT design notes
+
+* apparatus used
+  - using scan/distribute matrix
+  - not using the procon
+  - not using the rest of it either
+* interface to s/d matrix
+  - 4 static name leads (procon -> sd)
+    - wired-logic, no need
+  - 4 address leads (procon -> sd)
+  - 16 data leads (procon <-> sd)
+    - 012345 are bidir (procon <-> sd)
+    - 6789 can be in-only (procon <- sd)
+    - abcdef no connection
+  - 1 control lead (procon -> sd)
+    - 0 for read from scan points
+      - read is 4b address x 10b wide
+      - 160 bits in the field
+    - 1 for write to distribute points
+      - write is 2b address x 6b wide
+      - 24 bits in the field
+    - bit assignments are in SD-28111-01-B2
+  - 1 master strobe lead (procon -> sd)
+  - 1 slave strobe-confirm lead (sd -> procon)
+    - optional in this application, i suppose
+
+  - in sum
+    - 4 address leads
+    - 10 data leads (that matter)
+    - 2 control leads
+    - total: 16 leads
+      - 6 out-only
+      - 4 in-only
+      - 6 bidir
+
+  - gpio assignments
+    | gpio | dir        | function  | conn term |
+    |------+------------+-----------+-----------|
+    |   13 | procon->   | a1        |        23 |
+    |   16 | procon->   | a2        |        11 |
+    |   17 | procon->   | a3        |        21 |
+    |   18 | procon->   | a4        |         9 |
+    |   19 | procon->   | C1 = rdwr |        15 |
+    |   21 | procon->   | MSYN      |        63 |
+    |   22 | <-procon   | SSYN      |        39 |
+    |   23 | <-procon-> | d00       |        71 |
+    |   25 | <-procon-> | d01       |        59 |
+    |   26 | <-procon-> | d02       |        47 |
+    |   27 | <-procon-> | d03       |        35 |
+    |   32 | <-procon-> | d04       |        69 |
+    |   33 | <-procon-> | d05       |        57 |
+    |   34 | <-procon   | d06       |        45 |
+    |   35 | <-procon   | d07       |        33 |
+    |   36 | <-procon   | d08       |        67 |
+    |   39 | <-procon   | d09       |        55 |
+
+* volts
+  - esp32 output: 3v3
+  - esp32 input: 3v3,
+  - s/d bus: (cd-94851-01 page 3, sec. 2.02)
+    - 1: 0v0 - 0v4
+    - 0: 3v0 - 3v8
+  - hah holy crap no level shifters needed nice
+
+* named scan and dist pts
+  - [addr]:bit
+  - dist
+    - STR  [02]:5  start
+    - STRA [02]:4  start auxiliary (test call)
+    - ARLK [02]:3  automatic reset lock
+    - CMN  [02]:2  minor alarm
+    - CMJ  [02]:1  major alarm
+    - MB   [02]:0  make busy
+    - TRC  [01]:5  trouble record complete
+  - scan
+    - STR   [00]:9  start
+    - STRA1 [00]:8  start auxiliary (test call)
+    - SPL   [01]:9  special (test card)
+    - TRC   [01]:8  trouble record complete
+    - MB    [02]:9  make busy
+    - ROS   [02]:8  recorder out of service
+    - BWX0  [03]:1
+    - BWX1  [03]:0
+    - BWX2  [013]:3
+    - BWX3  [013]:2
+
+* program outline
+  - routines
+    - read-row
+    - write-row
+    - read-all
+    - read-relay-row
+      - close distribute point S-
+      - wait 32ms
+      - read all trouble card scan points
+      - open distribute point S-
+      - wait a moment?
+    - read-full-card
+      - read-relay-row 8 thru 0
+      - nine rows total
+
+  - init routine (ref SD-28111-01-E1, SC 1 )
+    - write appropriate thing to MB dist pt to clear the initial busy condition
+
+  - basic operation cycle (ref SD-28111-01-E1, SC 2 )
+    - read STR and STRA scan pts continuously
+      - address 0, bits 8 and 9
+      - wait for bit set
+    - read-full-card
+    - do something with that data
+      - post to somewhere?
+    - close dist pt TRC
+    - wait for open scan pt STR or STRA
+    - wait 0.5s
+    - open dist pt TRC
