@@ -8,8 +8,9 @@
 -- Astrid Smith, 2019
 -- Connections Museum
 
---require "sjson"
---require "gpio"
+require "sjson"
+require "gpio"
+require "bit"
 
 -- ascii 'SC' = 0x53 0x43 = 0x5343 = 21315
 server = "http://192.168.0.204:21315/api/app"
@@ -19,10 +20,10 @@ server = "http://192.168.0.204:21315/api/app"
 dist = {['OPEN'] = 0, ['CLOSED'] = 1}
 
 -- scan point shows HIGH=0 on ground, LOW=1 on battery or open
-scan = {['OPEN'] = 0, ['GND'] = 1}
+scan = {[0] = 1, [1] = 0, ['OPEN'] = 0, ['GND'] = 1}
 
 -- logic is inverted from what gpio calls it ...
-logic = {['LOW'] = 1, ['HIGH'] = 0}
+logic = {[0] = 1, [1] = 0, ['LOW'] = 1, ['HIGH'] = 0, [false] = 1, [true] = 0}
 
 -- yes the matrixes are somewhat fuckily arranged. see SD-28111-01 sh B2, FS 3
 distpts_order =
@@ -34,10 +35,10 @@ distpts_order =
 
 distpts_cache =
    {
-      { 0, 0, 0, 0, 0, 0 },
-      { 0, 0, 0, 0, 0, 0 },
-      { 0, 0, 0, 0, 0, 0 },
-      { 0, 0, 0, 0, 0, 0 }
+      { 'OPEN', 'OPEN', 'OPEN', 'OPEN', 'OPEN', 'OPEN' },
+      { 'OPEN', 'OPEN', 'OPEN', 'OPEN', 'OPEN', 'OPEN' },
+      { 'OPEN', 'OPEN', 'OPEN', 'OPEN', 'OPEN', 'OPEN' },
+      { 'OPEN', 'OPEN', 'OPEN', 'OPEN', 'OPEN', 'OPEN' }
    }
 
 scanpts_order =
@@ -62,10 +63,10 @@ scanpts_order =
 distpts = {}
 scanpts = {}
 for k, v in pairs(distpts_order) do
-   distpts[v] = { ['bit'] = (k-1) % 6, ['row'] = (k-1) // 6 }
+   distpts[v] = { ['bit'] = (k-1) % 6, ['row'] = math.floor((k-1) / 6) }
 end
 for k, v in pairs(scanpts_order) do
-   scanpts[v] = { ['bit'] = (k-1) % 10, ['row'] = (k-1) // 10 }
+   scanpts[v] = { ['bit'] = (k-1) % 10, ['row'] = math.floor((k-1) / 10) }
 end
 
 function get_scanpt(name)
@@ -97,33 +98,37 @@ leads['D07'] = 35
 leads['D08'] = 36
 leads['D09'] = 39
 
-gpio.mode(leads.A1, gpio.OUTPUT)
-gpio.mode(leads.A2, gpio.OUTPUT)
-gpio.mode(leads.A3, gpio.OUTPUT)
-gpio.mode(leads.A4, gpio.OUTPUT)
-gpio.mode(leads.MSYN, gpio.OUTPUT)
-gpio.mode(leads.SSYN, gpio.INPUT)
-gpio.mode(leads.D00, gpio.IN_OUT)
-gpio.mode(leads.D01, gpio.IN_OUT)
-gpio.mode(leads.D02, gpio.IN_OUT)
-gpio.mode(leads.D03, gpio.IN_OUT)
-gpio.mode(leads.D04, gpio.IN_OUT)
-gpio.mode(leads.D05, gpio.IN_OUT)
-gpio.mode(leads.D06, gpio.IN)
-gpio.mode(leads.D07, gpio.IN)
-gpio.mode(leads.D08, gpio.IN)
-gpio.mode(leads.D09, gpio.IN)
+gpio.config({gpio = leads.A1, dir = gpio.OUT})
+gpio.config({gpio = leads.A2, dir = gpio.OUT})
+gpio.config({gpio = leads.A3, dir = gpio.OUT})
+gpio.config({gpio = leads.A4, dir = gpio.OUT})
+gpio.config({gpio = leads.MSYN, dir = gpio.OUT})
+gpio.config({gpio = leads.SSYN, dir = gpio.IN})
+gpio.config({gpio = leads.D00, dir = gpio.IN_OUT})
+gpio.config({gpio = leads.D01, dir = gpio.IN_OUT})
+gpio.config({gpio = leads.D02, dir = gpio.IN_OUT})
+gpio.config({gpio = leads.D03, dir = gpio.IN_OUT})
+gpio.config({gpio = leads.D04, dir = gpio.IN_OUT})
+gpio.config({gpio = leads.D05, dir = gpio.IN_OUT})
+gpio.config({gpio = leads.D06, dir = gpio.IN})
+gpio.config({gpio = leads.D07, dir = gpio.IN})
+gpio.config({gpio = leads.D08, dir = gpio.IN})
+gpio.config({gpio = leads.D09, dir = gpio.IN})
 
 
 -- read a word from the scan points (10 bits)
 function read_row(rownr)
-   -- gpio.HIGH==1 but the bus is active-low logic, ugh
+   -- gpio.HIGH==1 but the bus is active-low logic, ugh, see the
+   -- `logic' table
 
    -- write address to the A1,A2,A3,A4 leads
-   gpio.write(leads.A1, logic[rownr & 0x01])
-   gpio.write(leads.A2, logic[rownr & 0x02])
-   gpio.write(leads.A3, logic[rownr & 0x04])
-   gpio.write(leads.A4, logic[rownr & 0x08])
+   --
+   -- nice.  instead of updating the lua (which is from 2008) they
+   -- decided to implement bitwise operations in an addon module.
+   gpio.write(leads.A1, logic[bit.isset(rownr, 0)])
+   gpio.write(leads.A2, logic[bit.isset(rownr, 1)])
+   gpio.write(leads.A3, logic[bit.isset(rownr, 2)])
+   gpio.write(leads.A4, logic[bit.isset(rownr, 3)])
 
    -- set C1 lead to "read" = 0 = 3v
    gpio.write(leads.C1, logic[0])
@@ -150,23 +155,22 @@ function read_row(rownr)
    -- drop MSYN
    gpio.write(leads.MSYN, logic[0])
    -- return that data in some format
-   return {scan[d0], scan[d1], scan[d2], scan[d3], scan[d4],
-	   scan[d5], scan[d6], scan[d7], scan[d8], scan[d9]}
+   return { scan[d0], scan[d1], scan[d2], scan[d3], scan[d4], scan[d5], scan[d6], scan[d7], scan[d8], scan[d9] }
 end
 
 -- write a word to the dist points (6 bits)
 function write_row(rownr, values)
    -- write address to the A1,A2 leads
-   gpio.write(leads.A1, logic[rownr & 0x01])
-   gpio.write(leads.A2, logic[rownr & 0x02])
+   gpio.write(leads.A1, logic[bit.isset(rownr, 0)])
+   gpio.write(leads.A2, logic[bit.isset(rownr, 1)])
 
    -- write data to leads D00 thru D05
-   gpio.write(leads.D00, logic[values[0]])
-   gpio.write(leads.D01, logic[values[1]])
-   gpio.write(leads.D02, logic[values[2]])
-   gpio.write(leads.D03, logic[values[3]])
-   gpio.write(leads.D04, logic[values[4]])
-   gpio.write(leads.D05, logic[values[5]])
+   gpio.write(leads.D00, dist[values[1]])
+   gpio.write(leads.D01, dist[values[2]])
+   gpio.write(leads.D02, dist[values[3]])
+   gpio.write(leads.D03, dist[values[4]])
+   gpio.write(leads.D04, dist[values[5]])
+   gpio.write(leads.D05, dist[values[6]])
 
    -- set C1 lead to "write" = 1 = gnd
    gpio.write(leads.C1, logic[1])
@@ -186,14 +190,15 @@ end
 
 function write_named_distpt(name, value)
    rownr, bitnr = get_distpt(name)
-   distpts_cache[rownr][bitnr] = value
-   write_row(rownr, distpts_cache[rownr])
+   -- because lists here start at 1
+   distpts_cache[rownr+1][bitnr+1] = value
+   write_row(rownr, distpts_cache[rownr+1])
 end
 
 function read_named_scanpt(name)
    rownr, bitnr = get_scanpt(name)
-   row = read_row(rownr)
-   return row[bitnr]
+   rowdat = read_row(rownr)
+   return rowdat[bitnr]
 end
 
 -- read all the scan points
