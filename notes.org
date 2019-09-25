@@ -118,3 +118,24 @@
     - wait for open scan pt STR or STRA
     - wait 0.5s
     - open dist pt TRC
+
+* drawings
+** TODO ED-27879-30
+   - bus terminator drawing
+   - connector pinout drawing
+   - KS-19162, L17 plug
+** ED-27907-10
+   - mdt connectorized switchboard cable assembly and connecting information
+   - db25 stuff
+** TODO J-23252-CR // MDT design
+   - scan this one!
+** J-99366-G // 16x16 scanner matrix unit (SD-94838-01)
+** J-99366-H // 4x16 distributor matrix unit (SD-94839-01)
+** TODO J-99366-J // 10x16 scanner + 4x6 distributor matrix unit || drawing missing
+** J-99379-A // procon? for 1xb mdt (SD-94844-01)
+   - psd A: assembly, equipment, and wiring
+** J-99379-AA // (SD-94844-01)
+   - psd controller: assembly, equipment, and wiring
+   - combo unit logic
+** J-1C082-B-2 // PROCON
+  - 
