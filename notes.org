@@ -36,25 +36,28 @@
       - 6 bidir
 
   - gpio assignments
-    | gpio | dir        | function  | conn term |
-    |------+------------+-----------+-----------|
-    |   13 | procon->   | a1        |        23 |
-    |   16 | procon->   | a2        |        11 |
-    |   17 | procon->   | a3        |        21 |
-    |   18 | procon->   | a4        |         9 |
-    |   19 | procon->   | C1 = rdwr |        15 |
-    |   21 | procon->   | MSYN      |        63 |
-    |   22 | <-procon   | SSYN      |        39 |
-    |   23 | <-procon-> | d00       |        71 |
-    |   25 | <-procon-> | d01       |        59 |
-    |   26 | <-procon-> | d02       |        47 |
-    |   27 | <-procon-> | d03       |        35 |
-    |   32 | <-procon-> | d04       |        69 |
-    |   33 | <-procon-> | d05       |        57 |
-    |   34 | <-procon   | d06       |        45 |
-    |   35 | <-procon   | d07       |        33 |
-    |   36 | <-procon   | d08       |        67 |
-    |   39 | <-procon   | d09       |        55 |
+    | gpio | dir        | function  | conn term | color     |
+    |------+------------+-----------+-----------+-----------|
+    |   13 | procon->   | a1        |        23 | blue-bk   |
+    |   12 | procon->   | a2        |        11 | orange-bk |
+    |   14 | procon->   | a3        |        21 | green-bk  |
+    |   18 | procon->   | a4        |         9 | brown-bk  |
+    |   19 | procon->   | C1 = rdwr |        15 | slate-bk  |
+    |   21 | procon->   | MSYN      |        63 | white-bk  |
+    |   22 | <-procon   | SSYN      |        39 | red-bk    |
+    |   23 | <-procon-> | d00       |        71 | blue      |
+    |   25 | <-procon-> | d01       |        59 | orange    |
+    |   26 | <-procon-> | d02       |        47 | green     |
+    |   27 | <-procon-> | d03       |        35 | brown     |
+    |   32 | <-procon-> | d04       |        69 | slate     |
+    |   33 | <-procon-> | d05       |        57 | white     |
+    |   34 | <-procon   | d06       |        45 | red       |
+    |   35 | <-procon   | d07       |        33 | black     |
+    |    4 | <-procon   | d08       |        67 | yellow    |
+    |    5 | <-procon   | d09       |        55 | violet    |
+    |  gnd | ---        | ground    |         4 | violet-bk |
+    |  Vin | ---        | power     |        6? | yellow-bk |
+
 
 * volts
   - esp32 output: 3v3

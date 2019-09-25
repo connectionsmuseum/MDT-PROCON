@@ -80,8 +80,8 @@ end
 leads = {}
 -- and now to enumerate the GPIO leads ...
 leads['A1'] = 13
-leads['A2'] = 16
-leads['A3'] = 17
+leads['A2'] = 12
+leads['A3'] = 14
 leads['A4'] = 18
 leads['C1'] = 19
 leads['MSYN'] = 21
@@ -94,8 +94,8 @@ leads['D04'] = 32
 leads['D05'] = 33
 leads['D06'] = 34
 leads['D07'] = 35
-leads['D08'] = 36
-leads['D09'] = 39
+leads['D08'] = 4
+leads['D09'] = 5
 
 gpio.mode(leads.A1, gpio.OUTPUT)
 gpio.mode(leads.A2, gpio.OUTPUT)
