@@ -89,6 +89,11 @@
     - BWX2  [013]:3
     - BWX3  [013]:2
 
+CMJ DP is [02]:1
+CMN DP is [02]:2
+
+
+
 * program outline
   - routines
     - read-row
@@ -139,3 +144,122 @@
    - combo unit logic
 ** J-1C082-B-2 // PROCON
   - 
+* test plan for <2019-10-08 Tue>
+** localize the problem with not being able to distribute bits
+   - set the commands to write CLOSED to CMJ DP [02]:1
+     - cmj: [2]:1 -> (DM0) eql 28 -> D conn #12 -> D201A -> CMJ 1L
+     - cmj ground is on -> D conn #37
+     - cmn: [2]:2 -> (DM1) eql 30 -> D conn #11 -> D202A -> CMN 1U
+   - known bus elements
+     - bit 1
+     - row 2 (0010)
+     - d0 f (hi)
+       - 0-1d0 (dm0 pin 5)
+       - 0-en1 (dm0 pin 4)
+     - d1 true (lo)
+       - 0-0d1 (dm0 pin 2)
+       - 0-en0 (dm0 pin 1)
+     - d2 f
+     - d3 f
+     - d4 f
+     - d5 f
+     - a1 f
+     - a2 true
+     - a3 f
+     - a4 f
+   - overthinking it
+     - this should be on DM0 lead "D201A"
+     - pin 25, DA21
+     - relay 5 on the card is active
+     - ic4 pin 13 output is high
+     - ic2 pin 15 output is low
+     - pins into the card that should bring this about
+       - en0 (1) false (hi)
+	 - tied externally to
+	 - 0d1 (2)
+       - en1 (4) asserted (lo)
+	 - tied externally to
+	 - 1d0 (5)
+       - clk2 (8) pulsed (hi-lo-hi)
+       - 1d0 (5) false (hi)
+       - 1d1 (3) asserted (lo)
+   - test plan pins for A1074 eql 28
+     - [X] 1d1 3 - lo (yes, wired to ground)
+       - run 263
+     - [X] 0d0 0 - lo (yes, wired to ground)
+       - run 263
+	 1) 28/0
+	 2) 28/3
+	 3) 28/10
+	 4) grd/28
+     - [X] en0 1 - lo (wired to d1)
+     - [X] 0d1 2 - lo (tied to en0)
+       - run 230
+	 1) in/59
+	 2) out/59
+	 3) 18/9
+	 4) 28/1
+	 5) 28/2
+     - [ ] en1 4 - hi (wired to d0)
+     - [ ] 1d0 5 - hi (tied to en1)
+       - run 225
+	 1) in/71
+	 2) out/71
+	 3) 17/9
+	 4) 28/4 (dm0-en1)
+	 5) 28/5 (dm0-1d0)
+     - [ ] clk3 8 - pulse hi-lo-hi
+       - run 246
+	 1) 16/2
+	 2) 28/8 (dm0-clk3)
+	 3) 30/8 (dm1-clk3)
+	 4) 32/8 (dm2-clk3)
+     - table of infos
+       - 
+          | lead | expect | find |
+          |    0 | lo     | lo   |
+          |    1 | lo     | lo   |
+          |    2 | lo     | lo   |
+          |    3 | lo     | lo   |
+          |    4 | hi     | lo   |
+          |    5 | hi     | lo   |
+          |    6 |        | hi   |
+          |    7 |        | hi   |
+          |    8 |        | hi   |
+          |    9 |        | hi   |
+	 
+       - what
+     - thinkins
+       - !(1d0 & en1) = !(f & t) = !(f) = true [ic2-ffA]
+       - !(1d1 & en1) = !(t & t) = !(t) = false [ic2-ffB]
+       - yep this makes sense
+   - test plan pins for A1075
+     - a3 - 4 - hi
+       - run 215
+	 1) in/21
+	 2) out/21
+	 3) 16/4
+     - c1 - 5 - ?
+       - run 218
+	 1) in/15
+	 2) out/15
+	 3) 16/5
+     - a1 - 7 - hi
+       - run 214
+	 1) in/23
+	 2) out/23
+	 3) 16/7
+     - a2 - 8 - lo
+       - run 219
+	 1) in/11
+	 2) out/11
+	 3) 16/8
+     - a4 - 9 - hi
+       - run 220
+	 1) in/9
+	 2) out/9
+	 3) 16/9
+
+gpio.config({gpio = 25, dir = gpio.IN_OUT, opendrain = 1, pull = gpio.FLOATING})
+print(gpio.read(25))
+

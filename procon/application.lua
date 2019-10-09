@@ -17,7 +17,7 @@ server = "http://192.168.0.204:21315/api/app"
 
 -- check all this nonsense, clearly
 
-dist = {['OPEN'] = 0, ['CLOSED'] = 1}
+dist = {['OPEN'] = 1, ['CLOSED'] = 0}
 
 -- scan point shows HIGH=0 on ground, LOW=1 on battery or open
 scan = {[0] = 1, [1] = 0, ['OPEN'] = 0, ['GND'] = 1}
@@ -98,47 +98,77 @@ leads['D07'] = 35
 leads['D08'] = 4
 leads['D09'] = 5
 
-gpio.config({gpio = leads.A1, dir = gpio.OUT})
-gpio.config({gpio = leads.A2, dir = gpio.OUT})
-gpio.config({gpio = leads.A3, dir = gpio.OUT})
-gpio.config({gpio = leads.A4, dir = gpio.OUT})
-gpio.config({gpio = leads.MSYN, dir = gpio.OUT})
-gpio.config({gpio = leads.SSYN, dir = gpio.IN})
-gpio.config({gpio = leads.D00, dir = gpio.IN_OUT})
-gpio.config({gpio = leads.D01, dir = gpio.IN_OUT})
-gpio.config({gpio = leads.D02, dir = gpio.IN_OUT})
-gpio.config({gpio = leads.D03, dir = gpio.IN_OUT})
-gpio.config({gpio = leads.D04, dir = gpio.IN_OUT})
-gpio.config({gpio = leads.D05, dir = gpio.IN_OUT})
-gpio.config({gpio = leads.D06, dir = gpio.IN})
-gpio.config({gpio = leads.D07, dir = gpio.IN})
-gpio.config({gpio = leads.D08, dir = gpio.IN})
-gpio.config({gpio = leads.D09, dir = gpio.IN})
 
+function setup_leads()
+   gpio.config({gpio = leads.A1,   dir = gpio.OUT, opendrain = 1, pull = gpio.FLOATING})
+   gpio.config({gpio = leads.A2,   dir = gpio.OUT, opendrain = 1, pull = gpio.FLOATING})
+   gpio.config({gpio = leads.A3,   dir = gpio.OUT, opendrain = 1, pull = gpio.FLOATING})
+   gpio.config({gpio = leads.A4,   dir = gpio.OUT, opendrain = 1, pull = gpio.FLOATING})
+
+   gpio.config({gpio = leads.C1, dir = gpio.OUT, opendrain = 1, pull = gpio.FLOATING})
+   gpio.config({gpio = leads.MSYN, dir = gpio.OUT, opendrain = 1, pull = gpio.FLOATING})
+   gpio.config({gpio = leads.SSYN, dir = gpio.IN})
+
+   gpio.config({gpio = leads.D00,  dir = gpio.IN_OUT, opendrain = 1, pull = gpio.FLOATING})
+   gpio.config({gpio = leads.D01,  dir = gpio.IN_OUT, opendrain = 1, pull = gpio.FLOATING})
+   gpio.config({gpio = leads.D02,  dir = gpio.IN_OUT, opendrain = 1, pull = gpio.FLOATING})
+   gpio.config({gpio = leads.D03,  dir = gpio.IN_OUT, opendrain = 1, pull = gpio.FLOATING})
+   gpio.config({gpio = leads.D04,  dir = gpio.IN_OUT, opendrain = 1, pull = gpio.FLOATING})
+   gpio.config({gpio = leads.D05,  dir = gpio.IN_OUT, opendrain = 1, pull = gpio.FLOATING})
+   gpio.config({gpio = leads.D06,  dir = gpio.IN})
+   gpio.config({gpio = leads.D07,  dir = gpio.IN})
+   gpio.config({gpio = leads.D08,  dir = gpio.IN})
+   gpio.config({gpio = leads.D09,  dir = gpio.IN})
+end
+
+function restore_leads()
+   gpio.write(leads.MSYN, 1)
+   gpio.write(leads.C1, 1)
+
+   gpio.write(leads.A1, 1)
+   gpio.write(leads.A2, 1)
+   gpio.write(leads.A3, 1)
+   gpio.write(leads.A4, 1)
+
+   gpio.write(leads.D00, 1)
+   gpio.write(leads.D01, 1)
+   gpio.write(leads.D02, 1)
+   gpio.write(leads.D03, 1)
+   gpio.write(leads.D04, 1)
+   gpio.write(leads.D05, 1)
+end
 
 -- read a word from the scan points (10 bits)
 function read_row(rownr)
    -- gpio.HIGH==1 but the bus is active-low logic, ugh, see the
    -- `logic' table
 
+   -- set C1 lead to "read" = 0
+   gpio.write(leads.C1, logic[0])
+
    -- write address to the A1,A2,A3,A4 leads
    --
    -- nice.  instead of updating the lua (which is from 2008) they
    -- decided to implement bitwise operations in an addon module.
    gpio.write(leads.A1, logic[bit.isset(rownr, 0)])
+   print("A1 = "..logic[bit.isset(rownr, 0)])
    gpio.write(leads.A2, logic[bit.isset(rownr, 1)])
+   print("A2 = "..logic[bit.isset(rownr, 1)])
    gpio.write(leads.A3, logic[bit.isset(rownr, 2)])
+   print("A3 = "..logic[bit.isset(rownr, 2)])
    gpio.write(leads.A4, logic[bit.isset(rownr, 3)])
-
-   -- set C1 lead to "read" = 0 = 3v
-   gpio.write(leads.C1, logic[0])
+   print("A4 = "..logic[bit.isset(rownr, 3)])
 
    -- strobe MSYN lead
    gpio.write(leads.MSYN, logic[1])
 
    -- observe for SSYN
-   while (gpio.read(leads.SSYN) == logic[0]) do
+   for j = 0, 2000000 do end
+   j = 0
+   while (gpio.read(leads.SSYN) == 1) do
+      j = j+1
    end
+   print("took "..j.." cycles")
 
    -- read from D00 thru D09
    d0 = gpio.read(leads.D00)
@@ -154,7 +184,10 @@ function read_row(rownr)
 
    -- drop MSYN
    gpio.write(leads.MSYN, logic[0])
+   restore_leads()
+
    -- return that data in some format
+   print(scan[d0]..scan[d1]..scan[d2]..scan[d3]..scan[d4]..scan[d5]..scan[d6]..scan[d7]..scan[d8]..scan[d9])
    return { scan[d0], scan[d1], scan[d2], scan[d3], scan[d4], scan[d5], scan[d6], scan[d7], scan[d8], scan[d9] }
 end
 
@@ -162,28 +195,41 @@ end
 function write_row(rownr, values)
    -- write address to the A1,A2 leads
    gpio.write(leads.A1, logic[bit.isset(rownr, 0)])
+   print("A1 = "..logic[bit.isset(rownr, 0)])
    gpio.write(leads.A2, logic[bit.isset(rownr, 1)])
+   print("A2 = "..logic[bit.isset(rownr, 1)])
 
    -- write data to leads D00 thru D05
    gpio.write(leads.D00, dist[values[1]])
+   print("D00 = "..dist[values[1]])
    gpio.write(leads.D01, dist[values[2]])
+   print("D01 = "..dist[values[2]])
    gpio.write(leads.D02, dist[values[3]])
+   print("D02 = "..dist[values[3]])
    gpio.write(leads.D03, dist[values[4]])
+   print("D03 = "..dist[values[4]])
    gpio.write(leads.D04, dist[values[5]])
+   print("D04 = "..dist[values[5]])
    gpio.write(leads.D05, dist[values[6]])
-
-   -- set C1 lead to "write" = 1 = gnd
+   print("D05 = "..dist[values[6]])
+   
+   -- set C1 lead to "write" = 1
    gpio.write(leads.C1, logic[1])
 
    -- strobe MSYN lead
    gpio.write(leads.MSYN, logic[1])
 
    -- observe for SSYN
+   for j = 0, 2000000 do end
+   j = 0
    while (gpio.read(leads.SSYN) == logic[0]) do
+      j = j+1
    end
+   print("took "..j.." cycles")
 
    -- drop MSYN
    gpio.write(leads.MSYN, logic[0])
+   restore_leads()
 
    return
 end
@@ -230,3 +276,6 @@ end
 function take_trouble_record()
    read_full_card()
 end
+
+-- setup_leads()
+-- restore_leads()
