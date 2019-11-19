@@ -151,24 +151,18 @@ function read_row(rownr)
    -- nice.  instead of updating the lua (which is from 2008) they
    -- decided to implement bitwise operations in an addon module.
    gpio.write(leads.A1, logic[bit.isset(rownr, 0)])
-   print("A1 = "..logic[bit.isset(rownr, 0)])
    gpio.write(leads.A2, logic[bit.isset(rownr, 1)])
-   print("A2 = "..logic[bit.isset(rownr, 1)])
    gpio.write(leads.A3, logic[bit.isset(rownr, 2)])
-   print("A3 = "..logic[bit.isset(rownr, 2)])
    gpio.write(leads.A4, logic[bit.isset(rownr, 3)])
-   print("A4 = "..logic[bit.isset(rownr, 3)])
 
    -- strobe MSYN lead
    gpio.write(leads.MSYN, logic[1])
 
    -- observe for SSYN
-   for j = 0, 2000000 do end
    j = 0
    while (gpio.read(leads.SSYN) == 1) do
       j = j+1
    end
-   print("took "..j.." cycles")
 
    -- read from D00 thru D09
    d0 = gpio.read(leads.D00)
@@ -187,7 +181,6 @@ function read_row(rownr)
    restore_leads()
 
    -- return that data in some format
-   print(scan[d0]..scan[d1]..scan[d2]..scan[d3]..scan[d4]..scan[d5]..scan[d6]..scan[d7]..scan[d8]..scan[d9])
    return { scan[d0], scan[d1], scan[d2], scan[d3], scan[d4], scan[d5], scan[d6], scan[d7], scan[d8], scan[d9] }
 end
 
@@ -195,23 +188,15 @@ end
 function write_row(rownr, values)
    -- write address to the A1,A2 leads
    gpio.write(leads.A1, logic[bit.isset(rownr, 0)])
-   print("A1 = "..logic[bit.isset(rownr, 0)])
    gpio.write(leads.A2, logic[bit.isset(rownr, 1)])
-   print("A2 = "..logic[bit.isset(rownr, 1)])
 
    -- write data to leads D00 thru D05
    gpio.write(leads.D00, dist[values[1]])
-   print("D00 = "..dist[values[1]])
    gpio.write(leads.D01, dist[values[2]])
-   print("D01 = "..dist[values[2]])
    gpio.write(leads.D02, dist[values[3]])
-   print("D02 = "..dist[values[3]])
    gpio.write(leads.D03, dist[values[4]])
-   print("D03 = "..dist[values[4]])
    gpio.write(leads.D04, dist[values[5]])
-   print("D04 = "..dist[values[5]])
    gpio.write(leads.D05, dist[values[6]])
-   print("D05 = "..dist[values[6]])
    
    -- set C1 lead to "write" = 1
    gpio.write(leads.C1, logic[1])
@@ -220,12 +205,10 @@ function write_row(rownr, values)
    gpio.write(leads.MSYN, logic[1])
 
    -- observe for SSYN
-   for j = 0, 2000000 do end
    j = 0
    while (gpio.read(leads.SSYN) == logic[0]) do
       j = j+1
    end
-   print("took "..j.." cycles")
 
    -- drop MSYN
    gpio.write(leads.MSYN, logic[0])
@@ -249,19 +232,40 @@ end
 
 -- read all the scan points
 function read_all()
+   r = {}
+   r[0] = read_row(0)
+   r[1] = read_row(1)
+   r[2] = read_row(2)
+   r[3] = read_row(3)
+   r[4] = read_row(4)
+   r[5] = read_row(5)
+   r[6] = read_row(6)
+   r[7] = read_row(7)
+   r[8] = read_row(8)
+   r[9] = read_row(9)
+   r[10] = read_row(10)
+   r[11] = read_row(11)
+   r[12] = read_row(12)
+   r[13] = read_row(13)
+   r[14] = read_row(14)
+   r[15] = read_row(15)
 end
 
 -- read one row of a card from the trouble record
 function read_relay_row(name)
    -- write to the correct (S-) dist pt
-   write_named_distpt(name)
+   write_named_distpt(name, 'CLOSED')
    -- XXX wait 32ms
+   --for j = 0, 20000 do end
+   card_row = read_all()
    -- read all rows
-   return read_all()
+   write_named_distpt(name, 'OPEN')
+   return card_row
 end
 
 -- read a full trouble record card
 function read_full_card()
+   card = {}
    card[8] = read_relay_row('S8')
    card[7] = read_relay_row('S7')
    card[6] = read_relay_row('S6')
@@ -273,9 +277,44 @@ function read_full_card()
    card[0] = read_relay_row('S0')
 end
 
-function take_trouble_record()
+function take_trouble_record(indication)
+   -- indication is 'STR' or 'STRA'
    read_full_card()
+   write_named_distpt('TRC', 'CLOSED')
+   -- wait for scanpt STR or STRA to clear
+   while (read_named_scanpt(indication) == 1) do
+   end
+   write_named_distpt('TRC', "OPEN")
 end
 
--- setup_leads()
--- restore_leads()
+function check_for_trouble()
+   -- print('looking for trouble?')
+   if (read_named_scanpt('STR') == 1) then
+      print("starting normal trouble")
+      take_trouble_record('STR')
+   elseif (read_named_scanpt('STRA1') == 1) then
+      print("starting auxiliary trouble")
+      take_trouble_record('STRA')
+   else
+      -- print("no trouble here!")
+   end
+end
+
+function init_mdt()
+   write_named_distpt('MB', 'CLOSED')
+   mb_scan = read_named_scanpt('MB')
+   print("MB x, scanpoint is "..mb_scan)
+   write_named_distpt('MB', 'OPEN')
+   mb_scan = read_named_scanpt('MB')
+   print("MB -, scanpoint is "..mb_scan)
+   return
+end
+
+setup_leads()
+restore_leads()
+
+init_mdt()
+
+t_check = tmr.create()
+t_check:register(1000, tmr.ALARM_AUTO, check_for_trouble)
+t_check:start()
