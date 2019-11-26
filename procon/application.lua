@@ -249,32 +249,19 @@ function read_all()
    r[13] = read_row(13)
    r[14] = read_row(14)
    r[15] = read_row(15)
+   return r
+end
+
+function close_scan_relay(name)
+   write_named_distpt(name, 'CLOSED')
 end
 
 -- read one row of a card from the trouble record
 function read_relay_row(name)
-   -- write to the correct (S-) dist pt
-   write_named_distpt(name, 'CLOSED')
-   -- XXX wait 32ms
-   --for j = 0, 20000 do end
-   card_row = read_all()
    -- read all rows
+   trouble[name] = read_all()
    write_named_distpt(name, 'OPEN')
-   return card_row
-end
-
--- read a full trouble record card
-function read_full_card()
-   card = {}
-   card[8] = read_relay_row('S8')
-   card[7] = read_relay_row('S7')
-   card[6] = read_relay_row('S6')
-   card[5] = read_relay_row('S5')
-   card[4] = read_relay_row('S4')
-   card[3] = read_relay_row('S3')
-   card[2] = read_relay_row('S2')
-   card[1] = read_relay_row('S1')
-   card[0] = read_relay_row('S0')
+   return
 end
 
 function take_trouble_record(indication)
@@ -287,34 +274,116 @@ function take_trouble_record(indication)
    write_named_distpt('TRC', "OPEN")
 end
 
-function check_for_trouble()
+function state_idle()
    -- print('looking for trouble?')
-   if (read_named_scanpt('STR') == 1) then
-      print("starting normal trouble")
-      take_trouble_record('STR')
-   elseif (read_named_scanpt('STRA1') == 1) then
-      print("starting auxiliary trouble")
-      take_trouble_record('STRA')
+   
+   if (ONLINE == 1) then
+      write_named_distpt('MB', 'OPEN')
    else
-      -- print("no trouble here!")
+      write_named_distpt('MB', 'CLOSED')
+   end
+
+   if (read_named_scanpt('STRA1') == 1) then
+      print("starting special trouble")
+      trouble_type = "express"
+      return {['next']= "s8"}
+   elseif (read_named_scanpt('STR') == 1) then
+      print("starting normal trouble")
+      trouble_type = "normal"
+      return {['next']= "s8"}
+   else
+      return {['next']= "idle"}
    end
 end
 
-function init_mdt()
+function state_release()
+   -- XXX send it here
+   print(trouble_type)
+   print(sjson.encode(trouble))
+
+   trouble = {}
+   trouble_type = nil
+   
+   write_named_distpt('TRC', 'CLOSED')
+   if (trouble_type == "express") then
+      indication = 'STRA1'
+   else
+      indication = 'STR'
+   end
+
+   while (read_named_scanpt(indication) == 1) do
+   end
+   write_named_distpt('TRC', 'OPEN')
+   
+   return {['next']= 'idle'}
+end
+
+function state_init()
    write_named_distpt('MB', 'CLOSED')
+   mb_scan = 0
    mb_scan = read_named_scanpt('MB')
    print("MB x, scanpoint is "..mb_scan)
+
    write_named_distpt('MB', 'OPEN')
    mb_scan = read_named_scanpt('MB')
    print("MB -, scanpoint is "..mb_scan)
-   return
+   while (mb_scan ~= 0) do
+      mb_scan = read_named_scanpt('MB')
+      print("MB x, scanpoint is "..mb_scan)
+   end
+
+   return {['next']= "idle"}
 end
+
+ms = 1
+sec = 1000
+
+state = {
+   ["start"]= state_init,
+   ["idle"]= state_idle,
+   ["s8"]= function() close_scan_relay('S8'); return {['next']= "r8", ['delay']= 32*ms} end,
+   ["s7"]= function() close_scan_relay('S7'); return {['next']= "r7", ['delay']= 32*ms} end,
+   ["s6"]= function() close_scan_relay('S6'); return {['next']= "r6", ['delay']= 32*ms} end,
+   ["s5"]= function() close_scan_relay('S5'); return {['next']= "r5", ['delay']= 32*ms} end,
+   ["s4"]= function() close_scan_relay('S4'); return {['next']= "r4", ['delay']= 32*ms} end,
+   ["s3"]= function() close_scan_relay('S3'); return {['next']= "r3", ['delay']= 32*ms} end,
+   ["s2"]= function() close_scan_relay('S2'); return {['next']= "r2", ['delay']= 32*ms} end,
+   ["s1"]= function() close_scan_relay('S1'); return {['next']= "r1", ['delay']= 32*ms} end,
+   ["s0"]= function() close_scan_relay('S0'); return {['next']= "r0", ['delay']= 32*ms} end,
+
+   ["r8"]= function() read_relay_row('S8'); return {['next']= 's7', ['delay']= 32*ms} end,
+   ["r7"]= function() read_relay_row('S7'); return {['next']= 's6', ['delay']= 32*ms} end,
+   ["r6"]= function() read_relay_row('S6'); return {['next']= 's5', ['delay']= 32*ms} end,
+   ["r5"]= function() read_relay_row('S5'); return {['next']= 's4', ['delay']= 32*ms} end,
+   ["r4"]= function() read_relay_row('S4'); return {['next']= 's3', ['delay']= 32*ms} end,
+   ["r3"]= function() read_relay_row('S3'); return {['next']= 's2', ['delay']= 32*ms} end,
+   ["r2"]= function() read_relay_row('S2'); return {['next']= 's1', ['delay']= 32*ms} end,
+   ["r1"]= function() read_relay_row('S1'); return {['next']= 's0', ['delay']= 32*ms} end,
+   ["r0"]= function() read_relay_row('S0'); return {['next']= 'release', ['delay']= 32*ms} end,
+   ["release"] = state_release,
+}
+
+cur_state = "start"
+trouble_type = nil
+trouble = {}
+
+function tick()
+   cb = state[cur_state]
+   ret = cb()
+   delay = (ret['delay'] or 100*ms)
+   cur_state = ret['next']
+   if (cur_state ~= 'idle') then
+      print('registering for entry into state [', cur_state, '] after ', delay)
+   end
+   t_tick:register(delay, tmr.ALARM_SINGLE, tick)
+   t_tick:start()
+end
+   
 
 setup_leads()
 restore_leads()
 
-init_mdt()
+t_tick = tmr.create()
+t_tick:register(10000, tmr.ALARM_SINGLE, tick)
+t_tick:start()
 
-t_check = tmr.create()
-t_check:register(1000, tmr.ALARM_AUTO, check_for_trouble)
-t_check:start()
