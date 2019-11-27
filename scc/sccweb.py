@@ -1,11 +1,14 @@
 #!/usr/bin/python3
 from flask import Flask, request
+from flask_api import status
 import math
 import sys
 import zipfile
 from PIL import Image, ImageDraw
 import configparser
 import os
+import json
+import random
 
 app = Flask(__name__)
 
@@ -28,12 +31,14 @@ scanpts_order = [
     'RSV15.0', 'RSV15.1', 'RSV15.2', 'RSV15.3', 119, 118, 117, 116, 'RSV15.8', 'RSV15.9'
     ]
 
+with open('/depot/sarah/ephemera/5xb-tweets.txt') as x:
+    exclamations = x.readlines()
+
 def deep_scan_to_namescan(scan):
     out = {}
     for i in range(len(scanpts_order)-1):
         j = int(i)%16
         k = math.floor(int(i)/16)
-        print(f"looking at {j}/{k}")
         out[scanpts_order[i]] = scan[j][k]
     return out
 
@@ -44,13 +49,26 @@ def unfold_scans(dump):
 @app.route('/punch', methods=['POST'])
 def req_punch():
     dump = request.get_json()
-    print(dump)
     leads = unfold_scans(dump)
-    print(leads)
     card = operate(leads)
+    # make card image
+    punch_card(card)
+    # save card info
+    save_card(card)
+    # put on twitter
+    post_card(card)
+    return "", status.HTTP_200_OK
+
+def save_card(card):
+    name = "cardout-date.json"
+    with open(name, "w") as f:
+        json.dump(card, f)
+
+def post_card(card):
+    # make card text
     cardtext = print_card(card)
     print(cardtext)
-    punch_card(card)
+    print(random.choice(exclamations))
 
 def print_card(card):
     text = ''
@@ -69,14 +87,12 @@ def print_card(card):
     return text
 
 def punch_card(bits):
-    print("cwd is " + os.getcwd())
     with zipfile.ZipFile('cardpack.zip') as cardpack:
         f_im=Image.open(cardpack.open('front.jpg'))
         b_im=Image.open(cardpack.open('back.jpg'))
         with cardpack.open('offsets.txt') as offsets:
             config=configparser.ConfigParser()
             config.read_string(offsets.read().decode('ASCII'))
-            print(config.sections())
             f_origin_x=float(config['Front']['originX'])
             f_origin_y=float(config['Front']['originY'])
             f_offset_x=float(config['Front']['offsetX'])
@@ -115,25 +131,35 @@ def operate(leads):
     for S in range(9):
         Sx = f"S{S}"
         for k in leads[Sx]:
+            row = S
             if isinstance(k, int):
-                row = S
                 zone = math.floor(k/30)
                 column = k%30
-                if zone==1:
+                if zone==0:
                     # top left
                     row = row
-                if zone==2:
+                if zone==1:
                     # top right
                     column += 39
-                if zone==3:
+                if zone==2:
                     # bottom left
                     row += 9
-                if zone==4:
+                if zone==3:
                     # bottom right
                     row += 9
                     column += 39
-                if (leads[Sx][k] == 1):
-                    card[row][column] = True
+            elif k == "BWX0":
+                column = 30
+            elif k == "BWX1":
+                column = 30
+                row += 9
+            elif k == "BWX2":
+                column = 38
+            elif k == "BWX3":
+                column = 38
+                row += 9
+            if ((leads[Sx][k] == 1) and (column is not None)):
+                card[row][column] = True
     return card
 
 if __name__ == '__main__':
