@@ -31,7 +31,7 @@ scanpts_order = [
     'RSV15.0', 'RSV15.1', 'RSV15.2', 'RSV15.3', 119, 118, 117, 116, 'RSV15.8', 'RSV15.9'
     ]
 
-with open('/depot/sarah/ephemera/5xb-tweets.txt') as x:
+with open('/opt/MDT-PROCON/scc/5xb-tweets.txt') as x:
     exclamations = x.readlines()
 
 def deep_scan_to_namescan(scan):
@@ -60,7 +60,7 @@ def req_punch():
     return "", status.HTTP_200_OK
 
 def save_card(card):
-    name = "cardout-date.json"
+    name = "/tmp/cardout-date.json"
     with open(name, "w") as f:
         json.dump(card, f)
 
@@ -122,14 +122,15 @@ def punch_card(bits):
                     b_draw.ellipse([(b_xcen - holesize, b_ycen - holesize),
                                     (b_xcen + holesize, b_ycen + holesize)],
                                    'black', 'black')
-        f_im.save("front.jpg")
-        b_im.save("back.jpg")
+        f_im.save("/tmp/front.jpg")
+        b_im.save("/tmp/back.jpg")
 
 
 def operate(leads):
     card = [[False for x in range(69)] for y in range(18)]
     for S in range(9):
-        Sx = f"S{S}"
+        Sx = "S{}".format(S)
+#        Sx = f"S{S}"
         for k in leads[Sx]:
             row = S
             if isinstance(k, int):
@@ -163,4 +164,4 @@ def operate(leads):
     return card
 
 if __name__ == '__main__':
-    app.run()
+    app.run(port=5220)

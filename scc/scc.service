@@ -1,0 +1,16 @@
+[Unit]
+Description=SCC service for the 5XB MDT
+Documentation=https://www.github.com/connectionsmuseum/MDT-PROCON
+
+[Service]
+User=scc
+WorkingDirectory=/opt/MDT-PROCON/scc/
+VIRTUAL_ENV=/opt/MDT-PROCON/scc/env/
+Environment=PATH=$VIRTUAL_ENV/bin:$PATH
+ExecStart=/opt/MDT-PROCON/scc/env/bin/python sccweb.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+
+

@@ -13,7 +13,7 @@ require "gpio"
 require "bit"
 
 -- ascii 'SC' = 0x53 0x43 = 0x5343 = 21315
-server = "http://192.168.0.204:21315/api/app"
+server = "http://192.168.0.204:5220/api/app"
 
 -- check all this nonsense, clearly
 
