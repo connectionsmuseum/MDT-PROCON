@@ -72,7 +72,7 @@ def post_card(card):
     flavor = random.choice(exclamations)
     print(cardtext)
     print(flavor)
-    with open('secrets.ini') as secrets:
+    with open('/etc/sccweb.conf') as secrets:
         config = configparser.ConfigParser()
         config.read_string(secrets.read())
         twitter = Twython(
