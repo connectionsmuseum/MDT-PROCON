@@ -9,6 +9,8 @@ import configparser
 import os
 import json
 import random
+from twython import Twython
+import io
 
 app = Flask(__name__)
 
@@ -51,7 +53,7 @@ def req_punch():
     dump = request.get_json()
     leads = unfold_scans(dump)
     card = operate(leads)
-    # make card image
+    # make card images
     punch_card(card)
     # save card info
     save_card(card)
@@ -67,8 +69,28 @@ def save_card(card):
 def post_card(card):
     # make card text
     cardtext = print_card(card)
+    flavor = random.choice(exclamations)
     print(cardtext)
-    print(random.choice(exclamations))
+    print(flavor)
+    with open('secrets.ini') as secrets:
+        config = configparser.ConfigParser()
+        config.read_string(secrets.read())
+        twitter = Twython(
+            app_key = config['secrets']['api_key'],
+            app_secret = config['secrets']['api_secret'],
+            oauth_token = config['fivecrossbar']['access_token'],
+            oauth_token_secret = config['fivecrossbar']['access_secret'],)
+        ffront = open("/tmp/front.png", 'rb')
+        fback = open("/tmp/back.png", 'rb')
+        front_resp = twitter.upload_media(media=ffront)
+        back_resp = twitter.upload_media(media=fback)
+        resp = twitter.update_status(status=flavor, 
+                              media_ids=[
+                                  front_resp['media_id']
+                                  ,back_resp['media_id']
+                              ]
+        )
+        return resp['id']
 
 def print_card(card):
     text = ''
@@ -88,8 +110,8 @@ def print_card(card):
 
 def punch_card(bits):
     with zipfile.ZipFile('cardpack.zip') as cardpack:
-        f_im=Image.open(cardpack.open('front.jpg'))
-        b_im=Image.open(cardpack.open('back.jpg'))
+        f_im=Image.open(cardpack.open('front.png'))
+        b_im=Image.open(cardpack.open('back.png'))
         with cardpack.open('offsets.txt') as offsets:
             config=configparser.ConfigParser()
             config.read_string(offsets.read().decode('ASCII'))
@@ -122,15 +144,14 @@ def punch_card(bits):
                     b_draw.ellipse([(b_xcen - holesize, b_ycen - holesize),
                                     (b_xcen + holesize, b_ycen + holesize)],
                                    'black', 'black')
-        f_im.save("/tmp/front.jpg")
-        b_im.save("/tmp/back.jpg")
+        f_im.save("/tmp/front.png", format="PNG", optimize=True)
+        b_im.save("/tmp/back.png", format="PNG", optimize=True)
 
 
 def operate(leads):
     card = [[False for x in range(69)] for y in range(18)]
     for S in range(9):
         Sx = "S{}".format(S)
-#        Sx = f"S{S}"
         for k in leads[Sx]:
             row = S
             if isinstance(k, int):
