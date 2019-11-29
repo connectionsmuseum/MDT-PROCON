@@ -33,6 +33,10 @@ scanpts_order = [
     ['RSV15.0', 'RSV15.1', 'RSV15.2', 'RSV15.3', 119, 118, 117, 116, 'RSV15.8', 'RSV15.9']
     ]
 
+# (bw0 .. bw59) -> R section
+# (bw60 .. bw119) -> S section
+
+
 with open('5xb-tweets.txt') as x:
     exclamations = x.readlines()
 
