@@ -44,7 +44,7 @@ def deep_scan_to_namescan(scan):
     out = {}
     for i in range(16):
         for j in range(10):
-            out[scanpts_order[i][j]] = scan[i][j]
+            out[scanpts_order[i][j]] = scan["%d"%i][j]
     return out
 
 def unfold_scans(dump):
