@@ -12,8 +12,7 @@ require "sjson"
 require "gpio"
 require "bit"
 
--- ascii 'SC' = 0x53 0x43 = 0x5343 = 21315
-server = "http://192.168.0.204:5220/api/app"
+server = "http://192.168.0.204:5220/punch"
 
 -- check all this nonsense, clearly
 
@@ -296,14 +295,24 @@ function state_idle()
    end
 end
 
-function state_release()
-   -- XXX send it here
+function state_transmit()
    print(trouble_type)
-   print(sjson.encode(trouble))
-
+   local tbl = sjson.encode(trouble)
+   http.post(server, "Content-Type: application/json\r\n", tbl,
+             function(status_code, body, headers)
+                cur_state = "release"
+             end )
    trouble = {}
    trouble_type = nil
-   
+
+   return {["next"]= "transmit_wait"}
+end
+
+function state_transmit_wait()
+   return {["next"]= "transmit_wait"}
+end
+
+function state_release()
    write_named_distpt('TRC', 'CLOSED')
    if (trouble_type == "express") then
       indication = 'STRA1'
@@ -360,6 +369,8 @@ state = {
    ["r2"]= function() read_relay_row('S2'); return {['next']= 's1', ['delay']= 32*ms} end,
    ["r1"]= function() read_relay_row('S1'); return {['next']= 's0', ['delay']= 32*ms} end,
    ["r0"]= function() read_relay_row('S0'); return {['next']= 'release', ['delay']= 32*ms} end,
+   ["transmit"] = state_transmit,
+   ["transmit_wait"] = state_transmit_wait,
    ["release"] = state_release,
 }
 

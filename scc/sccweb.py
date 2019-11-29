@@ -157,16 +157,16 @@ def operate(leads):
                 zone = math.floor(k/30)
                 column = k%30
                 if zone==0:
-                    # top left
+                    # top left 'S'
                     row = row
                 if zone==1:
-                    # top right
+                    # top right 'SA'
                     column += 39
                 if zone==2:
-                    # bottom left
+                    # bottom left 'R'
                     row += 9
                 if zone==3:
-                    # bottom right
+                    # bottom right 'RA'
                     row += 9
                     column += 39
             elif k == "BWX0":
