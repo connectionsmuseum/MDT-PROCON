@@ -303,27 +303,33 @@ function state_transmit()
                 cur_state = "release"
              end )
    trouble = {}
-   trouble_type = nil
 
+   write_named_distpt("TRC", "CLOSED")
    return {["next"]= "transmit_wait"}
 end
 
 function state_transmit_wait()
-   return {["next"]= "transmit_wait"}
-end
-
-function state_release()
-   write_named_distpt("TRC", "CLOSED")
+   trouble_type = nil
    if (trouble_type == "express") then
       indication = "STRA1"
    else
       indication = "STR"
    end
 
-   while (read_named_scanpt(indication) == 1) do
+   if (read_named_scanpt(indication) == 0) then
+      write_named_distpt("TRC", "OPEN")
+      trouble_type = nil
+      -- we've finished sending the trouble report but we shouldn't
+      -- take another until it's completely processed.  busy the unit
+      -- out until we are in release state.
+      write_named_distpt("MB", "CLOSED")
    end
-   write_named_distpt("TRC", "OPEN")
-   
+
+   return {["next"]= "transmit_wait"}
+end
+
+function state_release()
+   write_named_distpt("MB", "OPEN")
    return {["next"]= "idle"}
 end
 
