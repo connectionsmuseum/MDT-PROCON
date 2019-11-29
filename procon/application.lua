@@ -41,22 +41,22 @@ distpts_cache =
    }
 
 scanpts_order =
-   {"07", "06", "05", "04", "03", "02", "01", "00", "STRA1", "STR",
-    "15", "14", "13", "12", "11", "10", "09", "08", "TRC", "SPL",
-    "23", "22", "21", "20", "19", "18", "17", "16", "ROS", "MB",
-    "BWX1", "BWX0", "29", "28", "27", "26", "25", "24", "RSV3.8", "RSV3.9",
-    "37", "36", "35", "34", "33", "32", "31", "30", "RSV4.8", "RSV4.9",
-    "45", "44", "43", "42", "41", "40", "39", "38", "RSV5.8", "RSV5.9",
-    "53", "52", "51", "50", "49", "48", "47", "46", "RSV6.8", "RSV6.9",
-    "61", "60", "59", "58", "57", "56", "55", "54", "RSV7.8", "RSV7.9",
-    "69", "68", "67", "66", "65", "64", "63", "62", "RSV8.8", "RSV8.9",
-    "77", "76", "75", "74", "73", "72", "71", "70", "RSV9.8", "RSV9.9",
-    "85", "84", "83", "82", "81", "80", "79", "78", "RSV10.8", "RSV10.9",
-    "91", "90", "BWX3", "BWX2", "89", "88", "87", "86", "RSV11.8", "RSV11.9",
-    "99", "98", "97", "96", "95", "94", "93", "92", "RSV12.8", "RSV12.9",
-    "107", "106", "105", "104", "103", "102", "101", "100", "RSV13.8", "RSV13.9",
-    "115", "114", "113", "112", "111", "110", "109", "108", "RSV14.8", "RSV14.9",
-    "RSV15.0", "RSV15.1", "RSV15.2", "RSV15.3", "119", "118", "117", "116", "RSV15.8", "RSV15.9"
+   { 7,  6,  5,  4,  3,  2,  1,  0, "STRA1", "STR",
+    15, 14, 13, 12, 11, 10,  9,  8, "TRC", "SPL",
+    23, 22, 21, 20, 19, 18, 17, 16, "ROS", "MB",
+    "BWX1", "BWX0", 29, 28, 27, 26, 25, 24, "RSV3.8", "RSV3.9",
+    37, 36, 35, 34, 33, 32, 31, 30, "RSV4.8", "RSV4.9",
+    45, 44, 43, 42, 41, 40, 39, 38, "RSV5.8", "RSV5.9",
+    53, 52, 51, 50, 49, 48, 47, 46, "RSV6.8", "RSV6.9",
+    61, 60, 59, 58, 57, 56, 55, 54, "RSV7.8", "RSV7.9",
+    69, 68, 67, 66, 65, 64, 63, 62, "RSV8.8", "RSV8.9",
+    77, 76, 75, 74, 73, 72, 71, 70, "RSV9.8", "RSV9.9",
+    85, 84, 83, 82, 81, 80, 79, 78, "RSV10.8", "RSV10.9",
+    91, 90, "BWX3", "BWX2", 89, 88, 87, 86, "RSV11.8", "RSV11.9",
+    99, 98, 97, 96, 95, 94, 93, 92, "RSV12.8", "RSV12.9",
+    107, 106, 105, 104, 103, 102, 101, 100, "RSV13.8", "RSV13.9",
+    115, 114, 113, 112, 111, 110, 109, 108, "RSV14.8", "RSV14.9",
+    "RSV15.0", "RSV15.1", "RSV15.2", "RSV15.3", 119, 118, 117, 116, "RSV15.8", "RSV15.9"
    }
 
 distpts = {}
@@ -69,11 +69,11 @@ for k, v in pairs(scanpts_order) do
 end
 
 function get_scanpt(name)
-   pin = scanpts[name]
+   local pin = scanpts[name]
    return pin.row, pin.bit
 end
 function get_distpt(name)
-   pin = distpts[name]
+   local pin = distpts[name]
    return pin.row, pin.bit
 end
 
@@ -158,22 +158,22 @@ function read_row(rownr)
    gpio.write(leads.MSYN, logic[1])
 
    -- observe for SSYN
-   j = 0
+   local j = 0
    while (gpio.read(leads.SSYN) == 1) do
       j = j+1
    end
 
    -- read from D00 thru D09
-   d0 = gpio.read(leads.D00)
-   d1 = gpio.read(leads.D01)
-   d2 = gpio.read(leads.D02)
-   d3 = gpio.read(leads.D03)
-   d4 = gpio.read(leads.D04)
-   d5 = gpio.read(leads.D05)
-   d6 = gpio.read(leads.D06)
-   d7 = gpio.read(leads.D07)
-   d8 = gpio.read(leads.D08)
-   d9 = gpio.read(leads.D09)
+   local d0 = gpio.read(leads.D00)
+   local d1 = gpio.read(leads.D01)
+   local d2 = gpio.read(leads.D02)
+   local d3 = gpio.read(leads.D03)
+   local d4 = gpio.read(leads.D04)
+   local d5 = gpio.read(leads.D05)
+   local d6 = gpio.read(leads.D06)
+   local d7 = gpio.read(leads.D07)
+   local d8 = gpio.read(leads.D08)
+   local d9 = gpio.read(leads.D09)
 
    -- drop MSYN
    gpio.write(leads.MSYN, logic[0])
@@ -204,7 +204,7 @@ function write_row(rownr, values)
    gpio.write(leads.MSYN, logic[1])
 
    -- observe for SSYN
-   j = 0
+   local j = 0
    while (gpio.read(leads.SSYN) == logic[0]) do
       j = j+1
    end
@@ -217,38 +217,38 @@ function write_row(rownr, values)
 end
 
 function write_named_distpt(name, value)
-   rownr, bitnr = get_distpt(name)
+   local rownr, bitnr = get_distpt(name)
    -- because lists here start at 1
    distpts_cache[rownr+1][bitnr+1] = value
    write_row(rownr, distpts_cache[rownr+1])
 end
 
 function read_named_scanpt(name)
-   rownr, bitnr = get_scanpt(name)
-   rowdat = read_row(rownr)
+   local rownr, bitnr = get_scanpt(name)
+   local rowdat = read_row(rownr)
    return rowdat[bitnr]
 end
 
 -- read all the scan points
 function read_all()
-   r = {}
-   r[0] = read_row(0)
-   r[1] = read_row(1)
-   r[2] = read_row(2)
-   r[3] = read_row(3)
-   r[4] = read_row(4)
-   r[5] = read_row(5)
-   r[6] = read_row(6)
-   r[7] = read_row(7)
-   r[8] = read_row(8)
-   r[9] = read_row(9)
-   r[10] = read_row(10)
-   r[11] = read_row(11)
-   r[12] = read_row(12)
-   r[13] = read_row(13)
-   r[14] = read_row(14)
-   r[15] = read_row(15)
-   return r
+   local cur_row = {}
+   cur_row[0] = read_row(0)
+   cur_row[1] = read_row(1)
+   cur_row[2] = read_row(2)
+   cur_row[3] = read_row(3)
+   cur_row[4] = read_row(4)
+   cur_row[5] = read_row(5)
+   cur_row[6] = read_row(6)
+   cur_row[7] = read_row(7)
+   cur_row[8] = read_row(8)
+   cur_row[9] = read_row(9)
+   cur_row[10] = read_row(10)
+   cur_row[11] = read_row(11)
+   cur_row[12] = read_row(12)
+   cur_row[13] = read_row(13)
+   cur_row[14] = read_row(14)
+   cur_row[15] = read_row(15)
+   return cur_row
 end
 
 function close_scan_relay(name)
@@ -261,16 +261,6 @@ function read_relay_row(name)
    trouble[name] = read_all()
    write_named_distpt(name, "OPEN")
    return
-end
-
-function take_trouble_record(indication)
-   -- indication is "STR" or "STRA"
-   read_full_card()
-   write_named_distpt("TRC", "CLOSED")
-   -- wait for scanpt STR or STRA to clear
-   while (read_named_scanpt(indication) == 1) do
-   end
-   write_named_distpt("TRC", "OPEN")
 end
 
 function state_idle()
@@ -298,7 +288,8 @@ end
 function state_transmit()
    print(trouble_type)
    local tbl = sjson.encode(trouble)
-   http.post(server, "Content-Type: application/json\r\n", tbl,
+   http.post(server, {["headers"]= {["Content-Type"]= "application/json"},
+		["timeout"]= 300*sec }, tbl,
              function(status_code, body, headers)
                 cur_state = "release"
              end )
@@ -309,7 +300,6 @@ function state_transmit()
 end
 
 function state_transmit_wait()
-   trouble_type = nil
    if (trouble_type == "express") then
       indication = "STRA1"
    else
@@ -318,7 +308,6 @@ function state_transmit_wait()
 
    if (read_named_scanpt(indication) == 0) then
       write_named_distpt("TRC", "OPEN")
-      trouble_type = nil
       -- we've finished sending the trouble report but we shouldn't
       -- take another until it's completely processed.  busy the unit
       -- out until we are in release state.
@@ -329,23 +318,25 @@ function state_transmit_wait()
 end
 
 function state_release()
+   trouble_type = nil
    write_named_distpt("MB", "OPEN")
+   write_named_distpt("TRC", "OPEN")
    return {["next"]= "idle"}
 end
 
 function state_init()
    write_named_distpt("MB", "CLOSED")
-   mb_scan = 0
+   local mb_scan = 0
    mb_scan = read_named_scanpt("MB")
    print("MB x, scanpoint is "..mb_scan)
 
    write_named_distpt("MB", "OPEN")
    mb_scan = read_named_scanpt("MB")
    print("MB -, scanpoint is "..mb_scan)
-   while (mb_scan ~= 0) do
-      mb_scan = read_named_scanpt("MB")
-      print("MB x, scanpoint is "..mb_scan)
-   end
+   -- while (mb_scan ~= 0) do
+   mb_scan = read_named_scanpt('MB')
+   print("MB x, scanpoint is "..mb_scan)
+   -- end
 
    return {["next"]= "idle"}
 end
@@ -374,7 +365,7 @@ state = {
    ["r3"]= function() read_relay_row("S3"); return {["next"]= "s2", ["delay"]= 32*ms} end,
    ["r2"]= function() read_relay_row("S2"); return {["next"]= "s1", ["delay"]= 32*ms} end,
    ["r1"]= function() read_relay_row("S1"); return {["next"]= "s0", ["delay"]= 32*ms} end,
-   ["r0"]= function() read_relay_row("S0"); return {["next"]= "release", ["delay"]= 32*ms} end,
+   ["r0"]= function() read_relay_row("S0"); return {["next"]= "transmit", ["delay"]= 32*ms} end,
    ["transmit"] = state_transmit,
    ["transmit_wait"] = state_transmit_wait,
    ["release"] = state_release,
@@ -385,9 +376,9 @@ trouble_type = nil
 trouble = {}
 
 function tick()
-   cb = state[cur_state]
-   ret = cb()
-   delay = (ret["delay"] or 100*ms)
+   local cb = state[cur_state]
+   local ret = cb()
+   local delay = (ret["delay"] or 100*ms)
    cur_state = ret["next"]
    if (cur_state ~= "idle") then
       print("registering for entry into state [", cur_state, "] after ", delay)
