@@ -80,7 +80,7 @@ end
 leads = {}
 -- and now to enumerate the GPIO leads ...
 leads["A1"] = 13
-leads["A2"] = 12
+leads["A2"] = 15
 leads["A3"] = 14
 leads["A4"] = 18
 leads["C1"] = 19
@@ -314,7 +314,7 @@ function state_transmit_wait()
       write_named_distpt("MB", "CLOSED")
    end
 
-   return {["next"]= "transmit_wait"}
+   return {["next"]= "transmit_wait", ["delay"]= 1*sec}
 end
 
 function state_release()
@@ -347,15 +347,15 @@ sec = 1000
 state = {
    ["start"]= state_init,
    ["idle"]= state_idle,
-   ["s8"]= function() close_scan_relay("S8"); return {["next"]= "r8", ["delay"]= 32*ms} end,
-   ["s7"]= function() close_scan_relay("S7"); return {["next"]= "r7", ["delay"]= 32*ms} end,
-   ["s6"]= function() close_scan_relay("S6"); return {["next"]= "r6", ["delay"]= 32*ms} end,
-   ["s5"]= function() close_scan_relay("S5"); return {["next"]= "r5", ["delay"]= 32*ms} end,
-   ["s4"]= function() close_scan_relay("S4"); return {["next"]= "r4", ["delay"]= 32*ms} end,
-   ["s3"]= function() close_scan_relay("S3"); return {["next"]= "r3", ["delay"]= 32*ms} end,
-   ["s2"]= function() close_scan_relay("S2"); return {["next"]= "r2", ["delay"]= 32*ms} end,
-   ["s1"]= function() close_scan_relay("S1"); return {["next"]= "r1", ["delay"]= 32*ms} end,
-   ["s0"]= function() close_scan_relay("S0"); return {["next"]= "r0", ["delay"]= 32*ms} end,
+   ["s8"]= function() close_scan_relay("S8"); return {["next"]= "r8", ["delay"]= 64*ms} end,
+   ["s7"]= function() close_scan_relay("S7"); return {["next"]= "r7", ["delay"]= 64*ms} end,
+   ["s6"]= function() close_scan_relay("S6"); return {["next"]= "r6", ["delay"]= 64*ms} end,
+   ["s5"]= function() close_scan_relay("S5"); return {["next"]= "r5", ["delay"]= 64*ms} end,
+   ["s4"]= function() close_scan_relay("S4"); return {["next"]= "r4", ["delay"]= 64*ms} end,
+   ["s3"]= function() close_scan_relay("S3"); return {["next"]= "r3", ["delay"]= 64*ms} end,
+   ["s2"]= function() close_scan_relay("S2"); return {["next"]= "r2", ["delay"]= 64*ms} end,
+   ["s1"]= function() close_scan_relay("S1"); return {["next"]= "r1", ["delay"]= 64*ms} end,
+   ["s0"]= function() close_scan_relay("S0"); return {["next"]= "r0", ["delay"]= 64*ms} end,
 
    ["r8"]= function() read_relay_row("S8"); return {["next"]= "s7", ["delay"]= 32*ms} end,
    ["r7"]= function() read_relay_row("S7"); return {["next"]= "s6", ["delay"]= 32*ms} end,

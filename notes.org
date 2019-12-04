@@ -39,7 +39,7 @@
     | gpio | dir        | function  | conn term | color     |
     |------+------------+-----------+-----------+-----------|
     |   13 | procon->   | a1        |        23 | blue-bk   |
-    |   12 | procon->   | a2        |        11 | orange-bk |
+    |   15 | procon->   | a2        |        11 | orange-bk |
     |   14 | procon->   | a3        |        21 | green-bk  |
     |   18 | procon->   | a4        |         9 | brown-bk  |
     |   19 | procon->   | C1 = rdwr |        15 | slate-bk  |
@@ -57,6 +57,10 @@
     |    5 | <-procon   | d09       |        55 | violet    |
     |  gnd | ---        | ground    |         4 | violet-bk |
     |  Vin | ---        | power     |        6? | yellow-bk |
+    |      |            |           |           |           |
+    |   15 |            |           |           |           |
+    |    2 |            |           |           |           |
+    |      |            |           |           |           |
 
 
 * volts
