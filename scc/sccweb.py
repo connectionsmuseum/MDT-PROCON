@@ -156,33 +156,44 @@ def operate(leads):
     for S in range(9):
         Sx = "S{}".format(S)
         for k in leads[Sx]:
-            row = S
+            row = 8-S
             if isinstance(k, int):
-                zone = math.floor(k/30)
                 column = k%30
-                if zone==0:
-                    # top left 'S'
-                    row = row
-                if zone==1:
-                    # top right 'SA'
-                    column += 39
-                if zone==2:
-                    # bottom left 'R'
+                if k>=0 and k<=29:
+                    # 0 to 29, bottom left 'R'
                     row += 9
-                if zone==3:
-                    # bottom right 'RA'
+
+                if k>=30 and k<=59:
+                    # 30 to 59, bottom right 'RA'
                     row += 9
                     column += 39
+
+                if k>=60 and k<=89:
+                    # 60 to 89, top left 'S'
+                    True
+
+                if k>=90 and k<=119:
+                    # 90 to 119, top right 'SA'
+                    column += 39
+
             elif k == "BWX0":
+                # after 29, so bottom left
                 column = 30
+                row += 9
+
             elif k == "BWX1":
-                column = 30
+                # before 30, so bottom right
+                column = 38
                 row += 9
+
             elif k == "BWX2":
-                column = 38
+                # after 89
+                column = 30
+
             elif k == "BWX3":
+                # before 90
                 column = 38
-                row += 9
+
             if ((leads[Sx][k] == 1) and (column is not None)):
                 card[row][column] = True
     return card
