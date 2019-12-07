@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from flask import Flask, request
+from flask import Flask, request, render_template
 from flask_api import status
 import math
 import sys
@@ -57,11 +57,12 @@ def req_punch():
     leads = unfold_scans(dump)
     card = operate(leads)
     # make card images
+    print(print_card(card))
     punch_card(card)
     # save card info
     save_card(card)
     # put on twitter
-    post_card(card)
+    #post_card(card)
     return "", status.HTTP_200_OK
 
 def save_card(card):
@@ -197,6 +198,11 @@ def operate(leads):
             if ((leads[Sx][k] == 1) and (column is not None)):
                 card[row][column] = True
     return card
+
+@app.route('/punch', methods=['GET'])
+def displaycard():
+    return render_template("index.html", front="static/front.png", back="static/back.png")
+
 
 if __name__ == '__main__':
     app.run(host = '0.0.0.0', port = 5220)
