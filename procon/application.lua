@@ -273,6 +273,18 @@ function state_idle()
    end
 
    if (read_named_scanpt("STRA1") == 1) then
+      return {["next"]= "debonk", ["delay"]= 32*ms}
+   elseif (read_named_scanpt("STR") == 1) then
+      return {["next"]= "debonk", ["delay"]= 32*ms}
+   else
+      return {["next"]= "idle"}
+   end
+end
+
+function state_debonk()
+    -- this is a debounce state
+
+   if (read_named_scanpt("STRA1") == 1) then
       print("starting special trouble")
       trouble_type = "express"
       return {["next"]= "s8"}
@@ -347,15 +359,16 @@ sec = 1000
 state = {
    ["start"]= state_init,
    ["idle"]= state_idle,
-   ["s8"]= function() close_scan_relay("S8"); return {["next"]= "r8", ["delay"]= 64*ms} end,
-   ["s7"]= function() close_scan_relay("S7"); return {["next"]= "r7", ["delay"]= 64*ms} end,
-   ["s6"]= function() close_scan_relay("S6"); return {["next"]= "r6", ["delay"]= 64*ms} end,
-   ["s5"]= function() close_scan_relay("S5"); return {["next"]= "r5", ["delay"]= 64*ms} end,
-   ["s4"]= function() close_scan_relay("S4"); return {["next"]= "r4", ["delay"]= 64*ms} end,
-   ["s3"]= function() close_scan_relay("S3"); return {["next"]= "r3", ["delay"]= 64*ms} end,
-   ["s2"]= function() close_scan_relay("S2"); return {["next"]= "r2", ["delay"]= 64*ms} end,
-   ["s1"]= function() close_scan_relay("S1"); return {["next"]= "r1", ["delay"]= 64*ms} end,
-   ["s0"]= function() close_scan_relay("S0"); return {["next"]= "r0", ["delay"]= 64*ms} end,
+   ["debonk"]=state_debonk,
+   ["s8"]= function() close_scan_relay("S8"); return {["next"]= "r8", ["delay"]= 32*ms} end,
+   ["s7"]= function() close_scan_relay("S7"); return {["next"]= "r7", ["delay"]= 32*ms} end,
+   ["s6"]= function() close_scan_relay("S6"); return {["next"]= "r6", ["delay"]= 32*ms} end,
+   ["s5"]= function() close_scan_relay("S5"); return {["next"]= "r5", ["delay"]= 32*ms} end,
+   ["s4"]= function() close_scan_relay("S4"); return {["next"]= "r4", ["delay"]= 32*ms} end,
+   ["s3"]= function() close_scan_relay("S3"); return {["next"]= "r3", ["delay"]= 32*ms} end,
+   ["s2"]= function() close_scan_relay("S2"); return {["next"]= "r2", ["delay"]= 32*ms} end,
+   ["s1"]= function() close_scan_relay("S1"); return {["next"]= "r1", ["delay"]= 32*ms} end,
+   ["s0"]= function() close_scan_relay("S0"); return {["next"]= "r0", ["delay"]= 32*ms} end,
 
    ["r8"]= function() read_relay_row("S8"); return {["next"]= "s7", ["delay"]= 32*ms} end,
    ["r7"]= function() read_relay_row("S7"); return {["next"]= "s6", ["delay"]= 32*ms} end,

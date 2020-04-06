@@ -11,6 +11,8 @@ import json
 import random
 from twython import Twython
 import io
+from datetime import datetime
+
 
 app = Flask(__name__)
 
@@ -113,6 +115,9 @@ def print_card(card):
     return text
 
 def punch_card(bits):
+    now = datetime.now()
+    punchdate = now.strftime("$y-%m-%d_%H-%M")
+
     with zipfile.ZipFile('cardpack.zip') as cardpack:
         f_im=Image.open(cardpack.open('front.png'))
         b_im=Image.open(cardpack.open('back.png'))
@@ -148,8 +153,13 @@ def punch_card(bits):
                     b_draw.ellipse([(b_xcen - holesize, b_ycen - holesize),
                                     (b_xcen + holesize, b_ycen + holesize)],
                                    'black', 'black')
+        # save the cards to be used via the web frontend            
         f_im.save("/tmp/front.png", format="PNG", optimize=True)
         b_im.save("/tmp/back.png", format="PNG", optimize=True)
+
+        # and save the cards to a directory so I can look at them later
+        f_im.save("/tmp/cards/" + punchdate + "front.png", format="PNG", optimize=True)
+        b_im.save("/tmp/cards/" + punchdate + "back.png", format="PNG", optimize=True)
 
 
 def operate(leads):
