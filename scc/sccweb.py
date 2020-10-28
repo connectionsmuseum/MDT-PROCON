@@ -116,7 +116,7 @@ def print_card(card):
 
 def punch_card(bits):
     now = datetime.now()
-    punchdate = now.strftime("$y-%m-%d_%H-%M")
+    punchdate = now.strftime("%y-%m-%d_%H-%M")
 
     with zipfile.ZipFile('cardpack.zip') as cardpack:
         f_im=Image.open(cardpack.open('front.png'))
