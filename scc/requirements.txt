@@ -1,4 +1,4 @@
 Flask==1.1.1
 Flask-API==1.1
-Pillow==8.1.1
+Pillow==9.3.0
 Twython==3.6.0
