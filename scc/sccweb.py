@@ -12,6 +12,8 @@ import random
 from twython import Twython
 import io
 from datetime import datetime
+import pprint   #XXX sarah
+from mastodon import Mastodon
 
 
 app = Flask(__name__)
@@ -34,6 +36,7 @@ scanpts_order = [
     [115, 114, 113, 112, 111, 110, 109, 108, 'RSV14.8', 'RSV14.9'],
     ['RSV15.0', 'RSV15.1', 'RSV15.2', 'RSV15.3', 119, 118, 117, 116, 'RSV15.8', 'RSV15.9']
     ]
+
 
 # (bw0 .. bw59) -> R section
 # (bw60 .. bw119) -> S section
@@ -58,45 +61,26 @@ def req_punch():
     dump = request.get_json()
     leads = unfold_scans(dump)
     card = operate(leads)
+
     # make card images
     print(print_card(card))
     punch_card(card)
+
     # save card info
     save_card(card)
-    # put on twitter
-    #post_card(card)
     return "", status.HTTP_200_OK
+
+def reorder_dict(dump):
+    reordered_data = {}
+    for outer_key, inner_dict in dump.items():
+        sorted_keys = sorted(inner_dict.keys(), key=lambda x: (x != '0', x == '15', int(x)))
+        reordered_data[outer_key] = {k: inner_dict[k] for k in sorted_keys}
+    return reordered_data
 
 def save_card(card):
     name = "/tmp/cardout-date.json"
     with open(name, "w") as f:
         json.dump(card, f)
-
-def post_card(card):
-    # make card text
-    cardtext = print_card(card)
-    flavor = random.choice(exclamations)
-    print(cardtext)
-    print(flavor)
-    with open('/etc/sccweb.conf') as secrets:
-        config = configparser.ConfigParser()
-        config.read_string(secrets.read())
-        twitter = Twython(
-            app_key = config['secrets']['api_key'],
-            app_secret = config['secrets']['api_secret'],
-            oauth_token = config['fivecrossbar']['access_token'],
-            oauth_token_secret = config['fivecrossbar']['access_secret'],)
-        ffront = open("/tmp/front.png", 'rb')
-        fback = open("/tmp/back.png", 'rb')
-        front_resp = twitter.upload_media(media=ffront)
-        back_resp = twitter.upload_media(media=fback)
-        resp = twitter.update_status(status=flavor, 
-                              media_ids=[
-                                  front_resp['media_id']
-                                  ,back_resp['media_id']
-                              ]
-        )
-        return resp['id']
 
 def print_card(card):
     text = ''
@@ -153,7 +137,7 @@ def punch_card(bits):
                     b_draw.ellipse([(b_xcen - holesize, b_ycen - holesize),
                                     (b_xcen + holesize, b_ycen + holesize)],
                                    'black', 'black')
-        # save the cards to be used via the web frontend            
+        # save the cards to be used via the web frontend
         f_im.save("/tmp/front.png", format="PNG", optimize=True)
         b_im.save("/tmp/back.png", format="PNG", optimize=True)
 
@@ -165,9 +149,9 @@ def punch_card(bits):
 def operate(leads):
     card = [[False for x in range(69)] for y in range(18)]
     for S in range(9):
-        Sx = "S{}".format(S)
-        for k in leads[Sx]:
-            row = 8-S
+        Sx = "S{}".format(S)    # each scanning relay 0-8
+        for k in leads[Sx]:     # going into the nest "k"
+            row = 8-S           # S0 for example will give row = 8
             if isinstance(k, int):
                 column = k%30
                 if k>=0 and k<=29:
@@ -205,7 +189,7 @@ def operate(leads):
                 # before 90
                 column = 38
 
-            if ((leads[Sx][k] == 1) and (column is not None)):
+            if ((leads[Sx][k] == 1) and (column is not None) and isinstance(k, int)):
                 card[row][column] = True
     return card
 
@@ -213,6 +197,22 @@ def operate(leads):
 def displaycard():
     return render_template("index.html", front="static/front.png", back="static/back.png")
 
+@app.route('/mastodon', methods=['POST'])
+def button_click():
+    # make card text
+    # cardtext = print_card(card)
+    flavor = random.choice(exclamations)
+    # print(cardtext)
+    print(flavor)
+    with open('/etc/sccweb.conf') as secrets:
+        config = configparser.ConfigParser()
+        config.read_string(secrets.read())
+
+        ffront = open("/tmp/front.png", 'rb')
+        fback = open("/tmp/back.png", 'rb')
+
+    return render_template("index.html", front="static/front.png", back="static/back.png")
 
 if __name__ == '__main__':
     app.run(host = '0.0.0.0', port = 5220)
+

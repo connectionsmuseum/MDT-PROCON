@@ -154,6 +154,9 @@ function read_row(rownr)
    gpio.write(leads.A3, logic[bit.isset(rownr, 2)])
    gpio.write(leads.A4, logic[bit.isset(rownr, 3)])
 
+   --print("rownr ",rownr) --XXX Sarah
+
+
    -- strobe MSYN lead
    gpio.write(leads.MSYN, logic[1])
 
@@ -161,10 +164,6 @@ function read_row(rownr)
    local j = 0
    while (gpio.read(leads.SSYN) == 1) do
       j = j+1
-      if j == 100 then
-	 print("read row "..rownr.." timeout!")
-	 return { scan["OPEN"], scan["OPEN"], scan["OPEN"], scan["OPEN"], scan["OPEN"], scan["OPEN"], scan["OPEN"], scan["OPEN"], scan["OPEN"], scan["OPEN"] }
-      end
    end
 
    -- read from D00 thru D09
@@ -178,6 +177,8 @@ function read_row(rownr)
    local d7 = gpio.read(leads.D07)
    local d8 = gpio.read(leads.D08)
    local d9 = gpio.read(leads.D09)
+
+   --print("bits ",d0,d1,d2,d3,d4,d5,d6,d7,d8,d9)
 
    -- drop MSYN
    gpio.write(leads.MSYN, logic[0])
@@ -211,11 +212,6 @@ function write_row(rownr, values)
    local j = 0
    while (gpio.read(leads.SSYN) == logic[0]) do
       j = j+1
-      if j == 100 then
-	 print("write row "..rownr.." timeout!")
-	 return
-      end
-
    end
 
    -- drop MSYN
@@ -282,9 +278,11 @@ function state_idle()
    end
 
    if (read_named_scanpt("STRA1") == 1) then
-      return {["next"]= "debonk", ["delay"]= 32*ms}
+      print("STRA1 ASSERTED WHOA!")
+      return {["next"]= "debonk", ["delay"]= 64*ms}
    elseif (read_named_scanpt("STR") == 1) then
-      return {["next"]= "debonk", ["delay"]= 32*ms}
+      print("STR ASSERTED")
+      return {["next"]= "debonk", ["delay"]= 64*ms}
    else
       return {["next"]= "idle"}
    end
@@ -294,11 +292,11 @@ function state_debonk()
     -- this is a debounce state
 
    if (read_named_scanpt("STRA1") == 1) then
-      print("starting special trouble")
+      print("Starting special trouble")
       trouble_type = "express"
       return {["next"]= "s8"}
    elseif (read_named_scanpt("STR") == 1) then
-      print("starting normal trouble")
+      print("Starting normal trouble")
       trouble_type = "normal"
       return {["next"]= "s8"}
    else
@@ -307,7 +305,11 @@ function state_debonk()
 end
 
 function state_transmit()
-   print(trouble_type)
+   print("Transmitting ",trouble_type," trouble.")
+   --the below line to close TRC was just above the return, but sarah moved it here 2025-02-27
+   --i don't want the 5XB marker to wait for kercheep to return a 200 OK or a 300 msec timer
+   write_named_distpt("TRC", "CLOSED")
+   print("TRC lead closed.")
    local tbl = sjson.encode(trouble)
    http.post(server, {["headers"]= {["Content-Type"]= "application/json"},
 		["timeout"]= 300*sec }, tbl,
@@ -316,7 +318,6 @@ function state_transmit()
              end )
    trouble = {}
 
-   write_named_distpt("TRC", "CLOSED")
    return {["next"]= "transmit_wait"}
 end
 
@@ -335,7 +336,7 @@ function state_transmit_wait()
       write_named_distpt("MB", "CLOSED")
    end
 
-   return {["next"]= "transmit_wait", ["delay"]= 1*sec}
+   return {["next"]= "idle", ["delay"]= 1*sec}
 end
 
 function state_release()
@@ -346,19 +347,25 @@ function state_release()
 end
 
 function state_init()
-   write_named_distpt("MB", "CLOSED")
    local mb_scan = 0
-   mb_scan = read_named_scanpt("MB")
+   
+   write_named_distpt("MB", "CLOSED")
+   tmr.create():alarm(32, tmr.ALARM_SINGLE, 
+      function(t) mb_scan = read_named_scanpt("MB") end)
    print("MB x, scanpoint is "..mb_scan)
-
-   write_named_distpt("MB", "OPEN")
-   mb_scan = read_named_scanpt("MB")
+   
+   tmr.create():alarm(500, tmr.ALARM_SINGLE, 
+      function(t) write_named_distpt("MB", "OPEN") end)
+   tmr.create():alarm(32, tmr.ALARM_SINGLE, 
+      function(t) mb_scan = read_named_scanpt("MB") end)
    print("MB -, scanpoint is "..mb_scan)
-   -- while (mb_scan ~= 0) do
-   mb_scan = read_named_scanpt('MB')
-   print("MB x, scanpoint is "..mb_scan)
-   -- end
-
+   
+   tmr.create():alarm(500, tmr.ALARM_SINGLE, 
+      function(t) write_named_distpt("MB", "CLOSED") end)
+   tmr.create():alarm(32, tmr.ALARM_SINGLE, 
+      function(t) mb_scan = read_named_scanpt("MB") end)
+   print("MB x, scanpoint is "..mb_scan)   
+   
    return {["next"]= "idle"}
 end
 
@@ -416,4 +423,3 @@ restore_leads()
 t_tick = tmr.create()
 t_tick:register(10000, tmr.ALARM_SINGLE, tick)
 t_tick:start()
-

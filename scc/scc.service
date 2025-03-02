@@ -5,9 +5,9 @@ Documentation=https://www.github.com/connectionsmuseum/MDT-PROCON
 [Service]
 User=scc
 WorkingDirectory=/opt/MDT-PROCON/scc/
-VIRTUAL_ENV=/opt/MDT-PROCON/scc/env/
+VIRTUAL_ENV=/opt/MDT-PROCON/scc/
 Environment=PATH=$VIRTUAL_ENV/bin:$PATH
-ExecStart=/opt/MDT-PROCON/scc/env/bin/python sccweb.py
+ExecStart=/opt/MDT-PROCON/scc/bin/python sccweb.py
 Restart=on-failure
 
 [Install]

@@ -63,27 +63,13 @@ wifi_disconnect_event = function(T)
 end
 
 wifi.sta.on("got_ip", wifi_got_ip_event)
--- wifi.sta.on("connect", wifi_connect_event)
--- wifi.sta.on("disconnect", wifi_disconnect_event)
+--wifi.sta.on("connected", wifi_connect_event)
+--wifi.sta.on("disconnected", wifi_disconnect_event)
 
 wifi.mode(wifi.STATION)
 wifi.start()
 station_cfg={}
 station_cfg.ssid=SSID
 station_cfg.pwd=PASSWORD
+print("Wifi starting...")
 wifi.sta.config(station_cfg)
-
--- Register WiFi Station event callbacks
--- wifi.eventmon.register(wifi.eventmon.STA_CONNECTED, wifi_connect_event)
---wifi.sta.on("connected", wifi_connect_event)
--- wifi.eventmon.register(wifi.eventmon.STA_GOT_IP, wifi_got_ip_event)
---wifi.sta.on("got_ip", wifi_got_ip_event)
--- wifi.eventmon.register(wifi.eventmon.STA_DISCONNECTED, wifi_disconnect_event)
---wifi.sta.on("disconnected", wifi_disconnect_event)
-
-print("Connecting to WiFi access point...")
---wifi.start()
---wifi.mode(wifi.STATION)
---wifi.sta.config({ssid=SSID, pwd=PASSWORD})
---wifi.sta.setip({ip=IP_ADDR, netmask=NETMASK, gateway=GATEWAY})
---wifi.sta.connect()
