@@ -18,6 +18,8 @@ from mastodon import Mastodon
 
 app = Flask(__name__)
 
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
 scanpts_order = [
     [ 7,  6,  5,  4,  3,  2,  1,  0, 'STRA1', 'STR'],
     [15, 14, 13, 12, 11, 10,  9,  8, 'TRC', 'SPL'],
@@ -70,6 +72,59 @@ def req_punch():
     save_card(card)
     return "", status.HTTP_200_OK
 
+def scan_data_to_card(data):
+    card = [[False for x in range(69)] for y in range(18)]
+
+    for scan_group in range(9):
+        for i in range(16):
+            for j in range(8):
+                row = 8 - scan_group
+                scanpt_val = scanpts_order[i][j]
+                if isinstance(scanpt_val, int):
+                    col = scanpt_val % 30
+                    if 0 <= scanpt_val and scanpt_val <= 29:
+                        row += 9
+                    if 30 <= scanpt_val and scanpt_val <= 59:
+                        row += 9
+                        col += 39
+                    if 60 <= scanpt_val and scanpt_val <= 89:
+                        pass
+                    if 90 <= scanpt_val and scanpt_val <= 119:
+                        col += 39
+                elif scanpt_val == 'BWX0':
+                    col = 30
+                    row += 9
+                elif scanpt_val == 'BWX1':
+                    col = 38
+                    row += 9
+                elif scanpt_val == 'BWX2':
+                    col = 30
+                elif scanpt_val == 'BWX3':
+                    col = 38
+
+                if (((data[scan_group * 16 + i] >> j) & 1) == 1) and isinstance(scanpt_val, int):
+                    if row < 18 and col < 69:
+                        # app.logger.debug(f"on iteration s{scan_group} i{i} j{j} got row{row} col{col}")
+                        card[row][col] = True
+    return card
+
+@app.route('/trouble-card', methods=['POST'])
+def req_trouble_card():
+    if request.content_length < 2**16:
+        data = request.get_data(as_text=True)
+        # app.logger.debug(f"received '{data}'")
+        split_data = data.split(',')
+        decoded_data = list(map(lambda x: int(x, 16), split_data))
+        # app.logger.debug(f"decoded {decoded_data}")
+        card = scan_data_to_card(decoded_data)
+        print(print_card(card))
+        #app.logger.debug(md5(data.encode()).hexdigest())
+
+        punch_card(card)
+        save_card(card)
+
+        return {}
+
 def reorder_dict(dump):
     reordered_data = {}
     for outer_key, inner_dict in dump.items():
@@ -104,7 +159,7 @@ def punch_card(bits):
 
     with zipfile.ZipFile('cardpack.zip') as cardpack:
         f_im=Image.open(cardpack.open('front.png'))
-        b_im=Image.open(cardpack.open('back.png'))
+        #b_im=Image.open(cardpack.open('back.png'))
         with cardpack.open('offsets.txt') as offsets:
             config=configparser.ConfigParser()
             config.read_string(offsets.read().decode('ASCII'))
@@ -120,7 +175,7 @@ def punch_card(bits):
         holesize = 15
         #Render the PNGs
         f_draw = ImageDraw.Draw(f_im)
-        b_draw = ImageDraw.Draw(b_im)
+        #b_draw = ImageDraw.Draw(b_im)
         for xidx in range(69):
             for yidx in range(18):
                 if xidx>30 and xidx<38: continue
@@ -134,16 +189,17 @@ def punch_card(bits):
                     f_draw.ellipse([(f_xcen - holesize, f_ycen - holesize),
                                     (f_xcen + holesize, f_ycen + holesize)],
                                    'black', 'black')
-                    b_draw.ellipse([(b_xcen - holesize, b_ycen - holesize),
-                                    (b_xcen + holesize, b_ycen + holesize)],
-                                   'black', 'black')
+                   # b_draw.ellipse([(b_xcen - holesize, b_ycen - holesize),
+                   #                 (b_xcen + holesize, b_ycen + holesize)],
+                   #                'black', 'black')
         # save the cards to be used via the web frontend
-        f_im.save("/tmp/front.png", format="PNG", optimize=True)
-        b_im.save("/tmp/back.png", format="PNG", optimize=True)
+        rgb_im  = f_im.convert('RGB')
+        rgb_im.save("/tmp/front.jpg", optimize=True)
+        #b_im.save("/tmp/back.png", format="PNG", optimize=True)
 
         # and save the cards to a directory so I can look at them later
         f_im.save("/tmp/cards/" + punchdate + "front.png", format="PNG", optimize=True)
-        b_im.save("/tmp/cards/" + punchdate + "back.png", format="PNG", optimize=True)
+        #b_im.save("/tmp/cards/" + punchdate + "back.png", format="PNG", optimize=True)
 
 
 def operate(leads):
@@ -195,7 +251,7 @@ def operate(leads):
 
 @app.route('/punch', methods=['GET'])
 def displaycard():
-    return render_template("index.html", front="static/front.png", back="static/back.png")
+    return render_template("index.html", front="static/front.jpg")
 
 @app.route('/mastodon', methods=['POST'])
 def button_click():
@@ -208,10 +264,10 @@ def button_click():
         config = configparser.ConfigParser()
         config.read_string(secrets.read())
 
-        ffront = open("/tmp/front.png", 'rb')
-        fback = open("/tmp/back.png", 'rb')
+        ffront = open("/tmp/front.jpg", 'rb')
+        #fback = open("/tmp/back.png", 'rb')
 
-    return render_template("index.html", front="static/front.png", back="static/back.png")
+    return render_template("index.html", front="static/front.jpg")
 
 if __name__ == '__main__':
     app.run(host = '0.0.0.0', port = 5220)
