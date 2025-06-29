@@ -1,0 +1,20 @@
+[Front]
+originX=684
+originY=112
+
+offsetX=97.88
+; (7340-684) / 68
+
+offsetY=98.35
+; (1784-112) / 17
+
+[Back]
+originX=690
+originY=1782
+
+offsetX=97.44
+; (7316-690) / 68
+
+offsetY=-98.12
+; (114-1782) / 17
+
