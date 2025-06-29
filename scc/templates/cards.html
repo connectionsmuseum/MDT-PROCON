@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<style>
+    html, img {
+        background-color: #2A2A2A;
+    }
+</style>
+<html>
+    <head>
+        <title>Trouble Cards</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="apple-touch-icon" href="../static/touch-icon-iphone.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="../static/touch-icon-iphone-retina.png">
+        <script>
+            function loadCard() {
+                const name = document.getElementById("cardSelect").value;
+                var img = document.getElementById("card");
+                img.src = "card/" + name;
+            }
+        </script>
+    </head>
+    <body>
+        <select name="card" id="cardSelect" onchange="loadCard()">
+            {% for cardname in cardnames %}
+            <option value="{{cardname}}">
+                {{cardname}}
+            </option>
+            {% endfor %}
+            <option></option>
+        </select>
+        <img id="card" style="width:100%" src="static/front.jpg"/>
+    </body>
+</html>
