@@ -47,6 +47,10 @@ scanpts_order = [
 with open('5xb-tweets.txt') as x:
     exclamations = x.readlines()
 
+def unfold_scans(dump):
+    namescan = {k: deep_scan_to_namescan(v) for k, v in dump.items()}
+    return namescan
+
 def deep_scan_to_namescan(scan):
     out = {}
     for i in range(16):
@@ -54,75 +58,7 @@ def deep_scan_to_namescan(scan):
             out[scanpts_order[i][j]] = scan["%d"%i][j]
     return out
 
-def unfold_scans(dump):
-    namescan = {k: deep_scan_to_namescan(v) for k, v in dump.items()}
-    return namescan
-
-@app.route('/punch', methods=['POST'])
-def req_punch():
-    dump = request.get_json()
-    leads = unfold_scans(dump)
-    card = make_card(leads)
-
-    # make card images
-    print(print_card(card))
-    punch_card(card)
-
-    # save card image holes data as json blob
-    save_json_to_disk(card)
-    return "", status.HTTP_200_OK
-
-def scan_data_to_card(data):
-    card = [[False for x in range(69)] for y in range(18)]
-
-    for scan_group in range(9):
-        for i in range(16):
-            for j in range(8):
-                row = 8 - scan_group
-                scanpt_val = scanpts_order[i][j]
-                if isinstance(scanpt_val, int):
-                    col = scanpt_val % 30
-                    if 0 <= scanpt_val and scanpt_val <= 29:
-                        row += 9
-                    if 30 <= scanpt_val and scanpt_val <= 59:
-                        row += 9
-                        col += 39
-                    if 60 <= scanpt_val and scanpt_val <= 89:
-                        pass
-                    if 90 <= scanpt_val and scanpt_val <= 119:
-                        col += 39
-                # elif scanpt_val == 'BWX0':
-                #     col = 30
-                #     row += 9
-                # elif scanpt_val == 'BWX1':
-                #     col = 38
-                #     row += 9
-                # elif scanpt_val == 'BWX2':
-                #     col = 30
-                # elif scanpt_val == 'BWX3':
-                #    col = 38
-
-                if (((data[scan_group * 16 + i] >> j) & 1) == 1) and isinstance(scanpt_val, int):
-                    if row < 18 and col < 69:
-                        card[row][col] = True
-    return card
-
-def reorder_dict(dump):
-    reordered_data = {}
-    for outer_key, inner_dict in dump.items():
-        sorted_keys = sorted(inner_dict.keys(), key=lambda x: (x != '0', x == '15', int(x)))
-        reordered_data[outer_key] = {k: inner_dict[k] for k in sorted_keys}
-    return reordered_data
-
-def save_json_to_disk(card):
-    # This just writes out all 18 rows of the card, left to right, top to bottom.
-    # It ignores the S, R, SA, and RA sections and appears to be arranged to create the card image,
-    # not to actually meaningfully digest the data.
-    name = "/tmp/cardout-date.json"
-    with open(name, "w") as f:
-        json.dump(card, f)
-
-def print_card(card):
+def ascii_card(card):
     text = ''
     text += ('+'+('—'*69)+'+\n')
     for y in range(18):
@@ -137,53 +73,6 @@ def print_card(card):
         text += ('|\n')
     text += ('+'+('—'*69)+'+\n')
     return text
-
-def punch_card(bits):
-    now = datetime.now()
-    punchdate = now.strftime("%y-%m-%d_%H-%M-%S")
-
-    f_im=Image.open('cardpack/front.jpg')
-    with open('cardpack/offsets.txt') as offsets:
-        config=configparser.ConfigParser()
-        config.read_string(offsets.read().decode('ASCII'))
-        f_origin_x=float(config['Front']['originX'])
-        f_origin_y=float(config['Front']['originY'])
-        f_offset_x=float(config['Front']['offsetX'])
-        f_offset_y=float(config['Front']['offsetY'])
-        #b_origin_x=float(config['Back' ]['originX'])
-        #b_origin_y=float(config['Back' ]['originY'])
-        #b_offset_x=float(config['Back' ]['offsetX'])
-        #b_offset_y=float(config['Back' ]['offsetY'])
-
-        holesize = 15
-        #Render the PNGs
-        f_draw = ImageDraw.Draw(f_im)
-        #b_draw = ImageDraw.Draw(b_im)
-        for xidx in range(69):
-            for yidx in range(18):
-                if xidx>30 and xidx<38: continue
-                #Don't tell Professor Mead, these numbers are magic
-                f_xcen=f_origin_x+(xidx*f_offset_x)
-                f_ycen=f_origin_y+(yidx*f_offset_y)
-                b_xcen=b_origin_x+(xidx*b_offset_x)
-                b_ycen=b_origin_y+(yidx*b_offset_y)
-                #It's hole-punchin' time
-                if bits[yidx][xidx]:
-                    f_draw.ellipse([(f_xcen - holesize, f_ycen - holesize),
-                                    (f_xcen + holesize, f_ycen + holesize)],
-                                   'black', 'black')
-                   # b_draw.ellipse([(b_xcen - holesize, b_ycen - holesize),
-                   #                 (b_xcen + holesize, b_ycen + holesize)],
-                   #                'black', 'black')
-        # save the cards to be used via the web frontend
-        rgb_im  = f_im.convert('RGB')
-        rgb_im.save("/tmp/front.jpg", optimize=True)
-        #b_im.save("/tmp/back.png", format="PNG", optimize=True)
-
-        # and save the cards to a directory so I can look at them later
-        f_im.save("/tmp/cards/" + punchdate + "front.jpg", optimize=True)
-        #b_im.save("/tmp/cards/" + punchdate + "back.png", format="PNG", optimize=True)
-
 
 def make_card(leads):
     card = [[False for x in range(69)] for y in range(18)]
@@ -233,6 +122,128 @@ def make_card(leads):
                 card[row][column] = True
     return card
 
+def punch_card(bits):
+    now = datetime.now()
+    punchdate = now.strftime("%y-%m-%d_%H-%M-%S")
+
+    with zipfile.ZipFile('cardpack.zip') as cardpack:
+
+        f_im=Image.open('cardpack/front.jpg')
+        with cardpack.open('offsets.txt') as offsets:
+            config=configparser.ConfigParser()
+            config.read_string(offsets.read().decode('ASCII'))
+            f_origin_x=float(config['Front']['originX'])
+            f_origin_y=float(config['Front']['originY'])
+            f_offset_x=float(config['Front']['offsetX'])
+            f_offset_y=float(config['Front']['offsetY'])
+            #b_origin_x=float(config['Back' ]['originX'])
+            #b_origin_y=float(config['Back' ]['originY'])
+            #b_offset_x=float(config['Back' ]['offsetX'])
+            #b_offset_y=float(config['Back' ]['offsetY'])
+
+        holesize = 15
+        #Render the PNGs
+        f_draw = ImageDraw.Draw(f_im)
+        #b_draw = ImageDraw.Draw(b_im)
+        for xidx in range(69):
+            for yidx in range(18):
+                if xidx>30 and xidx<38: continue
+                #Don't tell Professor Mead, these numbers are magic
+                f_xcen=f_origin_x+(xidx*f_offset_x)
+                f_ycen=f_origin_y+(yidx*f_offset_y)
+                #b_xcen=b_origin_x+(xidx*b_offset_x)
+                #b_ycen=b_origin_y+(yidx*b_offset_y)
+                #It's hole-punchin' time
+                if bits[yidx][xidx]:
+                    f_draw.ellipse([(f_xcen - holesize, f_ycen - holesize),
+                                    (f_xcen + holesize, f_ycen + holesize)],
+                                   'black', 'black')
+                   # b_draw.ellipse([(b_xcen - holesize, b_ycen - holesize),
+                   #                 (b_xcen + holesize, b_ycen + holesize)],
+                   #                'black', 'black')
+        # save the cards to be used via the web frontend
+        rgb_im  = f_im.convert('RGB')
+        rgb_im.save("/tmp/front.jpg", optimize=True)
+        #b_im.save("/tmp/back.png", format="PNG", optimize=True)
+
+        # and save the cards to a directory so I can look at them later
+        f_im.save("/tmp/cards/" + punchdate + "front.jpg", optimize=True)
+        #b_im.save("/tmp/cards/" + punchdate + "back.png", format="PNG", optimize=True)
+
+def save_json_to_disk(card):
+    name = "/tmp/cardout_most_recent.json"
+    with open(name, "w") as f:
+        json.dump(card, f)
+
+def scan_data_to_card(data):
+    card = [[False for x in range(69)] for y in range(18)]
+
+    for scan_group in range(9):
+        for i in range(16):
+            for j in range(8):
+                row = 8 - scan_group
+                scanpt_val = scanpts_order[i][j]
+                if isinstance(scanpt_val, int):
+                    col = scanpt_val % 30
+                    if 0 <= scanpt_val and scanpt_val <= 29:
+                        row += 9
+                    if 30 <= scanpt_val and scanpt_val <= 59:
+                        row += 9
+                        col += 39
+                    if 60 <= scanpt_val and scanpt_val <= 89:
+                        pass
+                    if 90 <= scanpt_val and scanpt_val <= 119:
+                        col += 39
+                elif scanpt_val == 'BWX0':
+                    col = 30
+                    row += 9
+                elif scanpt_val == 'BWX1':
+                    col = 38
+                    row += 9
+                elif scanpt_val == 'BWX2':
+                    col = 30
+                elif scanpt_val == 'BWX3':
+                    col = 38
+
+                if (((data[scan_group * 16 + i] >> j) & 1) == 1) and isinstance(scanpt_val, int):
+                    if row < 18 and col < 69:
+                        # app.logger.debug(f"on iteration s{scan_group} i{i} j{j} got row{row} col{col}")
+                        card[row][col] = True
+    return card
+
+
+@app.route('/trouble-card', methods=['POST'])
+def req_trouble_card():
+    if request.content_length < 2**16:
+        data = request.get_data(as_text=True)
+        # app.logger.debug(f"received '{data}'")
+        split_data = data.split(',')
+        decoded_data = list(map(lambda x: int(x, 16), split_data))
+        # app.logger.debug(f"decoded {decoded_data}")
+        card = scan_data_to_card(decoded_data)
+        print(ascii_card(card))
+        #app.logger.debug(md5(data.encode()).hexdigest())
+
+        punch_card(card)
+        save_json_to_disk(card)
+
+        return {}
+
+
+@app.route('/punch', methods=['POST'])
+def req_punch():
+    dump = request.get_json()
+    leads = unfold_scans(dump)
+    card = make_card(leads)
+
+    # make card images
+    print(ascii_card(card))
+    punch_card(card)
+
+    # save card image holes data as json blob
+    save_json_to_disk(card)
+    return "", status.HTTP_200_OK
+
 @app.route('/punch', methods=['GET'])
 def displaycard():
     return render_template("index.html", front="static/front.jpg")
@@ -242,7 +253,7 @@ def cardsearch():
     cards = os.listdir('/tmp/cards/')
     cards.sort(key=lambda x: os.path.getmtime('/tmp/cards/' + x))
     cards = cards[::-1]
-    cards = cards[:20]
+    cards = cards[:30]
     return render_template("cards.html", cardnames=cards)
 
 @app.route('/card/<name>', methods=['GET'])
@@ -253,7 +264,7 @@ def card(name):
 @app.route('/mastodon', methods=['POST'])
 def button_click():
     # make card text
-    # cardtext = print_card(card)
+    # cardtext = ascii_card(card)
     flavor = random.choice(exclamations)
     # print(cardtext)
     print(flavor)

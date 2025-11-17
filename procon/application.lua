@@ -164,10 +164,6 @@ function read_row(rownr)
    local j = 0
    while (gpio.read(leads.SSYN) == 1) do
       j = j+1
-      if j == 100 then
-	     print("read row "..rownr.." timeout!")
-	  return { scan["OPEN"], scan["OPEN"], scan["OPEN"], scan["OPEN"], scan["OPEN"], scan["OPEN"], scan["OPEN"], scan["OPEN"], scan["OPEN"], scan["OPEN"] }
-      end
    end
 
    -- read from D00 thru D09
@@ -216,10 +212,6 @@ function write_row(rownr, values)
    local j = 0
    while (gpio.read(leads.SSYN) == logic[0]) do
       j = j+1
-      if j == 100 then
-        print("write row "..rownr.." timeout!")
-	    return
-      end
    end
 
    -- drop MSYN
