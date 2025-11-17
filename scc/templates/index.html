@@ -1,28 +1,63 @@
 <!DOCTYPE html>
 
-<style>
-    html, img {
-        background-color: #2A2A2A;
-    }
-</style>
-
 <html>
-	<head>
-		    <title>Most Recent 5XB Card</title>
-		  <!-- Mobile Specific Metas
+  <head>
+    <title>5XB Trouble Cards</title>
+    <!-- Mobile Specific Metas
 		  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-		  <meta name="viewport" content="width=device-width, initial-scale=1">
-		  <meta name="apple-mobile-web-app-capable" content="yes">
-		  <link rel="apple-touch-icon" href="../static/touch-icon-iphone.png">
-		  <link rel="apple-touch-icon" sizes="180x180" href="../static/touch-icon-iphone-retina.png">
-	</head>
-	<body>
-		<img style="width:100%;" src="{{ front }}" alt="Front">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <link rel="apple-touch-icon" href="../static/touch-icon-iphone.png" />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="../static/touch-icon-iphone-retina.png"
+    />
+    <script>
+      function loadCard() {
+        const name = document.getElementById("cardSelect").value;
+        var img = document.getElementById("card");
+        img.src = "card/" + name;
+      }
+    </script>
+    <style>
+      html,
+      img {
+        background-color: #2a2a2a;
+      }
+      .controls {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        padding-bottom: 10px;
+        gap: 10px;
+      }
+      .controls * {
+        display: block;
+      }
+    </style>
+  </head>
 
-        <button onClick="window.location.reload();">Reload</button>
-<!--        <form action="/mastodon" method="post">
+  <body>
+    <div class="controls">
+      <select name="card" id="cardSelect" onchange="loadCard()">
+        {% for cardname in cardnames %}
+        <option value="{{cardname}}">{{cardname}}</option>
+        {% endfor %}
+        <option></option>
+      </select>
+      <button onClick="window.location.reload();">Reload Page</button>
+    </div>
+    <img
+      id="card"
+      style="width: 100%"
+      src="static/front.jpg"
+      onerror="this.src='../static/placeholder.png';"
+    />
+
+    <!--        <form action="/mastodon" method="post">
             <button name="submit" value="Submit">Post</button>
         </form>
         -->
-	</body>
+  </body>
 </html>
