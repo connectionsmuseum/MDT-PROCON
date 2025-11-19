@@ -244,10 +244,6 @@ def req_punch():
     save_json_to_disk(card)
     return "", status.HTTP_200_OK
 
-@app.route('/punch', methods=['GET'])
-def displaycard():
-    return render_template("index.html", front="static/front.jpg")
-
 @app.route('/cards', methods=['GET'])
 def cardsearch():
     cards = os.listdir('/tmp/cards/')
