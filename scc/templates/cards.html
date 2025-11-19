@@ -20,14 +20,18 @@
         </script>
     </head>
     <body>
-        <select name="card" id="cardSelect" onchange="loadCard()">
-            {% for cardname in cardnames %}
-            <option value="{{cardname}}">
-                {{cardname}}
-            </option>
-            {% endfor %}
-            <option></option>
-        </select>
-        <img id="card" style="width:100%" src="static/front.jpg"/>
+        <div class="controls">
+            <select name="card" id="cardSelect" onchange="loadCard()">
+                {% for cardname in cardnames %}
+                <option value="{{cardname}}">
+                    {{cardname}}
+                </option>
+                {% endfor %}
+                <option></option>
+            </select>
+            <button onClick="window.location.reload();">Reload Page</button>
+        </div>
+        <img id="card" style="width:100%" src="static/front.jpg" 
+        onerror="this.src='../static/placeholder.png';"/>
     </body>
 </html>
