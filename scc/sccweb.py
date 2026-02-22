@@ -12,7 +12,6 @@ import random
 from twython import Twython
 import io
 from datetime import datetime
-import pprint   #XXX sarah
 from mastodon import Mastodon
 
 
@@ -216,33 +215,16 @@ def scan_data_to_card(data):
 def req_trouble_card():
     if request.content_length < 2**16:
         data = request.get_data(as_text=True)
-        # app.logger.debug(f"received '{data}'")
         split_data = data.split(',')
         decoded_data = list(map(lambda x: int(x, 16), split_data))
-        # app.logger.debug(f"decoded {decoded_data}")
         card = scan_data_to_card(decoded_data)
         print(ascii_card(card))
-        #app.logger.debug(md5(data.encode()).hexdigest())
 
         punch_card(card)
         save_json_to_disk(card)
 
         return {}
 
-
-@app.route('/punch', methods=['POST'])
-def req_punch():
-    dump = request.get_json()
-    leads = unfold_scans(dump)
-    card = make_card(leads)
-
-    # make card images
-    print(ascii_card(card))
-    punch_card(card)
-
-    # save card image holes data as json blob
-    save_json_to_disk(card)
-    return "", status.HTTP_200_OK
 
 @app.route('/cards', methods=['GET'])
 def cardsearch():
@@ -251,6 +233,7 @@ def cardsearch():
     cards = cards[::-1]
     cards = cards[:30]
     return render_template("cards.html", cardnames=cards)
+
 
 @app.route('/card/<name>', methods=['GET'])
 def card(name):
