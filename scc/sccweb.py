@@ -166,8 +166,8 @@ def punch_card(bits):
         #b_im.save("/tmp/back.png", format="PNG", optimize=True)
 
         # and save the cards to a directory so I can look at them later
-        f_im.save("/tmp/cards/" + punchdate + "front.jpg", optimize=True)
-        #b_im.save("/tmp/cards/" + punchdate + "back.png", format="PNG", optimize=True)
+        f_im.save("/tmp/cards/" + punchdate + "_front.jpg", optimize=True)
+        #b_im.save("/tmp/cards/" + punchdate + "_back.png", format="PNG", optimize=True)
 
 def save_json_to_disk(card):
     name = "/tmp/cardout_most_recent.json"
@@ -239,22 +239,6 @@ def cardsearch():
 def card(name):
     return send_from_directory('/tmp/cards', name)
 
-
-@app.route('/mastodon', methods=['POST'])
-def button_click():
-    # make card text
-    # cardtext = ascii_card(card)
-    flavor = random.choice(exclamations)
-    # print(cardtext)
-    print(flavor)
-    with open('/etc/sccweb.conf') as secrets:
-        config = configparser.ConfigParser()
-        config.read_string(secrets.read())
-
-        ffront = open("/tmp/front.jpg", 'rb')
-        #fback = open("/tmp/back.png", 'rb')
-
-    return render_template("index.html", front="static/front.jpg")
 
 if __name__ == '__main__':
     app.run(host = '0.0.0.0', port = 5220)
