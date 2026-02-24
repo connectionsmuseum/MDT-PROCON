@@ -1,24 +1,23 @@
 #!/usr/bin/python3
-from flask import Flask, abort, request, render_template, send_from_directory
+from flask import Flask, abort, request, render_template, send_from_directory, redirect
 from flask_api import status
-import math
 import sys
 import zipfile
 from PIL import Image, ImageDraw
 import configparser
 import os
 import json
-import random
-from twython import Twython
-import io
 from datetime import datetime
-from mastodon import Mastodon
 
 
 app = Flask(__name__)
 
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
+# The virtual card is scanned in 120 points (two rows) at a time, in the same way as the actual card would be punched
+# when it is transported through the trouble recorder. The following list gives the order of the scan points
+# for the two rows of each scan as we get them from the MDT. 
+# The final card will contain this list 8 times, once for each of the 9 scans (S0 to S8).
 scanpts_order = [
     [ 7,  6,  5,  4,  3,  2,  1,  0, 'STRA1', 'STR'],
     [15, 14, 13, 12, 11, 10,  9,  8, 'TRC', 'SPL'],
@@ -38,90 +37,56 @@ scanpts_order = [
     ['RSV15.0', 'RSV15.1', 'RSV15.2', 'RSV15.3', 119, 118, 117, 116, 'RSV15.8', 'RSV15.9']
 ]
 
-
 # (bw0 .. bw59) -> R section
 # (bw60 .. bw119) -> S section
 
 
-with open('5xb-tweets.txt') as x:
-    exclamations = x.readlines()
-
-def unfold_scans(dump):
-    namescan = {k: deep_scan_to_namescan(v) for k, v in dump.items()}
-    return namescan
-
-def deep_scan_to_namescan(scan):
-    out = {}
-    for i in range(16):
-        for j in range(10):
-            out[scanpts_order[i][j]] = scan["%d"%i][j]
-    return out
-
-def ascii_card(card):
-    text = ''
-    text += ('+'+('—'*69)+'+\n')
-    for y in range(18):
-        text += ('|')
-        for x in range(69): #nice
-            if x==31 or x==37:
-                text += ('|')
-            elif x>31 and x<37:
-                text += (' ')
-            else:
-                text += ('#' if card[y][x] else '·')
-        text += ('|\n')
-    text += ('+'+('—'*69)+'+\n')
-    return text
-
-def make_card(leads):
+def scan_data_to_card(data):
+# Convert scan data into a 2D card representation.
+    
     card = [[False for x in range(69)] for y in range(18)]
-    for S in range(9):
-        Sx = "S{}".format(S)    # each scanning relay 0-8
-        for k in leads[Sx]:     # going into the nest "k"
-            row = 8-S           # S0 for example will give row = 8
-            if isinstance(k, int):
-                column = k%30
-                if k>=0 and k<=29:
-                    # 0 to 29, bottom left 'R'
+
+    for scan_group in range(9):
+        for i in range(16):
+            for j in range(8):
+                row = 8 - scan_group
+                scanpt_val = scanpts_order[i][j]
+                if isinstance(scanpt_val, int):
+                    col = scanpt_val % 30
+                    if 0 <= scanpt_val and scanpt_val <= 29:
+                        # bottom left 'R'
+                        row += 9
+                    if 30 <= scanpt_val and scanpt_val <= 59:
+                        # bottom right 'RA'
+                        row += 9
+                        col += 39
+                    if 60 <= scanpt_val and scanpt_val <= 89:
+                        # top left 'S'
+                        pass
+                    if 90 <= scanpt_val and scanpt_val <= 119:
+                        # top right 'SA'
+                        col += 39
+                # Note: these are never written, regardless of value, due to the isinstance check below
+                elif scanpt_val == 'BWX0':
+                    col = 30
                     row += 9
-
-                if k>=30 and k<=59:
-                    # 30 to 59, bottom right 'RA'
+                elif scanpt_val == 'BWX1':
+                    col = 38
                     row += 9
-                    column += 39
+                elif scanpt_val == 'BWX2':
+                    col = 30
+                elif scanpt_val == 'BWX3':
+                    col = 38
 
-                if k>=60 and k<=89:
-                    # 60 to 89, top left 'S'
-                    True
-
-                if k>=90 and k<=119:
-                    # 90 to 119, top right 'SA'
-                    column += 39
-
-            # Note: these are never written, regardless of value, due to the isinstance check below
-            elif k == "BWX0":
-                # bottom half of column 'A'
-                column = 30
-                row += 9
-
-            elif k == "BWX1":
-                # bottom half of column 'B'
-                column = 38
-                row += 9
-
-            elif k == "BWX2":
-                # top half of column 'A'
-                column = 30
-
-            elif k == "BWX3":
-                # top half of column 'B'
-                column = 38
-
-            if ((leads[Sx][k] == 1) and (column is not None) and isinstance(k, int)):
-                card[row][column] = True
+                if (((data[scan_group * 16 + i] >> j) & 1) == 1) and isinstance(scanpt_val, int):
+                    if row < 18 and col < 69:
+                        card[row][col] = True
     return card
 
+
 def punch_card(bits):
+    # creates a card image complete with holes punched in the right places, 
+    # and saves it to disk with a timestamped filename
     now = datetime.now()
     punchdate = now.strftime("%y-%m-%d_%H-%M-%S")
 
@@ -152,7 +117,8 @@ def punch_card(bits):
                 f_ycen=f_origin_y+(yidx*f_offset_y)
                 #b_xcen=b_origin_x+(xidx*b_offset_x)
                 #b_ycen=b_origin_y+(yidx*b_offset_y)
-                #It's hole-punchin' time
+
+                #It's hole-punchin' time! KACHUKACHUKACHUKA
                 if bits[yidx][xidx]:
                     f_draw.ellipse([(f_xcen - holesize, f_ycen - holesize),
                                     (f_xcen + holesize, f_ycen + holesize)],
@@ -169,77 +135,61 @@ def punch_card(bits):
         f_im.save("/tmp/cards/" + punchdate + "_front.jpg", optimize=True)
         #b_im.save("/tmp/cards/" + punchdate + "_back.png", format="PNG", optimize=True)
 
+
+def ascii_card(card):
+    text = ''
+    text += ('+'+('—'*69)+'+\n')
+    for y in range(18):
+        text += ('|')
+        for x in range(69): #nice
+            if x==31 or x==37:
+                text += ('|')
+            elif x>31 and x<37:
+                text += (' ')
+            else:
+                text += ('#' if card[y][x] else '·')
+        text += ('|\n')
+    text += ('+'+('—'*69)+'+\n')
+    return text
+
+
 def save_json_to_disk(card):
     name = "/tmp/cardout_most_recent.json"
     with open(name, "w") as f:
         json.dump(card, f)
 
-def scan_data_to_card(data):
-    card = [[False for x in range(69)] for y in range(18)]
-
-    for scan_group in range(9):
-        for i in range(16):
-            for j in range(8):
-                row = 8 - scan_group
-                scanpt_val = scanpts_order[i][j]
-                if isinstance(scanpt_val, int):
-                    col = scanpt_val % 30
-                    if 0 <= scanpt_val and scanpt_val <= 29:
-                        row += 9
-                    if 30 <= scanpt_val and scanpt_val <= 59:
-                        row += 9
-                        col += 39
-                    if 60 <= scanpt_val and scanpt_val <= 89:
-                        pass
-                    if 90 <= scanpt_val and scanpt_val <= 119:
-                        col += 39
-                elif scanpt_val == 'BWX0':
-                    col = 30
-                    row += 9
-                elif scanpt_val == 'BWX1':
-                    col = 38
-                    row += 9
-                elif scanpt_val == 'BWX2':
-                    col = 30
-                elif scanpt_val == 'BWX3':
-                    col = 38
-
-                if (((data[scan_group * 16 + i] >> j) & 1) == 1) and isinstance(scanpt_val, int):
-                    if row < 18 and col < 69:
-                        # app.logger.debug(f"on iteration s{scan_group} i{i} j{j} got row{row} col{col}")
-                        card[row][col] = True
-    return card
-
 
 @app.route('/trouble-card', methods=['POST'])
-def req_trouble_card():
+def receive_trouble_card():
     if request.content_length < 2**16:
         data = request.get_data(as_text=True)
         split_data = data.split(',')
         decoded_data = list(map(lambda x: int(x, 16), split_data))
         card = scan_data_to_card(decoded_data)
-        print(ascii_card(card))
-
         punch_card(card)
+
+        print(ascii_card(card))
         save_json_to_disk(card)
 
-        return {}
+        return {}, 200
 
-
-@app.route('/cards', methods=['GET'])
-def cardsearch():
+@app.route('/', methods=['GET'])
+def display_cards():
     cards = os.listdir('/tmp/cards/')
     cards.sort(key=lambda x: os.path.getmtime('/tmp/cards/' + x))
     cards = cards[::-1]
     cards = cards[:30]
     return render_template("cards.html", cardnames=cards)
+ 
 
+@app.route('/cards', methods=['GET'])
+def go_away():
+    return redirect('/', code=301)
 
 @app.route('/card/<name>', methods=['GET'])
-def card(name):
+def single_card(name):
     return send_from_directory('/tmp/cards', name)
 
 
 if __name__ == '__main__':
     app.run(host = '0.0.0.0', port = 5220)
-
