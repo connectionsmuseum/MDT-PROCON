@@ -1,23 +1,25 @@
 #!/usr/bin/python3
-from flask import Flask, abort, request, render_template, send_from_directory, redirect
-from flask_api import status
-import sys
+from flask import Flask, abort, request, Response, render_template, send_from_directory, redirect
 import zipfile
+import queue
 from PIL import Image, ImageDraw
 import configparser
 import os
 import json
 from datetime import datetime
 
-
 app = Flask(__name__)
-
+clients = []
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
-# The virtual card is scanned in 120 points (two rows) at a time, in the same way as the actual card would be punched
-# when it is transported through the trouble recorder. The following list gives the order of the scan points
+# The virtual card is scanned in 120 points (two rows) at a time, 
+# in the same way as the actual card would be punched
+# when it is transported through the trouble recorder. 
+# (bw0 .. bw59) -> R, RA section
+# (bw60 .. bw119) -> S, SA section
+# The following list gives the order of the scan points
 # for the two rows of each scan as we get them from the MDT. 
-# The final card will contain this list 8 times, once for each of the 9 scans (S0 to S8).
+# The final card will contain this list 9 times, once for each of the 9 punch cycles (S0 to S8).
 scanpts_order = [
     [ 7,  6,  5,  4,  3,  2,  1,  0, 'STRA1', 'STR'],
     [15, 14, 13, 12, 11, 10,  9,  8, 'TRC', 'SPL'],
@@ -36,9 +38,6 @@ scanpts_order = [
     [115, 114, 113, 112, 111, 110, 109, 108, 'RSV14.8', 'RSV14.9'],
     ['RSV15.0', 'RSV15.1', 'RSV15.2', 'RSV15.3', 119, 118, 117, 116, 'RSV15.8', 'RSV15.9']
 ]
-
-# (bw0 .. bw59) -> R section
-# (bw60 .. bw119) -> S section
 
 
 def scan_data_to_card(data):
@@ -87,11 +86,12 @@ def scan_data_to_card(data):
 def punch_card(bits):
     # creates a card image complete with holes punched in the right places, 
     # and saves it to disk with a timestamped filename
+    # we are not drawing the back of the card, but the code is left here 
+    # in case we want to in the future 
     now = datetime.now()
     punchdate = now.strftime("%y-%m-%d_%H-%M-%S")
 
     with zipfile.ZipFile('cardpack.zip') as cardpack:
-
         f_im=Image.open('cardpack/front.jpg')
         with cardpack.open('offsets.txt') as offsets:
             config=configparser.ConfigParser()
@@ -160,6 +160,7 @@ def save_json_to_disk(card):
 
 
 @app.route('/trouble-card', methods=['POST'])
+# MDT posts cards here
 def receive_trouble_card():
     if request.content_length < 2**16:
         data = request.get_data(as_text=True)
@@ -167,29 +168,55 @@ def receive_trouble_card():
         decoded_data = list(map(lambda x: int(x, 16), split_data))
         card = scan_data_to_card(decoded_data)
         punch_card(card)
-
         print(ascii_card(card))
         save_json_to_disk(card)
 
+        # notify any connected clients that a new card is available
+        for q in clients:
+            q.put("update")
+
         return {}, 200
 
-@app.route('/', methods=['GET'])
-def display_cards():
-    cards = os.listdir('/tmp/cards/')
-    cards.sort(key=lambda x: os.path.getmtime('/tmp/cards/' + x))
-    cards = cards[::-1]
-    cards = cards[:30]
-    return render_template("cards.html", cardnames=cards)
- 
+@app.route('/test', methods=['POST'])
+# test endpoint for manually triggering an update event to connected 
+# clients without needing to send a card from the MDT
+def test():
+    for q in clients:
+        q.put("update")
+    return {}, 200
 
+@app.route('/events', methods=['GET'])
+# events endpoint for notifying clients of new cards
+def events():
+    def stream():
+        q = queue.Queue()
+        clients.append(q)
+        try:
+            while True:
+                msg = q.get()
+                yield f"data: {msg}\n\n"
+        except GeneratorExit:
+            clients.remove(q)
+
+    return Response(stream(), mimetype="text/event-stream")
+
+@app.route('/', methods=['GET'])
+# main page showing the most recent cards and allowing selection of past cards
+def display_cards():
+    saved_cards = os.listdir('/tmp/cards/')
+    saved_cards.sort(key=lambda x: os.path.getmtime('/tmp/cards/' + x))
+    saved_cards = saved_cards[::-1]
+    saved_cards = saved_cards[:30]
+    return render_template("cards.html", cardnames=saved_cards)
+ 
 @app.route('/cards', methods=['GET'])
+# for backward with older versions of the frontend
 def go_away():
     return redirect('/', code=301)
 
 @app.route('/card/<name>', methods=['GET'])
 def single_card(name):
     return send_from_directory('/tmp/cards', name)
-
 
 if __name__ == '__main__':
     app.run(host = '0.0.0.0', port = 5220)

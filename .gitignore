@@ -1,1 +1,8 @@
 .DS_Store
+.gitignore
+scc/include
+scc/bin
+scc/lib
+scc/lib64
+pyvenv/
+scc/pyvenv.cfg

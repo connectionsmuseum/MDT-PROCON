@@ -10,7 +10,6 @@ Jinja2==2.11.1
 MarkupSafe==2.0.1
 oauthlib==3.2.2
 pillow==11.1.0
-pprint
 requests==2.32.3
 requests-oauthlib==2.0.0
 urllib3==2.3.0

@@ -12,11 +12,38 @@
                 var img = document.getElementById("card");
                 img.src = "card/" + name;
             }
+            document.addEventListener("DOMContentLoaded", function () {
+
+                const evtSource = new EventSource("/events");
+                const checkbox = document.getElementById("autoRefresh");
+
+                // Restore saved setting (default: true if nothing stored)
+                const saved = localStorage.getItem("autoRefresh");
+                checkbox.checked = saved === null ? true : (saved === "true");
+
+                // Save whenever user changes it
+                checkbox.addEventListener("change", function () {
+                    localStorage.setItem("autoRefresh", checkbox.checked);
+                });
+                
+                // listener for server-sent events; reload page on "update" if auto-refresh enabled
+                evtSource.onmessage = function(event) {
+                    if (event.data === "update" && checkbox.checked) {  
+                        window.location.reload();
+                    }
+                }
+            });
         </script>
         <style>
         html,
         img {
             background-color: #2a2a2a;
+        }
+        html {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                 Roboto, Helvetica, Arial, sans-serif;
+                 color: white;
+                 font-size: 12px;
         }
         .controls {
             display: flex;
@@ -25,8 +52,11 @@
             padding-bottom: 10px;
             gap: 10px;
         }
-        .controls * {
-            display: block;
+        .controls label {
+            display: flex;         /* keeps checkbox + text inline */
+            align-items: center;
+            gap: 6px;              /* spacing between box and text */
+            cursor: pointer;
         }
         </style>
     </head>
@@ -40,6 +70,10 @@
                 {% endfor %}
                 <option></option>
             </select>
+            <label>
+                <input type="checkbox" id="autoRefresh" checked>  
+                Auto-refresh on new card
+            </label>
             <button onClick="window.location.reload();">Reload Page</button>
         </div>
         <img id="card" style="width:100%" src="static/front.jpg" 
