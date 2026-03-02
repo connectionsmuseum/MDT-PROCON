@@ -99,8 +99,39 @@
             height: 12px;
             border-radius: 50%;
             display: inline-block;
-            margin-left: 8px;
+            margin-left: 10px;
+            margin-right: 10px;
             box-shadow: 0 0 4px rgba(0,0,0,0.6);
+            transition: all 0.3s ease-in-out;
+        }
+        .status-dot:before {
+            content: '';
+            background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+            position: absolute;
+            top: -2px;
+            left:-2px;
+            background-size: 100%;
+            z-index: -1;
+            filter: blur(5px);
+            width: calc(100% + 4px);
+            height: calc(100% + 4px);
+            animation: glowing 20s linear infinite;
+            opacity: 0;
+            transition: opacity .3s ease-in-out;
+            border-radius: 10px;
+        }
+        .status-dot:hover:before {
+            opacity: 1;
+        }
+        .status-dot:after {
+            z-index: -1;
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            left: 0;
+            top: 0;
+            border-radius: 10px;
         }
 
         /* Connected (green) */
@@ -130,8 +161,10 @@
                 <input type="checkbox" id="autoRefresh" checked>  
                 Auto-refresh on new card
             </label> 
-            <span id="statusDot" class="status-dot disconnected"></span>
-            <button onClick="window.location.reload();">Reload Page</button>
+            <div class="rightcontrols">
+                <span id="statusDot" class="status-dot disconnected" title="Connection status..."></span>
+                <button onClick="window.location.reload();">Reload Page</button>
+            </div>
         </div>
         <img id="card" src="static/front.jpg" 
         onerror="this.src='static/placeholder.png';"/>

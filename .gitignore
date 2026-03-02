@@ -6,3 +6,5 @@ scc/lib
 scc/lib64
 pyvenv/
 scc/pyvenv.cfg
+.pycache__/
+__pycache__/
