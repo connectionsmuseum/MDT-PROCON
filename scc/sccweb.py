@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from flask import Flask, abort, request, Response, render_template, send_from_directory, redirect
+from flask import Flask, request, Response, render_template, send_from_directory, redirect
 import zipfile
 import queue
 from PIL import Image, ImageDraw
@@ -12,13 +12,12 @@ app = Flask(__name__)
 clients = []
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
-# The virtual card is scanned in 120 points (two rows) at a time, 
-# in the same way as the actual card would be punched
-# when it is transported through the trouble recorder. 
+# The virtual card is scanned in 120 points (two rows) at a time, in the same 
+# way as the actual card is punched when it is transported through the trouble recorder. 
 # (bw0 .. bw59) -> R, RA section
 # (bw60 .. bw119) -> S, SA section
-# The following list gives the order of the scan points
-# for the two rows of each scan as we get them from the MDT. 
+# The following list gives the order of the scan points for the two rows of each scan as we get
+# them from the MDT. 
 # The final card will contain this list 9 times, once for each of the 9 punch cycles (S0 to S8).
 scanpts_order = [
     [ 7,  6,  5,  4,  3,  2,  1,  0, 'STRA1', 'STR'],
@@ -38,7 +37,6 @@ scanpts_order = [
     [115, 114, 113, 112, 111, 110, 109, 108, 'RSV14.8', 'RSV14.9'],
     ['RSV15.0', 'RSV15.1', 'RSV15.2', 'RSV15.3', 119, 118, 117, 116, 'RSV15.8', 'RSV15.9']
 ]
-
 
 def scan_data_to_card(data):
 # Convert scan data into a 2D card representation.
@@ -82,12 +80,11 @@ def scan_data_to_card(data):
                         card[row][col] = True
     return card
 
-
 def punch_card(bits):
-    # creates a card image complete with holes punched in the right places, 
-    # and saves it to disk with a timestamped filename
-    # we are not drawing the back of the card, but the code is left here 
-    # in case we want to in the future 
+# creates a card image complete with holes punched in the right places, 
+# and saves it to disk with a timestamped filename
+# we are not drawing the back of the card, but the code is left here 
+# in case we want to in the future 
     now = datetime.now()
     punchdate = now.strftime("%y-%m-%d_%H-%M-%S")
 
@@ -135,8 +132,8 @@ def punch_card(bits):
         f_im.save("/tmp/cards/" + punchdate + "_front.jpg", optimize=True)
         #b_im.save("/tmp/cards/" + punchdate + "_back.png", format="PNG", optimize=True)
 
-
 def ascii_card(card):
+# mostly not used in production. provides a text representation of the card in the terminal
     text = ''
     text += ('+'+('—'*69)+'+\n')
     for y in range(18):
@@ -152,12 +149,10 @@ def ascii_card(card):
     text += ('+'+('—'*69)+'+\n')
     return text
 
-
 def save_json_to_disk(card):
     name = "/tmp/cardout_most_recent.json"
     with open(name, "w") as f:
         json.dump(card, f)
-
 
 @app.route('/trouble-card', methods=['POST'])
 # MDT posts cards here
@@ -191,6 +186,8 @@ def events():
     def stream():
         q = queue.Queue()
         clients.append(q)
+        # safari wants data immediately
+        yield "data: connected\n\n"
         try:
             while True:
                 msg = q.get()
@@ -210,7 +207,7 @@ def display_cards():
     return render_template("cards.html", cardnames=saved_cards)
  
 @app.route('/cards', methods=['GET'])
-# for backward with older versions of the frontend
+# for backward compatibility with older versions of the frontend
 def go_away():
     return redirect('/', code=301)
 

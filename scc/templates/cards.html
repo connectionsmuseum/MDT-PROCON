@@ -8,12 +8,15 @@
         <link rel="apple-touch-icon" sizes="180x180" href="../static/touch-icon-iphone-retina.png">
         <script>
             function loadCard() {
+                // used only when a card is selected from the dropdown.
+                // loads a card from somewhere below the top of the stack
                 const name = document.getElementById("cardSelect").value;
                 var img = document.getElementById("card");
                 img.src = "card/" + name;
+                console.log("older card loaded");
             }
             document.addEventListener("DOMContentLoaded", function () {
-
+                const statusDot = document.getElementById("statusDot");
                 const evtSource = new EventSource("/events");
                 const checkbox = document.getElementById("autoRefresh");
 
@@ -26,12 +29,30 @@
                     localStorage.setItem("autoRefresh", checkbox.checked);
                 });
                 
-                // listener for server-sent events; reload page on "update" if auto-refresh enabled
+                // listener for server-sent events; reload image on "update" if auto-refresh enabled
                 evtSource.onmessage = function(event) {
                     if (event.data === "update" && checkbox.checked) {  
-                        window.location.reload();
+                        console.log("UPDATE GET!");
+                        document.getElementById("card").src = "static/front.jpg"
+                        // Trigger flash
+                        const img = document.getElementById("card");
+                        img.classList.remove("flash");   // reset if already applied
+                        void img.offsetWidth;            // force reflow (important for some reason)
+                        img.classList.add("flash");
                     }
                 }
+                // Update status dot based on connection state
+                evtSource.onopen = function() {
+                    console.log("SSE OPEN");
+                    statusDot.classList.remove("disconnected");
+                    statusDot.classList.add("connected");
+                };
+                evtSource.onerror = function() {
+                    console.log("SSE ERROR", evtSource.readyState);
+                    statusDot.classList.remove("connected");
+                    statusDot.classList.add("disconnected");
+                };
+
             });
         </script>
         <style>
@@ -45,6 +66,21 @@
                  color: white;
                  font-size: 12px;
         }
+        #card {
+            width: 100%;
+            border: 3px solid transparent;
+            transition: opacity 0.2s ease;
+        }
+
+        @keyframes fadePulse {
+            0%   { opacity: 1; }
+            40%  { opacity: 0.15;}
+            100% { opacity: 1; }
+        }
+
+        #card.flash {
+            animation: fadePulse 0.4s ease;
+        }
         .controls {
             display: flex;
             flex-direction: row;
@@ -57,6 +93,26 @@
             align-items: center;
             gap: 6px;              /* spacing between box and text */
             cursor: pointer;
+        }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 8px;
+            box-shadow: 0 0 4px rgba(0,0,0,0.6);
+        }
+
+        /* Connected (green) */
+        .status-dot.connected {
+            background-color: #00cc44;
+            box-shadow: 0 0 6px #00cc44;
+        }
+
+        /* Disconnected (red) */
+        .status-dot.disconnected {
+            background-color: #cc0033;
+            box-shadow: 0 0 6px #cc0033;
         }
         </style>
     </head>
@@ -73,10 +129,11 @@
             <label>
                 <input type="checkbox" id="autoRefresh" checked>  
                 Auto-refresh on new card
-            </label>
+            </label> 
+            <span id="statusDot" class="status-dot disconnected"></span>
             <button onClick="window.location.reload();">Reload Page</button>
         </div>
-        <img id="card" style="width:100%" src="static/front.jpg" 
-        onerror="this.src='../static/placeholder.png';"/>
+        <img id="card" src="static/front.jpg" 
+        onerror="this.src='static/placeholder.png';"/>
     </body>
 </html>
