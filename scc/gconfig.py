@@ -9,7 +9,7 @@ bind = "0.0.0.0:5220"
 
 # Timeout Settings
 timeout = 15  # Automatically restart workers if they take too long
-graceful_timeout = 4 # Graceful shutdown for workers
+graceful_timeout = 2 # Graceful shutdown for workers
 
 # Worker Restart Settings
 max_requests = 500  # Restart workers after processing 1000 requests

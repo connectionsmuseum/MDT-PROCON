@@ -12,12 +12,12 @@ app = Flask(__name__)
 clients = []
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
-# The virtual card is scanned in 120 points (two rows) at a time, in the same 
-# way as the actual card is punched when it is transported through the trouble recorder. 
+# The virtual card is scanned in 120 points (two rows) at a time, in the same
+# way as the actual card is punched when it is transported through the trouble recorder.
 # (bw0 .. bw59) -> R, RA section
 # (bw60 .. bw119) -> S, SA section
 # The following list gives the order of the scan points for the two rows of each scan as we get
-# them from the MDT. 
+# them from the MDT.
 # The final card will contain this list 9 times, once for each of the 9 punch cycles (S0 to S8).
 scanpts_order = [
     [ 7,  6,  5,  4,  3,  2,  1,  0, 'STRA1', 'STR'],
@@ -40,7 +40,7 @@ scanpts_order = [
 
 def scan_data_to_card(data):
 # Convert scan data into a 2D card representation.
-    
+
     card = [[False for x in range(69)] for y in range(18)]
 
     for scan_group in range(9):
@@ -81,10 +81,10 @@ def scan_data_to_card(data):
     return card
 
 def punch_card(bits):
-# creates a card image complete with holes punched in the right places, 
+# creates a card image complete with holes punched in the right places,
 # and saves it to disk with a timestamped filename
-# we are not drawing the back of the card, but the code is left here 
-# in case we want to in the future 
+# we are not drawing the back of the card, but the code is left here
+# in case we want to in the future
     now = datetime.now()
     punchdate = now.strftime("%y-%m-%d_%H-%M-%S")
 
@@ -173,7 +173,7 @@ def receive_trouble_card():
         return {}, 200
 
 @app.route('/test', methods=['POST'])
-# test endpoint for manually triggering an update event to connected 
+# test endpoint for manually triggering an update event to connected
 # clients without needing to send a card from the MDT
 def test():
     for q in clients:
@@ -205,13 +205,14 @@ def display_cards():
     saved_cards = saved_cards[::-1]
     saved_cards = saved_cards[:30]
     return render_template("cards.html", cardnames=saved_cards)
- 
+
 @app.route('/cards', methods=['GET'])
 # for backward compatibility with older versions of the frontend
 def go_away():
     return redirect('/', code=301)
 
 @app.route('/card/<name>', methods=['GET'])
+# used by the frontend to request a specific card from a dropdown
 def single_card(name):
     return send_from_directory('/tmp/cards', name)
 
