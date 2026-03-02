@@ -104,34 +104,14 @@
             box-shadow: 0 0 4px rgba(0,0,0,0.6);
             transition: all 0.3s ease-in-out;
         }
-        .status-dot:before {
-            content: '';
-            background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
-            position: absolute;
-            top: -2px;
-            left:-2px;
-            background-size: 100%;
-            z-index: -1;
-            filter: blur(5px);
-            width: calc(100% + 4px);
-            height: calc(100% + 4px);
-            animation: glowing 20s linear infinite;
-            opacity: 0;
-            transition: opacity .3s ease-in-out;
-            border-radius: 10px;
+        /* Rainbow hover animation */
+        @keyframes rainbowSpin {
+            0%   { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
         }
-        .status-dot:hover:before {
-            opacity: 1;
-        }
-        .status-dot:after {
-            z-index: -1;
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            left: 0;
-            top: 0;
-            border-radius: 10px;
+
+        .status-dot:hover {
+            animation: rainbowSpin 1.2s linear infinite;
         }
 
         /* Connected (green) */
@@ -162,7 +142,7 @@
                 Auto-refresh on new card
             </label> 
             <div class="rightcontrols">
-                <span id="statusDot" class="status-dot disconnected" title="Connection status..."></span>
+                <span id="statusDot" class="status-dot disconnected" title="Connection status"></span>
                 <button onClick="window.location.reload();">Reload Page</button>
             </div>
         </div>
