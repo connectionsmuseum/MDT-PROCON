@@ -31,11 +31,11 @@
                 
                 // listener for server-sent events; reload image on "update" if auto-refresh enabled
                 evtSource.onmessage = function(event) {
+                    const img = document.getElementById("card");
                     if (event.data === "update" && checkbox.checked) {  
                         console.log("UPDATE GET!");
-                        document.getElementById("card").src = "static/front.jpg"
+                        img.src = "static/front.jpg?t=" + Date.now(); // bust-a-cache
                         // Trigger flash
-                        const img = document.getElementById("card");
                         img.classList.remove("flash");   // reset if already applied
                         void img.offsetWidth;            // force reflow (important for some reason)
                         img.classList.add("flash");
