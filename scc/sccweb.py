@@ -12,12 +12,12 @@ app = Flask(__name__)
 clients = []
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
-# The virtual card is scanned in 120 points (two rows) at a time, in the same 
-# way as the actual card is punched when it is transported through the trouble recorder. 
+# The virtual card is scanned in 120 points (two rows) at a time, in the same
+# way as the actual card is punched when it is transported through the trouble recorder.
 # (bw0 .. bw59) -> R, RA section
 # (bw60 .. bw119) -> S, SA section
 # The following list gives the order of the scan points for the two rows of each scan as we get
-# them from the MDT. 
+# them from the MDT.
 # The final card will contain this list 9 times, once for each of the 9 punch cycles (S0 to S8).
 scanpts_order = [
     [ 7,  6,  5,  4,  3,  2,  1,  0, 'STRA1', 'STR'],
@@ -38,9 +38,23 @@ scanpts_order = [
     ['RSV15.0', 'RSV15.1', 'RSV15.2', 'RSV15.3', 119, 118, 117, 116, 'RSV15.8', 'RSV15.9']
 ]
 
+# helpful dictionary for punching the timestamp in the correct two-of-five holes on the card
+two_of_five = {
+    0: [3,4],
+    1: [0,1],
+    2: [0,2],
+    3: [1,2],
+    4: [0,3],
+    5: [1,3],
+    6: [2,4],
+    7: [0,4],
+    8: [1,4],
+    9: [2,4]
+}
+
 def scan_data_to_card(data):
 # Convert scan data into a 2D card representation.
-    
+
     card = [[False for x in range(69)] for y in range(18)]
 
     for scan_group in range(9):
@@ -81,12 +95,29 @@ def scan_data_to_card(data):
     return card
 
 def punch_card(bits):
-# creates a card image complete with holes punched in the right places, 
+# creates a card image complete with holes punched in the right places,
 # and saves it to disk with a timestamped filename
-# we are not drawing the back of the card, but the code is left here 
-# in case we want to in the future 
     now = datetime.now()
     punchdate = now.strftime("%y-%m-%d_%H-%M-%S")
+
+    time_dict = {
+        'day_tens': int(now.strftime("%d")) // 10,
+        'day_units': int(now.strftime("%d")) % 10,
+        'hour_tens': int(now.strftime("%H")) // 10,
+        'hour_units': int(now.strftime("%H")) % 10,
+        'minute_tens': int(now.strftime("%M")) // 10,
+        'minute_units': int(now.strftime("%M")) % 10
+    }
+
+    tstartpos_y = 17
+    tstartpos_x = 39
+
+    for key, value in time_dict.items():
+        holes = two_of_five[value]
+        for hole in holes:
+            # print(f"Punching hole for {key} in position {hole}")
+            bits[tstartpos_y][tstartpos_x + hole] = True
+        tstartpos_x += 5
 
     with zipfile.ZipFile('cardpack.zip') as cardpack:
         f_im=Image.open('cardpack/front.jpg')
@@ -97,40 +128,27 @@ def punch_card(bits):
             f_origin_y=float(config['Front']['originY'])
             f_offset_x=float(config['Front']['offsetX'])
             f_offset_y=float(config['Front']['offsetY'])
-            #b_origin_x=float(config['Back' ]['originX'])
-            #b_origin_y=float(config['Back' ]['originY'])
-            #b_offset_x=float(config['Back' ]['offsetX'])
-            #b_offset_y=float(config['Back' ]['offsetY'])
 
         holesize = 15
-        #Render the PNGs
+        #Render the JPG
         f_draw = ImageDraw.Draw(f_im)
-        #b_draw = ImageDraw.Draw(b_im)
         for xidx in range(69):
             for yidx in range(18):
                 if xidx>30 and xidx<38: continue
                 #Don't tell Professor Mead, these numbers are magic
                 f_xcen=f_origin_x+(xidx*f_offset_x)
                 f_ycen=f_origin_y+(yidx*f_offset_y)
-                #b_xcen=b_origin_x+(xidx*b_offset_x)
-                #b_ycen=b_origin_y+(yidx*b_offset_y)
 
                 #It's hole-punchin' time! KACHUKACHUKACHUKA
                 if bits[yidx][xidx]:
                     f_draw.ellipse([(f_xcen - holesize, f_ycen - holesize),
                                     (f_xcen + holesize, f_ycen + holesize)],
                                    'black', 'black')
-                   # b_draw.ellipse([(b_xcen - holesize, b_ycen - holesize),
-                   #                 (b_xcen + holesize, b_ycen + holesize)],
-                   #                'black', 'black')
         # save the cards to be used via the web frontend
-        rgb_im  = f_im.convert('RGB')
-        rgb_im.save("/tmp/front.jpg", optimize=True)
-        #b_im.save("/tmp/back.png", format="PNG", optimize=True)
+        f_im.save("/tmp/front.jpg", optimize=True)
 
         # and save the cards to a directory so I can look at them later
         f_im.save("/tmp/cards/" + punchdate + "_front.jpg", optimize=True)
-        #b_im.save("/tmp/cards/" + punchdate + "_back.png", format="PNG", optimize=True)
 
 def ascii_card(card):
 # mostly not used in production. provides a text representation of the card in the terminal
@@ -154,6 +172,7 @@ def save_json_to_disk(card):
     with open(name, "w") as f:
         json.dump(card, f)
 
+
 @app.route('/trouble-card', methods=['POST'])
 # MDT posts cards here
 def receive_trouble_card():
@@ -173,9 +192,12 @@ def receive_trouble_card():
         return {}, 200
 
 @app.route('/test', methods=['POST'])
-# test endpoint for manually triggering an update event to connected 
+# test endpoint for manually triggering an update event to connected
 # clients without needing to send a card from the MDT
 def test():
+    data = [[False for x in range(69)] for y in range(18)]
+    punch_card(data)
+
     for q in clients:
         q.put("update")
     return {}, 200
@@ -205,13 +227,14 @@ def display_cards():
     saved_cards = saved_cards[::-1]
     saved_cards = saved_cards[:30]
     return render_template("cards.html", cardnames=saved_cards)
- 
+
 @app.route('/cards', methods=['GET'])
 # for backward compatibility with older versions of the frontend
 def go_away():
     return redirect('/', code=301)
 
 @app.route('/card/<name>', methods=['GET'])
+# used by the frontend to request a specific card from a dropdown
 def single_card(name):
     return send_from_directory('/tmp/cards', name)
 

@@ -31,11 +31,11 @@
                 
                 // listener for server-sent events; reload image on "update" if auto-refresh enabled
                 evtSource.onmessage = function(event) {
+                    const img = document.getElementById("card");
                     if (event.data === "update" && checkbox.checked) {  
                         console.log("UPDATE GET!");
-                        document.getElementById("card").src = "static/front.jpg"
+                        img.src = "static/front.jpg?t=" + Date.now(); // bust-a-cache
                         // Trigger flash
-                        const img = document.getElementById("card");
                         img.classList.remove("flash");   // reset if already applied
                         void img.offsetWidth;            // force reflow (important for some reason)
                         img.classList.add("flash");
@@ -99,8 +99,18 @@
             height: 12px;
             border-radius: 50%;
             display: inline-block;
-            margin-left: 8px;
+            margin-left: 10px;
+            margin-right: 10px;
             box-shadow: 0 0 4px rgba(0,0,0,0.6);
+            transition: all 0.3s ease-in-out;
+        }
+        @keyframes rainbowSpin {
+            0%   { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
+        }
+
+        .status-dot:hover {
+            animation: rainbowSpin 1.2s linear infinite;
         }
 
         /* Connected (green) */
@@ -130,8 +140,10 @@
                 <input type="checkbox" id="autoRefresh" checked>  
                 Auto-refresh on new card
             </label> 
-            <span id="statusDot" class="status-dot disconnected"></span>
-            <button onClick="window.location.reload();">Reload Page</button>
+            <div class="rightcontrols">
+                <span id="statusDot" class="status-dot disconnected" title="Connection status"></span>
+                <button onClick="window.location.reload();">Reload Page</button>
+            </div>
         </div>
         <img id="card" src="static/front.jpg" 
         onerror="this.src='static/placeholder.png';"/>
