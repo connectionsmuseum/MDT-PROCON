@@ -19,12 +19,13 @@
                 const statusDot = document.getElementById("statusDot");
                 const evtSource = new EventSource("/events");
                 const checkbox = document.getElementById("autoRefresh");
+                const dropdown = document.getElementById("cardSelect");
 
                 // Restore saved setting (default: true if nothing stored)
                 const saved = localStorage.getItem("autoRefresh");
                 checkbox.checked = saved === null ? true : (saved === "true");
 
-                // Save whenever user changes it
+                // Save whenever user checks or unchecks
                 checkbox.addEventListener("change", function () {
                     localStorage.setItem("autoRefresh", checkbox.checked);
                 });
@@ -34,11 +35,29 @@
                     const img = document.getElementById("card");
                     if (event.data === "update" && checkbox.checked) {  
                         console.log("UPDATE GET!");
-                        img.src = "static/front.jpg?t=" + Date.now(); // bust-a-cache
                         // Trigger flash
                         img.classList.remove("flash");   // reset if already applied
                         void img.offsetWidth;            // force reflow (important for some reason)
                         img.classList.add("flash");
+                        img.src = "static/front.jpg?t=" + Date.now(); // bust-a-cache
+
+                        // Update the dropdown list
+                        fetch('/cardnames')
+                            .then(response => response.json())
+                            .then(cardnames => {
+                                const select = document.getElementById('cardSelect');
+                                select.innerHTML = '';
+                                cardnames.forEach(name => {
+                                    const option = document.createElement('option');
+                                    option.value = name;
+                                    option.textContent = name;
+                                    select.appendChild(option);
+                                });
+                                // easter egg
+                                const emptyOption = document.createElement('option');
+                                select.appendChild(emptyOption);
+                            })
+                            .catch(error => console.error('Error fetching cardnames:', error));
                     }
                 }
                 // Update status dot based on connection state
