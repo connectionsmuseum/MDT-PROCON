@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-from flask import Flask, request, Response, render_template, send_from_directory, redirect
+from flask import Flask, request, Response, render_template, send_from_directory, redirect, jsonify
 import zipfile
 import queue
 from PIL import Image, ImageDraw
@@ -227,6 +227,15 @@ def display_cards():
     saved_cards = saved_cards[::-1]
     saved_cards = saved_cards[:30]
     return render_template("cards.html", cardnames=saved_cards)
+
+@app.route('/cardnames', methods=['GET'])
+# gets the list of saved cards
+def get_cardnames():
+    saved_cards = os.listdir('/tmp/cards/')
+    saved_cards.sort(key=lambda x: os.path.getmtime('/tmp/cards/' + x))
+    saved_cards = saved_cards[::-1]
+    saved_cards = saved_cards[:30]
+    return jsonify(saved_cards)
 
 @app.route('/cards', methods=['GET'])
 # for backward compatibility with older versions of the frontend
