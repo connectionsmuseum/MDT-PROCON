@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 from flask import Flask, request, Response, render_template, send_from_directory, redirect, jsonify
-import zipfile
 import queue
 from PIL import Image, ImageDraw
 import configparser
@@ -10,7 +9,7 @@ from datetime import datetime
 
 app = Flask(__name__)
 clients = []
-app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+_offsets = None
 
 # The virtual card is scanned in 120 points (two rows) at a time, in the same
 # way as the actual card is punched when it is transported through the trouble recorder.
@@ -52,7 +51,7 @@ two_of_five = {
     9: [2,4]
 }
 
-def scan_data_to_card(data):
+def convert_to_card(data):
 # Convert scan data into a 2D card representation.
 
     card = [[False for x in range(69)] for y in range(18)]
@@ -94,9 +93,29 @@ def scan_data_to_card(data):
                         card[row][col] = True
     return card
 
+def get_offsets():
+    global _offsets
+    if _offsets is None:
+        with open('cardpack/offsets.txt') as offsets:
+            config = configparser.ConfigParser()
+            config.read_string(offsets.read())
+            _offsets = (
+                float(config['Front']['originX']),
+                float(config['Front']['originY']),
+                float(config['Front']['offsetX']),
+                float(config['Front']['offsetY']),
+                int(config['Front']['t_start_x']),
+                int(config['Front']['t_start_y'])
+            )
+    return _offsets
+
 def punch_card(bits):
 # creates a card image complete with holes punched in the right places,
 # and saves it to disk with a timestamped filename
+    orig_x, orig_y, off_x, off_y, t_start_x, t_start_y = get_offsets()
+    f_im=Image.open('cardpack/front.jpg')
+
+    holesize = 15
     now = datetime.now()
     punchdate = now.strftime("%y-%m-%d_%H-%M-%S")
 
@@ -109,41 +128,28 @@ def punch_card(bits):
         'minute_units': int(now.strftime("%M")) % 10
     }
 
-    tstartpos_y = 17
-    tstartpos_x = 39
-
     for key, value in time_dict.items():
         holes = two_of_five[value]
         for hole in holes:
             # print(f"Punching hole for {key} in position {hole}")
-            bits[tstartpos_y][tstartpos_x + hole] = True
-        tstartpos_x += 5
+            bits[t_start_y][t_start_x + hole] = True
+        t_start_x += 5
 
-    with zipfile.ZipFile('cardpack.zip') as cardpack:
-        f_im=Image.open('cardpack/front.jpg')
-        with cardpack.open('offsets.txt') as offsets:
-            config=configparser.ConfigParser()
-            config.read_string(offsets.read().decode('ASCII'))
-            f_origin_x=float(config['Front']['originX'])
-            f_origin_y=float(config['Front']['originY'])
-            f_offset_x=float(config['Front']['offsetX'])
-            f_offset_y=float(config['Front']['offsetY'])
-
-        holesize = 15
         #Render the JPG
         f_draw = ImageDraw.Draw(f_im)
         for xidx in range(69):
             for yidx in range(18):
                 if xidx>30 and xidx<38: continue
                 #Don't tell Professor Mead, these numbers are magic
-                f_xcen=f_origin_x+(xidx*f_offset_x)
-                f_ycen=f_origin_y+(yidx*f_offset_y)
+                f_xcen=orig_x+(xidx*off_x)
+                f_ycen=orig_y+(yidx*off_y)
 
                 #It's hole-punchin' time! KACHUKACHUKACHUKA
                 if bits[yidx][xidx]:
                     f_draw.ellipse([(f_xcen - holesize, f_ycen - holesize),
                                     (f_xcen + holesize, f_ycen + holesize)],
                                    'black', 'black')
+
         # save the cards to be used via the web frontend
         f_im.save("/tmp/front.jpg", optimize=True)
 
@@ -180,7 +186,7 @@ def receive_trouble_card():
         data = request.get_data(as_text=True)
         split_data = data.split(',')
         decoded_data = list(map(lambda x: int(x, 16), split_data))
-        card = scan_data_to_card(decoded_data)
+        card = convert_to_card(decoded_data)
         punch_card(card)
         print(ascii_card(card))
         save_json_to_disk(card)

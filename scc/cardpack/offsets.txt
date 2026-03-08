@@ -8,6 +8,10 @@ offsetX=97.88
 offsetY=98.35
 ; (1784-112) / 17
 
+t_start_x=39
+t_start_y=17
+; these are not pixels, they're a row,col index for punching time
+
 [Back]
 originX=690
 originY=1782

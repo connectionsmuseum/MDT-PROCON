@@ -267,3 +267,8 @@ CMN DP is [02]:2
 gpio.config({gpio = 25, dir = gpio.IN_OUT, opendrain = 1, pull = gpio.FLOATING})
 print(gpio.read(25))
 
+2026-03
+thoughts
+
+it would be nice if the punch function provided data to the web frontend, which dynamically generated the card on the fly
+would be nice if I could submit card data as JSON to my test endpoint
