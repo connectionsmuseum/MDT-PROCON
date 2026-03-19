@@ -1,5 +1,6 @@
-[
-    [
+{
+"card": [
+        [
         false,
         false,
         false,
@@ -1278,3 +1279,4 @@
         true
     ]
 ]
+}

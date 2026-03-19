@@ -189,6 +189,37 @@ def save_card_metadata(punchdate, card, metadata):
         json.dump({"card": card, "metadata": metadata}, f, indent=2)
 
 
+def _list_saved_cards(limit=30):
+    """Return the most recent saved card JPG filenames."""
+    saved_cards = [f for f in os.listdir('/tmp/cards/') if f.lower().endswith('.jpg')]
+    saved_cards.sort(key=lambda x: os.path.getmtime('/tmp/cards/' + x))
+    saved_cards = saved_cards[::-1]
+    return saved_cards[:limit]
+
+
+def _get_bins():
+    """Return a mapping of bin -> list of JPG filenames."""
+    bins = {}
+    for fn in os.listdir('/tmp/cards/'):
+        if not fn.endswith('_front.json'):
+            continue
+        path = os.path.join('/tmp/cards', fn)
+        try:
+            with open(path) as f:
+                data = json.load(f)
+        except Exception:
+            continue
+        bin_name = data.get('metadata', {}).get('bin', 'unknown')
+        jpg_name = fn[:-5] + '.jpg'
+        bins.setdefault(bin_name, []).append(jpg_name)
+
+    # Filenames are timestamp-prefixed (yy-mm-dd_HH-MM-SS...), so reverse
+    # lexicographic sort gives newest punched cards first in each bin.
+    for cards in bins.values():
+        cards.sort(reverse=True)
+
+    return bins
+
 @app.route('/trouble-card', methods=['POST'])
 # MDT posts cards here
 def receive_trouble_card():
@@ -223,8 +254,8 @@ def test():
     card = None
     # first, try to parse the body as JSON
     if request.is_json:
-        card = request.get_json()
-        #card = json_data["card"]
+        data = request.get_json()
+        card = data["card"]
     else:
         # fallback: try reading raw data and parsing
         try:
@@ -245,7 +276,7 @@ def test():
 
     for q in clients:
         q.put("update")
-    return {}, 200
+    return jsonify({"z_card": card, "metadata": metadata}), 200
 
 @app.route('/events', methods=['GET'])
 def events():
@@ -263,31 +294,6 @@ def events():
             clients.remove(q)
 
     return Response(stream(), mimetype="text/event-stream")
-
-def _list_saved_cards(limit=30):
-    """Return the most recent saved card JPG filenames."""
-    saved_cards = [f for f in os.listdir('/tmp/cards/') if f.lower().endswith('.jpg')]
-    saved_cards.sort(key=lambda x: os.path.getmtime('/tmp/cards/' + x))
-    saved_cards = saved_cards[::-1]
-    return saved_cards[:limit]
-
-
-def _get_bins():
-    """Return a mapping of bin -> list of JPG filenames."""
-    bins = {}
-    for fn in os.listdir('/tmp/cards/'):
-        if not fn.endswith('_front.json'):
-            continue
-        path = os.path.join('/tmp/cards', fn)
-        try:
-            with open(path) as f:
-                data = json.load(f)
-        except Exception:
-            continue
-        bin_name = data.get('metadata', {}).get('bin', 'unknown')
-        jpg_name = fn[:-5] + '.jpg'
-        bins.setdefault(bin_name, []).append(jpg_name)
-    return bins
 
 
 @app.route('/', methods=['GET'])
@@ -318,28 +324,9 @@ def card_metadata(name):
     base = os.path.splitext(name)[0]
     meta_path = os.path.join('/tmp/cards', f"{base}.json")
     if not os.path.exists(meta_path):
-        return {"error": "metadata not found"}, 404
+        return jsonify({"error": "metadata not found"}), 404
     with open(meta_path) as f:
         return jsonify(json.load(f))
-
-
-@app.route('/bins', methods=['GET'])
-def list_bins():
-    """Return bins and the cards contained in each bin."""
-    bins = {}
-    for fn in os.listdir('/tmp/cards/'):
-        if not fn.endswith('_front.json'):
-            continue
-        path = os.path.join('/tmp/cards', fn)
-        try:
-            with open(path) as f:
-                data = json.load(f)
-        except Exception:
-            continue
-        bin_name = data.get('metadata', {}).get('bin', 'unknown')
-        jpg_name = fn[:-5] + '.jpg'
-        bins.setdefault(bin_name, []).append(jpg_name)
-    return jsonify(bins)
 
 
 @app.route('/bin/<binname>', methods=['GET'])

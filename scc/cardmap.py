@@ -69,7 +69,7 @@ def punchCoords(name):
         if pname == name:
             return coord
     # not found
-    raise KeyError(f"Punch name {name!r} not found")
+    raise KeyError(f"Punch name {name!r} not found. Check punchnames.csv for valid names.")
 
 # print(json.dumps(json_map))
 # card currently being processed, stored by the caller
