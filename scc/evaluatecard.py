@@ -3,8 +3,6 @@ import cardmap as cm
 import punch_descriptions as pd
 import punch_groups as pg
 
-last_or_failure = None
-
 '''
 punchName - row, col or (row,col) -> punch name
 punchCoords - 'punch name' -> (row, col)
@@ -90,7 +88,7 @@ def status_flag_getmeta(card, describe: bool = False):
     else:
         return (None)
 
-def x_getmeta(card, describe: bool = False):
+def x_check(card, describe: bool = False):
     '''
     Time to check for crosses! This should be easy.
     '''
@@ -167,14 +165,8 @@ def register_check(card):
         8: [1, 7],
         9: [2, 7],
     }
-    global register_type
-    register_type = None
-
-    if(cm.punchValue('TER') or cm.punchValue('INC')):
-        register_type = 'IR'
-    else :
-        register_type = 'OR'
-    print(">>> evaluating ", register_type, " data...")
+    kind = 'IR' if (cm.punchValue('TER') or cm.punchValue('INC')) else 'OR'
+    print(">>> evaluating ", kind, " data...")
 
     # retrieve the OR number
     names = (['CN-RG0', 'CN-RG1', 'CN-RG2', 'CN-RG3', 'CN-RG4', 'CN-RG5', 'CN-RG6', 'CN-RG7', 'CN-RG8', 'CN-RG9'])
@@ -260,32 +252,9 @@ def register_check(card):
     if errors:
         raise RegCheckError("; ".join(errors),
                            or_number=OR_number,
-                           registers=registers, decoded=decoded, regtype=register_type)
+                           registers=registers, decoded=decoded, kind=kind)
 
-    return decoded, OR_number, register_type
-
-def register_check_fails(card):
-    """Return ``True`` when :func:`register_check` reports invalid data.
-
-    Instead of simply converting the exception to a boolean we also populate
-    :data:`last_or_failure` with a tuple ``(or_number, registers, message)``
-    describing the failure.  ``registers`` maps letter names to the list of
-    punched positions seen in that group; ``or_number`` may be ``None`` if the
-    card did not have a valid OR punch.
-
-    Analysis can then be performed on the contents without interrupting program execution.
-    """
-    global last_or_failure
-
-    try:
-        register_check(card)
-        last_or_failure = None
-        return False
-    except RegCheckError as exc:
-        # record details for later inspection
-        last_or_failure = (exc.or_number, exc.registers, str(exc))
-        print(f"{register_type} check failed: {last_or_failure}")
-        return True
+    return decoded, OR_number, kind
 
 def orlm_check(card):
     '''
@@ -299,10 +268,7 @@ def orlm_check(card):
     0, 1, 2, 3, 4. The following additional constraints are present.
 
     * reed packs must all be full. Nothing may be omitted.
-    * the ``CT`` digit must be 0
-
-    When a valid sequence is present the return value is a list of integers
-    corresponding to the decoded line location (terminator excluded).
+    * the ``CT`` digit must be 0 (hole at position 0).
 
     Order of output should always be FT, FU, VG, HG, VF, CT, CU
 
@@ -393,130 +359,11 @@ def orlm_check(card):
     if errors:
         raise ORLMCheckError("; ".join(errors),
                            packs=packs,
-                           decoded=decoded)
+                           decoded=decoded, bin="ORLM_FAILURE")
 
     return decoded
 
-def sender_reed_check(card):
-    '''
-    Verify that the digits stored in the sender reed packs are valid
-
-    On calls requiring an outsender, the originating line location 
-    is passed to the sender by the marker and stored in the sender's reed packs.
-    The sender uses this information for AMA, which itself is checked elsewhere.
-    Each *digit* in the line location occupies one reed pack and is
-    encoded using the two‑out‑of‑five scheme: exactly two of the positions
-    ``0, 1, 2, 4, 7`` must be punched.  The exceptions to this are the ``FT``
-    frame tens digit that is 0,1,2,3, and the ``VF`` vertical file digit which is
-    0, 1, 2, 3, 4. 
-    
-    The following additional constraints are present.
-
-    * reed packs must all be full. Nothing may be omitted.
-    * one and only one of ``OBS`` and ``NOB`` must be punched to indicate 
-      whether the line is observed or not observed.
-
-    When a valid sequence is present the return value is a list of integers
-    corresponding to the decoded line location (terminator excluded).
-
-    Order of output should always be FT', FU', VG', HG', VF, OBS/NOB'
-
-    Example::
-
-        >>> sender_reed_check(card)
-        [3, 1, 3, 9, 2]
-    '''
-    cm.set_current_card(card)
-
-    # helpful dictionary for decoding integers to their respective two-of-five punches
-    # this is different than the dictionary in sccweb.py because that dict uses positions in
-    # a list. This dict uses the values of the holes.
-    two_of_five = {
-        0: [4, 7],
-        1: [0, 1],
-        2: [0, 2],
-        3: [1, 2],
-        4: [0, 4],
-        5: [1, 4],
-        6: [2, 4],
-        7: [0, 7],
-        8: [1, 7],
-        9: [2, 7],
-    }
-
-    print(">>> evaluating sender reed packs...")
-
-
-    # build reverse lookup: given a pair of positions -> digit
-    rev = {tuple(sorted(v)): k for k, v in two_of_five.items()}
-
-    packs = []
-    errors = []
-    decoded = {"FT'": None, "FU'": None, "VG'": None, "HG'": None, "VF'": None, "OBS": None, "NOB": None}
-
-    # we capture the raw reed pack contents as we go so that an exception can
-    # report exactly what was seen in each field.
-    packs = {}
-
-    def record_error(msg: str):
-        """Record an error message and continue scanning."""
-        errors.append(msg)
-
-    for k in decoded:
-        if k == "OBS" or k == "NOB" or k == "FT'" or k == "VF'":
-            # these have special rules and are not two-of-five, so we check them first
-
-            if k == "OBS" or k == "NOB":
-                obs_punched = cm.punchValue("OBS")
-                nob_punched = cm.punchValue("NOB")
-                packs["OBS"] = obs_punched
-                packs["NOB"] = nob_punched
-                if obs_punched and nob_punched:
-                    record_error("both OBS and NOB punched; exactly one must be punched to indicate observed vs not observed")
-                elif not obs_punched and not nob_punched:
-                    record_error("neither OBS nor NOB punched; exactly one must be punched to indicate observed vs not observed")
-                else:
-                    decoded["OBS/NOB'"] = "OBS" if obs_punched else "NOB"
-                continue
-            
-            # FT must always have values 0 + 3
-            if k == "FT'":
-                punched = [pos for pos in [0, 1, 2, 3] if cm.punchValue(f"{k}{pos}")]
-                packs[k] = punched.copy()
-                if punched != [0, 3]:
-                    record_error(f"FT' digit must be 0 and 3 (holes at 0 and 3), but found {punched}")
-                decoded[k] = sum(punched) # add up the values of punched and store the total in the packs dict for later output
-                continue
-            
-            # VF must be 0, 1, 2, 3, or 4
-            if k == "VF'":
-                punched = [pos for pos in [0, 1, 2, 3, 4] if cm.punchValue(f"{k}{pos}")]
-                packs[k] = punched.copy()
-                if punched not in ([0], [1], [2], [3], [4]):
-                    record_error(f"VF value must be 0, 1, 2, 3, or 4 (holes at one of positions 0-4), but found {punched}")
-                decoded[k] = sum(punched)
-                continue
-        else:
-            # these packs should be 2-of-5
-            punched = [pos for pos in [0, 1, 2, 4, 7] if cm.punchValue(f"{k}{pos}")]
-            packs[k] = punched.copy()
-            if len(punched) != 2:
-                record_error(f"{k} field has {len(punched)} punch(es) {punched}; exactly two required for a digit")
-                continue
-            decoded[k] = rev[tuple(sorted(punched))]
-
-            # maintain standard 5XB ordering for consistency
-            desired_order = ["FT'", "FU'", "VG'", "HG'", "VF'", "OBS/NOB"]
-            decoded = {k: decoded[k] for k in desired_order}
-
-    if errors:
-        raise SenderReedCheckError("; ".join(errors),
-                           packs=packs,
-                           decoded=decoded)
-
-    return decoded
-
-def os_getmeta(card):
+def os_getmeta(card, outsender=None):
     '''
     Verify punches related to outgoing sender selection. Called only when an OSG0-4 punch is detected.
 
@@ -527,18 +374,22 @@ def os_getmeta(card):
       but with different field names and the additional constraint that the ``OR`` punch must be present to indicate that 
       this information is valid at all).
 
-    When valid, the return value is a dictionary containing the decoded outsender information.
+    When valid, this populates and returns an ``outsender`` dict containing
+    sender group/number/subgroup metadata.
     '''
 
-    if card_has(card, ["OSG0", "OSG1", "OSG2", "OSG3", "OSG4"]):
+    errors = []
+    if outsender is None:
         outsender = {}
+
+    if card_has(card, ["OSG0", "OSG1", "OSG2", "OSG3", "OSG4"]):
         # determine group
         for n in ["OSG0", "OSG1", "OSG2", "OSG3", "OSG4"]:
             if cm.punchValue(n):
                 outsender["group"] = int(n[3])
                 break
         else:
-            raise OSCheckError("missing OSG punch")
+            errors.append("NO_OSG: no OSG punch detected among OSG0-4")
 
         # determine sender
         for n in ["OS0", "OS1", "OS2", "OS3", "OS4"]:
@@ -546,7 +397,7 @@ def os_getmeta(card):
                 outsender["sender"] = int(n[2])
                 break
         else:
-            raise OSCheckError("missing OS punch")
+            errors.append("NO_OS: no OS punch detected among OS0-4")
 
         # check SSA/SSB
         if cm.punchValue("SSA") and not cm.punchValue("SSB"):
@@ -554,15 +405,201 @@ def os_getmeta(card):
         elif cm.punchValue("SSB") and not cm.punchValue("SSA"):
             outsender["subgroup"] = "SSB"
         else:
-            raise OSCheckError(f"invalid subgroup punches: SSA={cm.punchValue('SSA')}, SSB={cm.punchValue('SSB')}")
+            errors.append(f"invalid subgroup punches: SSA={cm.punchValue('SSA')}, SSB={cm.punchValue('SSB')}")
 
-        # check originating line info in sender (same format as ORLM but different field names)
+        if errors:
+            raise OSCheckError("; ".join(errors), bin="POSSIBLE_OSC_FAILURE")
+
+    return outsender
+
+def os_reedcheck(card, outsender=None):
+    '''
+    Verify that the digits stored in the sender reed packs are valid
+
+    On calls requiring an outsender, the originating line location 
+    is passed to the sender by the marker and stored in the sender's reed packs.
+    This info includes both the CLI (calling line identification), and 
+    the number to be outpulseed. The sender uses CLI for AMA, which itself 
+    is checked elsewhere.
+
+    If the call is SOG, each digit in the calling line identification portion 
+    should match what was passed into the CM from the OR. These are all in 2-of-5 format.
+
+    Each *digit* in the CLI (line location) occupies one reed pack and is
+    encoded using the two‑out‑of‑five scheme: exactly two of the positions
+    ``0, 1, 2, 4, 7`` must be punched.  The exceptions to this are the ``FT``
+    frame tens digit that is 0,1,2,3, and the ``VF`` vertical file digit which is
+    0, 1, 2, 3, 4. 
+    
+    The following additional constraints are present.
+
+    * CLI reed packs must all be full. Nothing may be omitted.
+    * one and only one of ``OBS`` and ``NOB`` must be punched to indicate 
+      whether the line is observed or not observed.
+
+    When a valid sequence is present the return value is a list of integers
+    corresponding to the decoded line location (terminator excluded).
+
+    Order of output should always be FT', FU', VG', HG', VF, OBS/NOB'
+
+    Example::
+
+        >>> os_reedcheck(card)
+        {"CLI_reeds": {"FT'": 3, ...}, "OS_reeds": []}
+    '''
+
+    if cm.punchValue("SOG") or cm.punchValue("TOG"): # this function only applicable if call requires a sender
+
+        cm.set_current_card(card)
+        if outsender is None:
+            outsender = {}
+
+        # helpful dictionary for decoding integers to their respective two-of-five punches
+        # this is different than the dictionary in sccweb.py because that dict uses positions in
+        # a list. This dict uses the values of the holes.
+        two_of_five = {
+            0: [4, 7],
+            1: [0, 1],
+            2: [0, 2],
+            3: [1, 2],
+            4: [0, 4],
+            5: [1, 4],
+            6: [2, 4],
+            7: [0, 7],
+            8: [1, 7],
+            9: [2, 7],
+        }
+
+        print(">>> evaluating sender reed packs...")
+
+        # build reverse lookup: given a pair of positions -> digit
+        rev = {tuple(sorted(v)): k for k, v in two_of_five.items()}
+
+        errors = []
+        decoded = {"FT'": None, "FU'": None, "VG'": None, "HG'": None, "VF'": None, "OBS'": None, "NOB'": None}
+
+        # we capture the raw reed pack contents as we go so that an exception can
+        # report exactly what was seen in each field.
+        packs_calling_line = {}
+
+        def record_error(msg: str):
+            """Record an error message and continue scanning."""
+            errors.append(msg)
+
+        for k in decoded:
+            if k == "OBS'" or k == "NOB'" or k == "FT'" or k == "VF'":
+                # these have special rules and are not two-of-five, so we check them first
+                if k == "OBS'" or k == "NOB'":
+                    obs_punched = cm.punchValue("OBS'")
+                    nob_punched = cm.punchValue("NOB'")
+                    packs_calling_line["OBS'"] = obs_punched
+                    packs_calling_line["NOB'"] = nob_punched
+                    if obs_punched and nob_punched:
+                        record_error("both OBS' and NOB' punched; exactly one must be punched to indicate observed vs not observed")
+                    elif not obs_punched and not nob_punched:
+                        record_error("neither OBS' nor NOB' punched; exactly one must be punched to indicate observed vs not observed")
+                    else:
+                        decoded["OBS'"] = obs_punched
+                        decoded["NOB'"] = nob_punched
+                    continue
+                
+                # FT must always have values 0 + 3
+                if k == "FT'":
+                    punched = [pos for pos in [0, 1, 2, 3] if cm.punchValue(f"{k}{pos}")]
+                    packs_calling_line[k] = punched.copy()
+                    if punched != [0, 3]:
+                        record_error(f"FT' digit must be 0 and 3 (holes at 0 and 3), but found {punched}")
+                    decoded[k] = sum(punched) # add up the values of punched and store the total in the packs dict for later output
+                    continue
+                
+                # VF must be 0, 1, 2, 3, or 4
+                if k == "VF'":
+                    punched = [pos for pos in [0, 1, 2, 3, 4] if cm.punchValue(f"{k}{pos}")]
+                    packs_calling_line[k] = punched.copy()
+                    if punched not in ([0], [1], [2], [3], [4]):
+                        record_error(f"VF value must be 0, 1, 2, 3, or 4 (holes at one of positions 0-4), but found {punched}")
+                    decoded[k] = sum(punched)
+                    continue
+            else:
+                # these packs should be 2-of-5
+                punched = [pos for pos in [0, 1, 2, 4, 7] if cm.punchValue(f"{k}{pos}")]
+                packs_calling_line[k] = punched.copy()
+                if len(punched) != 2:
+                    record_error(f"{k} field has {len(punched)} punch(es) {punched}; exactly two required for a digit")
+                    continue
+                decoded[k] = rev[tuple(sorted(punched))]
+
+                # maintain standard 5XB ordering for consistency
+                desired_order = ["FT'", "FU'", "VG'", "HG'", "VF'", "OBS'", "NOB'"]
+                decoded = {k: decoded[k] for k in desired_order}
+
+        sender_prime_decoded = None
+        # For SOG calls, sender packs A'-H' should carry the register sequence.
+        # In practice this should be only an immediate single-7 terminator.
         try:
-            sender_info = orlm_check(card)
-            outsender["line_info"] = sender_info
-        except SenderReedCheckError as exc:
-            raise OSCheckError(f"invalid originating line info in sender: {exc}", details=exc.decoded)
+            register_digits, _, _ = register_check(card)
+        except RegCheckError as exc:
+            record_error(f"cannot validate A'-H' sender/OR copy because register data is invalid: {exc}")
+            register_digits = None
 
+        sender_prime_decoded = []
+        packs_outpulse = {}
+        sender_prime_seen_zero = False
+        sender_prime_terminated = False
+        sender_prime_skipped = None
+
+        for letter in "ABCDEFGH":
+            group = f"{letter}'"
+            punched = [pos for pos in [0, 1, 2, 4, 7] if cm.punchValue(f"{group}{pos}")]
+            packs_outpulse[group] = punched.copy()
+
+            if sender_prime_terminated:
+                if punched:
+                    record_error(f"punches present after sender A'-H' termination at {group}: {punched}")
+                continue
+
+            if not punched:
+                sender_prime_seen_zero = True
+                sender_prime_skipped = group
+                continue
+
+            if sender_prime_seen_zero:
+                record_error(f"skipped sender A'-H' group {sender_prime_skipped}")
+                sender_prime_seen_zero = False
+
+            if punched == [7]:
+                sender_prime_terminated = True
+                continue
+
+            if len(punched) != 2:
+                record_error(
+                    f"{group} has {len(punched)} punch(es) {punched}; exactly two required for a digit, or single 7 terminator")
+                continue
+
+            pair = tuple(sorted(punched))
+            if pair not in rev:
+                record_error(f"invalid two-of-five pair {pair} for {group}")
+                continue
+
+            sender_prime_decoded.append(rev[pair])
+
+        if sender_prime_decoded and not sender_prime_terminated:
+            record_error("sender A'-H' digit sequence must be terminated with a single 7")
+
+        if not sender_prime_terminated:
+            record_error("sender H' data must include a single-7 terminator")
+
+        if register_digits is not None and sender_prime_decoded != register_digits:
+            record_error(
+                f"sender A'-H' decoded digits {sender_prime_decoded} do not match register data {register_digits}")
+
+        if errors:
+            raise OSReedCheckError("; ".join(errors),
+                            packs_calling_line=packs_calling_line, packs_outpulse=packs_outpulse,   
+                            decoded=decoded, sender_prime_decoded=sender_prime_decoded, bin="OS_CLI_FAILURE")
+
+        outsender["reeds_calling_line"] = decoded
+        outsender["reeds_outpulse"] = sender_prime_decoded
         return outsender
 
 def ng_getmeta(card):
@@ -614,58 +651,59 @@ def ng_getmeta(card):
             )
         return observed
 
-    try:
-        register_digits, reg_number, reg_type = register_check(card)
-    except RegCheckError as exc:
-        raise NumberGroupCheckError(
-            "cannot validate number group because register data is invalid",
-            details={
-                "register_error": str(exc),
-                "registers": exc.registers,
-                "decoded": exc.decoded,
-                "reg_type": getattr(exc, "reg_type", None),
-            },
-        ) from exc
+    if card_has(card, "SNG"):
+        # If number group has been seized but not released, we should check these active punches.
+        # H,T,U punches should correspond to the digits stored in the register reed packs. 
+        try:
+            register_digits, reg_number, kind = register_check(card)
+        except RegCheckError as exc:
+            raise NumberGroupCheckError(
+                "cannot validate number group because register data is invalid",
+                details={
+                    "register_error": str(exc),
+                    "registers": exc.registers,
+                    "decoded": exc.decoded,
+                    "kind": exc.kind,
+                },
+            ) from exc
 
-    # Work from units to tens to hundreds using the decoded register digits.
-    expected = {
-        "U": register_digits[-1] if len(register_digits) >= 1 else None,
-        "T": register_digits[-2] if len(register_digits) >= 2 else None,
-        "HN": register_digits[-3] if len(register_digits) >= 3 else None,
-    }
+        # Work from units to tens to hundreds using the decoded register digits.
+        expected = {
+            "U": register_digits[-1] if len(register_digits) >= 1 else None,
+            "T": register_digits[-2] if len(register_digits) >= 2 else None,
+            "HN": register_digits[-3] if len(register_digits) >= 3 else None,
+        }
+        observed = {}
+        errors = []
+        for prefix in ("HN", "T", "U"):
+            punched = [i for i in range(10) if cm.punchValue(f"{prefix}{i}")]
+            if len(punched) == 1:
+                observed[prefix] = punched[0] 
+            if len(punched) > 1:
+                observed[prefix] = punched
+                errors.append(f"multiple punches found for {prefix}: {punched}")
+            if len(punched) == 0:
+                observed[prefix] = None
+            want = expected[prefix]
 
-    observed = {}
-    errors = []
-    for prefix in ("HN", "T", "U"):
-        punched = [i for i in range(10) if cm.punchValue(f"{prefix}{i}")]
-        if len(punched) == 1:
-            observed[prefix] = punched[0] 
-        if len(punched) > 1:
-            observed[prefix] = punched
-            errors.append(f"multiple punches found for {prefix}: {punched}")
-        if len(punched) == 0:
-            observed[prefix] = None
-        want = expected[prefix]
+            if want is None:
+                if punched:
+                    errors.append(f"{prefix} should be blank but found {observed[prefix]}")
+                continue
 
-        if want is None:
-            if punched:
-                errors.append(f"{prefix} should be blank but found {observed[prefix]}")
-            continue
+            if observed[prefix] != want:
+                errors.append(f"{prefix} expected {want} but found {observed[prefix]}")
 
-        if observed[prefix] != want:
-            errors.append(f"{prefix} expected {want} but found {observed[prefix]}")
-
-    if errors:
-        raise NumberGroupCheckError(
-            "; ".join(errors),
-            details={
-                "expected": expected,
-                "observed": observed,
-            },
-        )
+        if errors:
+            raise NumberGroupCheckError(
+                "; ".join(errors),
+                details={
+                    "expected": expected,
+                    "observed": observed,
+                },
+            )
 
     return observed
-    
 
 def cm_check(card):
     """Evaluates a whole bunch of things to ensure that the completing marker's operation is sane.
@@ -772,7 +810,7 @@ def cm_check(card):
     def found_count(names):
         return len(found(names))
 
-    def raise_cm_error(code, message, required=None, trigger=None, context=None, requirement="all"):
+    def raise_cm_error(code, message, required=None, trigger=None, context=None, requirement="all", bin="yellow"):
         required = list(required or [])
         trigger = list(trigger or [])
         context = list(context or [])
@@ -789,280 +827,274 @@ def cm_check(card):
             details["triggered_by"] = found(trigger)
         if requirement != "all":
             details["requirement"] = requirement
-        raise CMCheckError(message, code=code, details=details)
+        raise CMCheckError(message, code=code, details=details, bin=bin)
 
     # --- Number group registration checks ---
     if card_has(card, "SNG") and card_lacks(card, "NGK"):
-        raise_cm_error("NO_NGK", "marker was unable to seize number group", required=["NGK"], trigger=["SNG"])
+        raise_cm_error("NO_NGK", "marker timed out while attemptime to seize number group", required=["NGK"], trigger=["SNG"], bin="NG_FAILURE")
 
     if card_has(card, "NGK") and card_lacks(card, "HTUK"):
         raise_cm_error("NO_HTUK", "number group seized, but one or more "
-                        "H T U relays failed to operate", required=["HTUK"], trigger=["NGK"])
+                        "H T U relays failed to operate", required=["HTUK"], trigger=["NGK"], bin="NG_FAILURE")
 
     if card_has_all(card, "HTUK", "WT"):
         raise_cm_error("WT_WHILE_IN_NG", "WT timed out while recording called "
-        "line information from number group", trigger=["HTUK", "WT"])
+        "line information from number group", trigger=["HTUK", "WT"], bin="NG_FAILURE")
+
+    if card_has_all(card, "FLG", "SNG") and card_lacks(card, "RNG"):
+        raise_cm_error("SNG_NO_RNG", "FLG with SNG requires RNG",
+                       required=["RNG"], trigger=["FLG", "SNG"], bin="NG_FAILURE")
 
     # --- TER calls ---
     if card_has(card, ["TER", "TOG"]) and card_lacks(card, "FLG"):
-        raise_cm_error("NO_FLG", "TER or TOG requires FLG", required=["FLG"], trigger=["TER", "TOG"])
+        raise_cm_error("NO_FLG", "TER or TOG requires FLG", required=["FLG"], trigger=["TER", "TOG"], bin="NO_FLG")
 
     if card_has(card, "TER") and not card_has_all(card, "TF4", "TF7"):
-        raise_cm_error("INC_NO_TF", "TLF indication not recorded in IR or CM", required=["TF4", "TF7"], trigger=["TER"])
+        raise_cm_error("INC_NO_TF", "TLF indication not recorded in IR or CM", required=["TF4", "TF7"], trigger=["TER"], bin="INC_NO_TF")
 
     if card_has(card, "TER") and card_has(card, ["BY", "OV", "OFH"]) and card_lacks(card, "RS9"):
         raise_cm_error("NO_RS9", "horizontal 9 in the Ringing Selection Switch failed to operate",
-                       required=["RS9"], trigger=["TER", "BY", "OV", "OFH"])
+                       required=["RS9"], trigger=["TER", "BY", "OV", "OFH"], bin="NO_RS9")
 
     if card_has(card, rct_punches) and card_lacks(card, "RSK"):
         raise_cm_error("NO_RSK", "RCT1-9 requires RSK",
-                       required=["RSK"], trigger=rct_punches)
+                       required=["RSK"], trigger=rct_punches, bin="NO_RSK")
 
     if card_has_all(card, "TER", "BY") and card_lacks(card, "RS1"):
         raise_cm_error("BY_NO_RS1", "horizontal 1 in the Ringing Selection Switch failed to operate",
-                       required=["RS1"], trigger=["TER", "BY"])
+                       required=["RS1"], trigger=["TER", "BY"], bin="BY_NO_RS1")
 
     if card_has_all(card, "TER", "OV") and card_lacks(card, "RS0"):
         raise_cm_error("OV_NO_RS0", "horizontal 0 in the Ringing Selection Switch failed to operate",
-                       required=["RS0"], trigger=["TER", "OV"])
+                       required=["RS0"], trigger=["TER", "OV"], bin="OV_NO_RS0")
 
     if card_has_all(card, "TER", "RS9") and card_lacks(card, "RSK"):
         raise_cm_error("NO_RSK", "TER with RS9 requires RSK",
-                       required=["RSK"], trigger=["TER", "RS9"])
+                       required=["RSK"], trigger=["TER", "RS9"], bin="RSS_CHECK")
 
     if card_has_all(card, "TER", "RCK2") and card_lacks(card, "RCK3"):
         raise_cm_error("NO_RCK3", "TER with RCK2 requires RCK3",
-                       required=["RCK3"], trigger=["TER", "RCK2"])
+                       required=["RCK3"], trigger=["TER", "RCK2"], bin="RSS_CHECK")
 
     if card_has_all(card, "TER", "RSK") and card_lacks(card, "SRK"):
         raise_cm_error("NO_SRK", "TER with RSK requires SRK",
-                       required=["SRK"], trigger=["TER", "RSK"])
+                       required=["SRK"], trigger=["TER", "RSK"], bin="RSS_CHECK")
 
     if card_has_all(card, "TER", "SRK") and card_lacks(card, "LI"):
-        raise_cm_error("SRK_NO_LI", "TER with SRK requires LI", required=["LI"], trigger=["TER", "SRK"])
+        raise_cm_error("SRK_NO_LI", "TER with SRK requires LI", required=["LI"], trigger=["TER", "SRK"], bin="RSS_CHECK")
 
     if card_has_all(card, "TER", "LI") and card_lacks(card, "DIS1"):
-        raise_cm_error("TER_NO_DIS1", "TER with LI requires DIS1", required=["DIS1"], trigger=["TER", "LI"])
+        raise_cm_error("TER_NO_DIS1", "TER with LI requires DIS1", required=["DIS1"], trigger=["TER", "LI"], bin="NO_DIS1")
 
     # --- Double Connection Tests ---
     if card_has(card, ["GT2", "AVK1", "RCK3", "CLK"]) and card_lacks(card, "DCT1"):
         raise_cm_error("NO_DCT1", "GT2, AVK1, RCK3, or CLK requires DCT1",
-                       required=["DCT1"], trigger=["GT2", "AVK1", "RCK3", "CLK"])
+                       required=["DCT1"], trigger=["GT2", "AVK1", "RCK3", "CLK"], bin="DCT_FAILURES")
 
     if card_has(card, "RCK3") and card_lacks(card, "DCT1") and card_lacks(card, "DCT"):
         raise_cm_error("TER_NO_DCT", "RCK3 without DCT1 requires DCT",
-                       required=["DCT"], trigger=["RCK3"], context=["DCT1"])
+                       required=["DCT"], trigger=["RCK3"], context=["DCT1"], bin="DCT_FAILURES")
 
     if card_has(card, "DCT1") and (card_has(card, "DCT") or card_lacks(card, "DIS1")):
         raise_cm_error("DCT1_NO_DIS1", "DCT1 must have DIS1 and must not have DCT",
-                       required=["DIS1"], trigger=["DCT1"], context=["DCT"])
+                       required=["DIS1"], trigger=["DCT1"], context=["DCT"], bin="DCT_FAILURES")
 
     if card_has(card, "DCT1") and card_lacks(card, "LK1"):
-        raise_cm_error("NO_LK1", "DCT1 is punched without LK1", required=["LK1"], trigger=["DCT1"])
+        raise_cm_error("NO_LK1", "DCT1 is punched without LK1", required=["LK1"], trigger=["DCT1"], bin="DCT_FAILURES")
 
     if (card_has_all(card, "DCT1", "LK1") or card_has(card, ["DCT2", "LK1"])) and card_lacks(card, "DIS1"):
         raise_cm_error("NO_DIS1", "DCT/LK combination requires DIS1",
-                       required=["DIS1"], trigger=["DCT1", "DCT2", "LK1"])
+                       required=["DIS1"], trigger=["DCT1", "DCT2", "LK1"], bin="NO_DIS1")
 
     # --- TLF checks ---
     if card_has(card, lv_punches) and card_lacks(card, ["FAK", "FBK"]):
         raise_cm_error("NO_FAK_FBK", "LV2-9 requires FAK or FBK",
-                       required=["FAK", "FBK"], trigger=lv_punches, requirement="any")
+                       required=["FAK", "FBK"], trigger=lv_punches, requirement="any", bin="NO_FAK_FBK")
 
     if card_has(card, fut_punches + jg_0_4_punches):
         lk_rk_found = found(["LK", "RK"])
         if len(lk_rk_found) != 0 and len(lk_rk_found) != 1:
             raise_cm_error("LK_RK_CONFLICT", "FUT-/JG- requires zero or one (but not both) of LK or RK",
                            required=["LK", "RK"], trigger=fut_punches + jg_0_4_punches,
-                           context=["LK", "RK"], requirement="exactly_one")
+                           context=["LK", "RK"], requirement="exactly_one", bin="LK_RK_CONFLICT")
 
     if card_lacks(card, "TER") and card_has(card, "MAK1") and found_count(ts_punches) != 1:
         raise_cm_error("NO_TS", "MAK1 requires one and only one TS0-19",
-                       trigger=["MAK1"], context=ts_punches, requirement="exactly_one")
+                       trigger=["MAK1"], context=ts_punches, requirement="exactly_one", bin="INV_TS")
 
     if card_has(card, ts_punches) and found_count(lv_punches) != 1:
         raise_cm_error("NO_LV", "TS0-19 requires one and only one LV2-9",
-                       trigger=ts_punches, context=lv_punches, requirement="exactly_one")
+                       trigger=ts_punches, context=lv_punches, requirement="exactly_one", bin="INV_LV")
 
     if card_has(card, lv_punches) and found_count(lc_punches) != 1:
         raise_cm_error("NO_LC", "LV2-9 requires one and only one LC0-9",
-                       trigger=lv_punches, context=lc_punches, requirement="exactly_one")
+                       trigger=lv_punches, context=lc_punches, requirement="exactly_one", bin="INV_LC")
 
     if card_has(card, lc_punches) and card_lacks(card, "LCK"):
-        raise_cm_error("NO_LCK", "LC0-9 requires LCK", required=["LCK"], trigger=lc_punches)
+        raise_cm_error("NO_LCK", "LC0-9 requires LCK", required=["LCK"], trigger=lc_punches, bin="NO_LCK")
 
     # --- Crosspoint checks ---
     if card_lacks(card, "HMS1") and card_has(card, "SL"):
         raise_cm_error("FALSE_SL", "SL is punched without HMS1",
-                       required=["HMS1"], trigger=["SL"])
+                       required=["HMS1"], trigger=["SL"], bin="XPT_CHECK")
 
     if card_lacks(card, "HTR", "HMS1") and card_has(card, ["JXP1", "LXP1"]):
         raise_cm_error("FALSE_JXP1_LXP1", "JXP1/LXP1 punched without HMS1",
-                       required=["HMS1"], trigger=["JXP1", "LXP1"])
+                       required=["HMS1"], trigger=["JXP1", "LXP1"], bin="XPT_CHECK")
 
     if card_has(card, "HMS1") and card_lacks(card, "SL"):
-        raise_cm_error("NO_SL", "HMS1 is punched without SL", required=["SL"], trigger=["HMS1"])
+        raise_cm_error("NO_SL", "HMS1 is punched without SL", required=["SL"], trigger=["HMS1"], bin="XPT_CHECK")
 
     if card_has(card, "JXP1") and card_lacks(card, "LXP1"):
-        raise_cm_error("NO_LXP1", "JXP1 is punched without LXP1", required=["LXP1"], trigger=["JXP1"])
+        raise_cm_error("NO_LXP1", "JXP1 is punched without LXP1", required=["LXP1"], trigger=["JXP1"], bin="XPT_CHECK")
 
     if card_has(card, "SL") and card_lacks(card, "JXP1"):
-        raise_cm_error("NO_JXP1", "SL is punched without JXP1", required=["JXP1"], trigger=["SL"])
+        raise_cm_error("NO_JXP1", "SL is punched without JXP1", required=["JXP1"], trigger=["SL"], bin="XPT_CHECK")
 
     if card_has_all(card, "SL", "JXP1", "LXP1") and card_lacks(card, "GT2"):
         raise_cm_error("NO_GT2", "SL/JXP1/LXP1 combination requires GT2",
-                       required=["GT2"], trigger=["SL", "JXP1", "LXP1"])
+                       required=["GT2"], trigger=["SL", "JXP1", "LXP1"], bin="XPT_CHECK")
 
     if card_has(card, ch_punches) and card_lacks(card, "HMS1"):
-        raise_cm_error("NO_HMS1", "CH0-9 requires HMS1", required=["HMS1"], trigger=ch_punches)
+        raise_cm_error("NO_HMS1", "CH0-9 requires HMS1", required=["HMS1"], trigger=ch_punches, bin="XPT_CHECK")
 
     if card_has(card, jc_punches) and card_lacks(card, "JCK"):
-        raise_cm_error("NO_JCK", "JC0-9 requires JCK", required=["JCK"], trigger=jc_punches)
+        raise_cm_error("NO_JCK", "JC0-9 requires JCK", required=["JCK"], trigger=jc_punches, bin="XPT_CHECK")
 
     if card_lacks(card, "TER") and card_has(card, p_punches + ["PNR", "PA", "PB", "PC", "PE"]) and card_lacks(card, "TCHK"):
         raise_cm_error("NO_TCHK", "P/PNR/PA/PB/PC/PE activity requires TCHK",
-                       required=["TCHK"], trigger=p_punches + ["PNR", "PA", "PB", "PC", "PE"])
+                       required=["TCHK"], trigger=p_punches + ["PNR", "PA", "PB", "PC", "PE"], bin="XPT_CHECK")
 
     # --- IRL LR Checks ---
     if card_has(card, "LR") and card_lacks(card, "DCK"):
         raise_cm_error("LR_INC_XPTS", "LR is punched without DCK",
-                       required=["DCK"], trigger=["LR"])
+                       required=["DCK"], trigger=["LR"], bin="IRL_FAILURE")
 
     if card_has_all(card, "LR", "DCK") and card_has(card, ["INC", "TOL", "TAN"]):
         raise_cm_error("LR_FAILURE_TO_ATTACH", "LR and DCK indicates possible double connection in IRL",
-                       required=["INC", "TOL", "TAN"], trigger=["LR", "DCK"], requirement="any")
+                       required=["INC", "TOL", "TAN"], trigger=["LR", "DCK"], requirement="any", bin="IRL_FAILURE")
 
     if card_has_all(card, "LR", "DCK") and card_lacks(card, ["INC", "TOL", "TAN"]):
         raise_cm_error("LR_NOCLASS", "LR with DCK requires INC, TOL, or TAN",
-                       required=["INC", "TOL", "TAN"], trigger=["LR", "DCK"], requirement="any")
+                       required=["INC", "TOL", "TAN"], trigger=["LR", "DCK"], requirement="any", bin="IRL_FAILURE")
 
     if card_has(card, "LR") and card_lacks(card, lv_punches):
         raise_cm_error("LR_NO_TRUNK", "LR requires one of LV2-9",
-                       required=lv_punches, trigger=["LR"], requirement="any")
+                       required=lv_punches, trigger=["LR"], requirement="any", bin="IRL_FAILURE")
 
     # --- Outgoing calls with sender ---
     if card_has(card, osg_punches) and card_lacks(card, "SOG"):
-        raise_cm_error("NO_SOG", "OSG0-4 requires SOG", required=["SOG"], trigger=osg_punches)
+        raise_cm_error("NO_SOG", "OSG0-4 requires SOG", required=["SOG"], trigger=osg_punches, bin="SENDER_ATTACH_FAILURE")
 
     if card_has(card, "SOG") and card_lacks(card, "OSK"):
-        raise_cm_error("NO_OSK", "SOG is punched without OSK", required=["OSK"], trigger=["SOG"])
+        raise_cm_error("NO_OSK", "SOG is punched without OSK", required=["OSK"], trigger=["SOG"], bin="SENDER_ATTACH_FAILURE")
 
     if card_has(card, "OSK") and card_lacks(card, "SLK2"):
-        raise_cm_error("NO_SLK2", "OSK is punched without SLK2", required=["SLK2"], trigger=["OSK"])
+        raise_cm_error("NO_SLK2", "OSK is punched without SLK2", required=["SLK2"], trigger=["OSK"], bin="SENDER_ATTACH_FAILURE")
 
     if card_has(card, os_0_4_punches) and card_lacks(card, "RSC"):
-        raise_cm_error("NO_RSC", "OS0-4 requires RSC", required=["RSC"], trigger=os_0_4_punches)
+        raise_cm_error("NO_RSC", "OS0-4 requires RSC", required=["RSC"], trigger=os_0_4_punches, bin="SENDER_ATTACH_FAILURE")
 
     if card_has_all(card, "TI", "RSC", "SLK2") and card_lacks(card, "AVK1"):
         raise_cm_error("NO_AVK1", "sender unable to operate its AV relay, thus no AVK1",
-                       required=["AVK1"], trigger=["TI", "RSC", "SLK2"])
+                       required=["AVK1"], trigger=["TI", "RSC", "SLK2"], bin="NO_AVK1")
 
     if card_has(card, "LT1") and card_lacks(card, "AMA"):
-        raise_cm_error("NO_AMA", "calls to kercheep require AMA", required=["AMA"], trigger=["LT1"])
+        raise_cm_error("NO_AMA", "calls to kercheep require AMA", required=["AMA"], trigger=["LT1"], bin="NO_AMA")
 
     if card_has(card, "TGT"):
         raise_cm_error("TG_FAIL", "sender failed to complete TG test in allotted time. "
-                        "suspect OGT trouble", trigger=["TGT"])
+                        "suspect OGT trouble", trigger=["TGT"], bin="OGT_ISSUE")
 
     # --- Barebones checks if all others fall thru ---
     if card_has(card, "FLG") and card_lacks(card, "JCK"):
-        raise_cm_error("NO_JCK", "FLG requires JCK", required=["JCK"], trigger=["FLG"])
+        raise_cm_error("NO_JCK", "FLG requires JCK", required=["JCK"], trigger=["FLG"], bin="XPT_CHECK")
 
     if card_has(card, "FLG") and card_lacks(card, "LCK"):
-        raise_cm_error("NO_LCK", "FLG requires LCK", required=["LCK"], trigger=["FLG"])
+        raise_cm_error("NO_LCK", "FLG requires LCK", required=["LCK"], trigger=["FLG"], bin="XPT_CHECK")
 
     if card_has(card, "FLG") and card_lacks(card, "HGK"):
-        raise_cm_error("NO_HGK", "FLG requires HGK", required=["HGK"], trigger=["FLG"])
+        raise_cm_error("NO_HGK", "FLG requires HGK", required=["HGK"], trigger=["FLG"], bin="XPT_CHECK")
 
     if card_has(card, "FLG") and card_lacks(card, "TCHK"):
-        raise_cm_error("NO_TCHK", "FLG requires TCHK", required=["TCHK"], trigger=["FLG"])
+        raise_cm_error("NO_TCHK", "FLG requires TCHK", required=["TCHK"], trigger=["FLG"], bin="XPT_CHECK")
 
     if card_has(card, "FLG") and card_lacks(card, ["LK", "RK"]):
-        raise_cm_error("NO_LK_RK", "FLG requires LK or RK", required=["LK", "RK"], trigger=["FLG"], requirement="any")
+        raise_cm_error("NO_LK_RK", "FLG requires LK or RK", required=["LK", "RK"], trigger=["FLG"], requirement="any", bin="XPT_CHECK")
 
     if card_has(card, "FLG") and card_lacks(card, "RK3"):
-        raise_cm_error("NO_RK3", "FLG requires RK3", required=["RK3"], trigger=["FLG"])
+        raise_cm_error("NO_RK3", "FLG requires RK3", required=["RK3"], trigger=["FLG"], bin="XPT_CHECK")
 
     if card_has_all(card, "FLG", "JCK", "LCK", "HGK", "TCHK", "RK3") and card_has(card, ["LK", "RK"]) and card_lacks(card, "TK"):
         raise_cm_error("NO_TK", "TK failed to operate when it should have on FLG",
-                       required=["TK"], trigger=["FLG", "JCK", "LCK", "HGK", "TCHK", "RK3"], context=["LK", "RK"])
+                       required=["TK"], trigger=["FLG", "JCK", "LCK", "HGK", "TCHK", "RK3"], context=["LK", "RK"], bin="NO_TK")
 
     if card_has(card, "SCB") and card_lacks(card, "FAK"):
-        raise_cm_error("NO_FAK", "SCB requires FAK", required=["FAK"], trigger=["SCB"])
+        raise_cm_error("NO_FAK", "SCB requires FAK", required=["FAK"], trigger=["SCB"], bin="TLF_NO_FAK")
 
     if card_has(card, "SCB") and card_lacks(card, "LCK"):
-        raise_cm_error("NO_LCK", "SCB requires LCK", required=["LCK"], trigger=["SCB"])
+        raise_cm_error("NO_LCK", "SCB requires LCK", required=["LCK"], trigger=["SCB"], bin="XPT_CHECK")
 
     if card_has(card, "SCB") and card_lacks(card, "JCK"):
-        raise_cm_error("NO_JCK", "SCB requires JCK", required=["JCK"], trigger=["SCB"])
+        raise_cm_error("NO_JCK", "SCB requires JCK", required=["JCK"], trigger=["SCB"], bin="XPT_CHECK")
 
     if card_has(card, "SCB") and card_lacks(card, "DTK"):
         raise_cm_error("NO_DTK", "SCB requires DTK", required=["DTK"], trigger=["SCB"])
 
     if card_has(card, "SCB") and card_lacks(card, "HGK"):
-        raise_cm_error("NO_HGK", "SCB requires HGK", required=["HGK"], trigger=["SCB"])
+        raise_cm_error("NO_HGK", "SCB requires HGK", required=["HGK"], trigger=["SCB"], bin="XPT_CHECK")
 
     if card_has(card, "SCB") and card_lacks(card, "RK3"):
-        raise_cm_error("NO_RK3", "SCB requires RK3", required=["RK3"], trigger=["SCB"])
+        raise_cm_error("NO_RK3", "SCB requires RK3", required=["RK3"], trigger=["SCB"], bin="XPT_CHECK")
 
     if card_has_all(card, "SCB", "FAK", "LCK", "JCK", "DTK", "HGK", "RK3") and card_lacks(card, "TK"):
         raise_cm_error("NO_TK", "TK failed to operate when it should have on SCB linkage",
-                       required=["TK"], trigger=["SCB", "FAK", "LCK", "JCK", "DTK", "HGK", "RK3"])
+                       required=["TK"], trigger=["SCB", "FAK", "LCK", "JCK", "DTK", "HGK", "RK3"], bin="NO_TK")
 
     if card_has(card, "TK") and card_lacks(card, "HMS1"):
-        raise_cm_error("NO_HMS1", "TK is punched without HMS1", required=["HMS1"], trigger=["TK"])
+        raise_cm_error("NO_HMS1", "TK is punched without HMS1", required=["HMS1"], trigger=["TK"], bin="NO_HMS1")
 
     if card_has(card, "HMS1") and card_lacks(card, "DCT1"):
-        raise_cm_error("NO_DCT1", "HMS1 is punched without DCT1", required=["DCT1"], trigger=["HMS1"])
+        raise_cm_error("NO_DCT1", "HMS1 is punched without DCT1", required=["DCT1"], trigger=["HMS1"], bin="DCT_FAILURE")
 
     if card_has(card, "TK") and card_lacks(card, "CK"):
-        raise_cm_error("NO_CK", "TK is punched without CK", required=["CK"], trigger=["TK"])
+        raise_cm_error("NO_CK", "TK is punched without CK", required=["CK"], trigger=["TK"], bin="NO_CK")
 
     if card_has(card, "TI") and card_has(card, ["SOG", "ITR", "TOG", "NSO"]) and found_count(tg_0_5_punches) != 1:
         raise_cm_error("NO_TG", "TI with SOG/ITR/TOG/NSO requires one and only one TG0-5",
-                       trigger=["TI", "SOG", "ITR", "TOG", "NSO"], context=tg_0_5_punches, requirement="exactly_one")
+                       trigger=["TI", "SOG", "ITR", "TOG", "NSO"], context=tg_0_5_punches, requirement="exactly_one", bin="INV_TG")
 
     if card_has(card, "TM") and card_has(card, ["OR", "TOG"]) and found_count(tb_0_4_punches) != 1:
         raise_cm_error("NO_TB", "TM with OR or TOG requires one and only one TB0-4",
-                       trigger=["TM", "OR", "TOG"], context=tb_0_4_punches, requirement="exactly_one")
+                       trigger=["TM", "OR", "TOG"], context=tb_0_4_punches, requirement="exactly_one", bin="INV_TB")
 
     if card_lacks(card, "TER") and card_has(card, tb_0_4_punches) and found_count(ts_punches) != 1:
         raise_cm_error("NO_TS", "TB0-4 requires one and only one TS0-19",
-                       trigger=tb_0_4_punches, context=ts_punches, requirement="exactly_one")
+                       trigger=tb_0_4_punches, context=ts_punches, requirement="exactly_one", bin="INV_TS")
 
     if card_lacks(card, "TER") and card_has(card, tb_0_5_punches) and found_count(fs_punches) != 1:
         raise_cm_error("NO_FS", "TB0-5 requires one and only one FS0-9",
-                       trigger=tb_0_5_punches, context=fs_punches, requirement="exactly_one")
+                       trigger=tb_0_5_punches, context=fs_punches, requirement="exactly_one", bin="INV_FS")
 
     if card_has(card, "FS0") and card_lacks(card, "FTCK"):
-        raise_cm_error("NO_FTCK", "FS0 is punched without FTCK", required=["FTCK"], trigger=["FS0"])
+        raise_cm_error("NO_FTCK", "FS0 is punched without FTCK", required=["FTCK"], trigger=["FS0"], bin="NO_FTCK")
 
     if card_has(card, "LK1") and card_lacks(card, "SCB"):
-        raise_cm_error("NO_SCB", "when LK1 is punched, the marker should be ready to Start Call Back (SCB)", required=["SCB"], trigger=["LK1"])
+        raise_cm_error("NO_SCB", "when LK1 is punched, the marker should be ready to Start Call Back (SCB)", required=["SCB"], trigger=["LK1"], bin="NO_SCB")
 
     if card_has_all(card, "FLG", "LB") and card_lacks(card, ["BY", "OV"]):
         raise_cm_error("NO_BY_OV", "FLG and LB requires BY or OV",
-                       required=["BY", "OV"], trigger=["FLG", "LB"], requirement="any")
-
-    if card_has(card, "FLG") and card_lacks(card, "RNG") and card_lacks(card, "SNG"):
-        raise_cm_error("FLG_NO_SNG", "FLG without RNG requires SNG",
-                       required=["SNG"], trigger=["FLG"], context=["RNG"])
-
-    if card_has_all(card, "FLG", "SNG") and card_lacks(card, "RNG"):
-        raise_cm_error("SNG_NO_RNG", "FLG with SNG requires RNG",
-                       required=["RNG"], trigger=["FLG", "SNG"])
+                       required=["BY", "OV"], trigger=["FLG", "LB"], requirement="any", bin="LB_BY_OV_FAIL")
 
     if card_has_all(card, "HGK", "JCK", "TCHK", "LCK") and card_has(card, ["FAK", "FBK"]) and card_lacks(card, "TK"):
         raise_cm_error("NO_TK", "HGK/JCK/TCHK/LCK with FAK or FBK requires TK",
-                       required=["TK"], trigger=["HGK", "JCK", "TCHK", "LCK", "FAK", "FBK"])
+                       required=["TK"], trigger=["HGK", "JCK", "TCHK", "LCK", "FAK", "FBK"], bin="NO_TK")
         
     if card_has_all(card, "TM", "CKG", "TSE"):
         raise_cm_error("TSE_NO_TRUNK", "TSE indicates marker unable to begin trunk selection. Probable translation or route relay failure.",
-                       trigger=["TM", "CKG"], context=["TSE"])
+                       trigger=["TM", "CKG"], context=["TSE"], bin="TSE_NO_TRUNK")
         
     return {"ok": True}
-
-
 
 def evaluate(card, describe: bool = False):
     """Evaluate a card and return a serializable metadata dict.
@@ -1071,34 +1103,41 @@ def evaluate(card, describe: bool = False):
     """
     cm.set_current_card(card)
 
-
     meta = {
-        "type": type_of_card(card, describe),
-        "marker": marker_no(card, describe),
-        "trial": trial_getmeta(card, describe),
-        "timer": timer_getmeta(card, describe),
-        "status_flag": status_flag_getmeta(card, describe),
-        "register": {"number": None, "digits": None, "kind": None},
-        "perm_sig": ps_getmeta(card),
-        "crosses": x_getmeta(card),
-   
-        #"stage": stage_getmeta(card),
-
+        "type": type_of_card(card, describe),                       # does not bin, binned below
+        "marker": marker_no(card, describe),                        # does not bin
+        "trial": trial_getmeta(card, describe),                     # does not bin
+        "timer": timer_getmeta(card, describe),                     # does not bin
+        "status_flag": status_flag_getmeta(card, describe),         # does not bin yet
+        "register": {"number": None, "digits": None, "kind": None}, # checked and binned below
+        "perm_sig": ps_getmeta(card),                               # does not bin yet
+        "crosses": [],                                              # checked and binned below
     }
+
+    def set_bin_if_unbinned(bin_name):
+        if bin_name and meta.get("bin") == "unbinned":
+            meta["bin"] = bin_name
+
+    if meta["type"][0] in ("MTPT", "SRT", "TKT", "MLV"):
+        meta["bin"] = "TEST_CARD"
+
+    # Cross check supersedes all other bins, so run this first.
+    meta["crosses"] = x_check(card)
+    if meta["crosses"]:
+        set_bin_if_unbinned("X_INDICATION")
 
     # Register check + binning
     try:
-        decoded, reg_number, register_type = register_check(card)
-        meta["register"] = {"number": reg_number, "digits": decoded, "kind": register_type}
-        meta["bin"] = bin_card(card, rules=[("reg_error", register_check_fails)], default="unbinned")
+        decoded, reg_number, kind = register_check(card)
+        meta["register"] = {"number": reg_number, "digits": decoded, "kind": kind}
     except RegCheckError as exc:
         meta["register"] = {
             "error": str(exc),
             "or_number": exc.or_number,
             "registers": exc.registers,
-            "kind": getattr(exc, "reg_type", None),
+            "kind": exc.kind,
         }
-        meta["bin"] = "reg_error"
+        set_bin_if_unbinned("REG_ERROR")
 
     # ORLM check + binning
     if meta["register"].get("kind") == "OR": 
@@ -1111,19 +1150,35 @@ def evaluate(card, describe: bool = False):
                 "packs": exc.packs,
                 "decoded": exc.decoded,
             }
+            set_bin_if_unbinned("ORLM_ERROR")
 
     # OS check + binning
-    if card_has(card, ["OSG0", "OSG1", "OSG2", "OSG3", "OSG4"]):
+    if card_has(card, ["SON"]):
+        outsender = {}
         try:
-            outsender = os_getmeta(card)
-            meta["outsender"] = outsender
-        except OSCheckError as exc: 
-            meta["outsender"] = { # XXX: make these consistent with what os_getmeta() returns
+            outsender = os_getmeta(card, outsender)
+        except OSCheckError as exc:
+            outsender["os_getmeta"] = {
                 "error": str(exc),
                 "details": exc.details,
             }
+        try:
+            outsender = os_reedcheck(card, outsender)
+        except OSReedCheckError as exc:
+            outsender["os_reed_check"] = {
+                "error": str(exc),
+                "packs_outpulse": exc.packs_outpulse or {},
+                "packs_calling_line": exc.packs_calling_line or {},
+                "decoded": exc.decoded,
+                "sender_prime_decoded": exc.sender_prime_decoded,
+                "bin": exc.bin,
+            }
 
-    # Number Group check + binning
+        meta["outsender"] = outsender
+        set_bin_if_unbinned(outsender.get("os_reed_check", {}).get("bin") or outsender.get("os_getmeta", {}).get("bin"))
+
+    # Number Group check. Binning for errors here is done in func:`cm_check()`, since we can get 
+    # better granularity on the failure mode there.
     try:
         number_group = ng_getmeta(card)
         meta["number_group"] = number_group
@@ -1144,13 +1199,7 @@ def evaluate(card, describe: bool = False):
                 "code": exc.code,
                 "details": exc.details,
             }
-
-    '''
-    # Other easy bins
-    meta["bin"] = bin_card(card, rules=[
-        ("X_cross", lambda c: card_has(c, pg.crosses))
-         ], default = "unbinned")
-    '''
+            set_bin_if_unbinned(exc.bin)
 
     meta["punches"] = truthy_punches(card)
 
@@ -1211,7 +1260,7 @@ def bin_card(card, rules, default=None):
 
         rules = [
             ("trouble_TI", lambda c: card_has(c, "TI")),
-            ("or_error", register_check_fails),
+            ("or_error", lambda c: card_has(c, "OR") and card_lacks(c, "CN-RG0")),
             ("TI_and_MOR", lambda c: card_has(c, "TI", "MOR")),
         ]
         bin_name = bin_card(card, rules)
@@ -1233,7 +1282,7 @@ def bin_card(card, rules, default=None):
 
 
 # ---------------------------------------------------------------------------
-# helpful functions that are friendly and helpful
+# helpful functions that are friendly and helpful to callers
 # ---------------------------------------------------------------------------
 
 def describe_punch(name):
@@ -1246,6 +1295,7 @@ def truthy_punches(card):
     #punches.sort()
     return punches
 
+
 # ---------------------------------------------------------------------------
 # custom error classes
 # ---------------------------------------------------------------------------
@@ -1255,11 +1305,10 @@ class RegCheckError(ValueError):
 
     The exception carries attributes that make it possible for callers to
     inspect the OR number and the raw contents of the letter groups that were
-    examined.  ``register_check_fails`` uses this information to record diagnostics
-    for later analysis.
+    examined.
     """
 
-    def __init__(self, message, or_number=None, registers=None, decoded=None, regtype=None):
+    def __init__(self, message, or_number=None, registers=None, decoded=None, kind=None):
         super().__init__(message)
         self.or_number = or_number
         # ``registers`` is a dict mapping letter names (``'A'``..``'L'``) to the
@@ -1268,15 +1317,14 @@ class RegCheckError(ValueError):
         # still have the state up through the failure point.
         self.registers = registers or {}
         self.decoded = decoded
-        self.reg_type = regtype
+        self.kind = kind
 
 class ORLMCheckError(ValueError):
     """Raised when ``orlm_check`` encounters malformed data.
 
     The exception carries attributes that make it possible for callers to
     inspect the OR number and the raw contents of the letter groups that were
-    examined.  ``orlm_check_fails`` uses this information to record diagnostics
-    for later analysis.
+    examined.
     """
 
     def __init__(self, message, packs=None, decoded=None):
@@ -1284,19 +1332,21 @@ class ORLMCheckError(ValueError):
         self.packs = packs or {}
         self.decoded = decoded
 
-class SenderReedCheckError(ValueError):
-    """Raised when :func:`sender_reed_check` encounters malformed data.
+class OSReedCheckError(ValueError):
+    """Raised when :func:`os_reedcheck` encounters malformed data.
 
     The exception carries attributes that make it possible for callers to
     inspect the raw contents of the letter groups that were
-    examined.  ``sender_reed_check_fails`` uses this information to record diagnostics
-    for later analysis.
+    examined.
     """
 
-    def __init__(self, message, packs=None, decoded=None):
+    def __init__(self, message, packs_calling_line=None, packs_outpulse=None, decoded=None, sender_prime_decoded=None, bin=None):
         super().__init__(message)
-        self.packs = packs or {}
+        self.packs_calling_line = packs_calling_line or {}
+        self.packs_outpulse = packs_outpulse or {}
         self.decoded = decoded
+        self.sender_prime_decoded = sender_prime_decoded
+        self.bin = bin
 
 class OSCheckError(ValueError):
     """Raised when :func:`os_check` encounters malformed data.
@@ -1307,23 +1357,25 @@ class OSCheckError(ValueError):
     for later analysis.
     """
 
-    def __init__(self, message, packs=None, decoded=None, details=None):
+    def __init__(self, message, packs=None, decoded=None, details=None, bin=None):
         super().__init__(message)
         self.packs = packs or {}
         self.decoded = decoded
         self.details = details
+        self.bin = bin
 
 class NumberGroupCheckError(ValueError):
     """Raised when :func:`ng_getmeta` detects invalid number-group punches."""
 
-    def __init__(self, message, details=None):
+    def __init__(self, message, details=None, bin=None):
         super().__init__(message)
         self.details = details or {}
 
 class CMCheckError(ValueError):
     """Raised when :func:`cm_check` detects an invalid completing-marker state."""
 
-    def __init__(self, message, code=None, details=None):
+    def __init__(self, message, code=None, details=None, bin=None):
         super().__init__(message)
         self.code = code
         self.details = details or {}
+        self.bin = bin
