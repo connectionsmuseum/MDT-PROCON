@@ -703,7 +703,7 @@ def ng_getmeta(card):
                 },
             )
 
-    return observed
+        return observed
 
 def cm_check(card):
     """Evaluates a whole bunch of things to ensure that the completing marker's operation is sane.
