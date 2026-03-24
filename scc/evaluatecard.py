@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import cardmap as cm
 import punch_descriptions as pd
-import punch_groups as pg
 
 '''
 punchName - row, col or (row,col) -> punch name
@@ -38,27 +37,23 @@ def type_of_card(card, describe: bool = False):
 def marker_no(card, describe: bool = False):
     cm.set_current_card(card)
     print(">>> evaluating marker number...")
-    names = ['DR0', 'DR1', 'DR8']
-    for n in names:
-        if cm.punchValue(n):
-            number = int(n[2:])
-            break
-    else:
+    number = next((f'DR{i}' for i in range(10) if cm.punchValue(f'DR{i}')), None)
+    if number is None:
         raise ValueError("no marker punch detected")
     if describe:
-        return (number, describe_punch(n))
-    return number
+        return (number, describe_punch(number))
+    return number[2:]
 
 def trial_getmeta(card, describe: bool = False):
     cm.set_current_card(card)
     print(">>> evaluating trial punches...")
     names = ['1TR', '2TR']
-    for n in names:
-        if cm.punchValue(n):
-            if describe:
-                return (n, describe_punch(n))
-            return (n)
-    return (None)
+
+    trial = next((n for n in names if cm.punchValue(n)), None)
+    if describe:
+        return (trial, describe_punch(trial))
+    else:
+        return (trial)
 
 def timer_getmeta(card, describe: bool = False):
     '''
@@ -68,25 +63,79 @@ def timer_getmeta(card, describe: bool = False):
     '''
     print('>>> evaluating marker timers...')
     names = (['WT', 'SDT', 'LDT', 'TRS'])
-    for n in names:
-        if cm.punchValue(n):
-            return (n)
+    
+    timer = next((n for n in names if cm.punchValue(n)), None)
+
+    if describe:
+        return (timer, describe_punch(timer))
     else:
-        return (None)
+        return(timer)
+
+def ch_tk_getmeta(card, describe: bool = False):
+    '''
+    Evaluates the following punches and returns a dictionary as follows
+
+        "channel": int or None,  # 0-9 if CH0-9 detected, otherwise None
+        "pattern": str or None,  # pattern name if P0-9 detected, otherwise None
+        "pattern_type": str or None,  # one of PNR, PA, PB, PC if detected, otherwise None
+        # Trunk group choice (new part of the dict)
+        "TB": str or None,  # trunk block if TB0-5 detected, otherwise None
+        "TG: str or None, # trunk group if TG0-19 detected, otherwise None
+        # Selected frame/trunk/link/level (new part of the dict)
+        "FS": str or None, # frame select if FS0-29 detected, otherwise None
+        "TS": str or None, # trunk select if TS0-19 detected, otherwise None
+        "LC": str or None, # link connector if LC0-9 detected, otherwise None
+        "LV": str or None, # level if LV2-9 detected, otherwise None
+
+    '''
+    print(">>> evaluating channel/tk punches...")
+    result = {
+        "channel": None,
+        "pattern": None,
+        "pattern_type": None,
+        "TB": None,
+        "TG": None,
+        "FS": None,
+        "TS": None,
+        "LC": None,
+        "LV": None,
+    }
+    cm.set_current_card(card)
+
+    result["channel"] = next((i for i in range(10) if cm.punchValue(f'CH{i}')), None)
+    result["pattern"] = next((f'P{i}' for i in range(10) if cm.punchValue(f'P{i}')), None)
+    result["pattern_type"] = next((n for n in ('PNR', 'PA', 'PB', 'PC') if cm.punchValue(n)), None)
+    result["TB"] = next((f'TB{i}' for i in range(6) if cm.punchValue(f'TB{i}')), None)
+    result["TG"] = next((f'TG{i}' for i in range(20) if cm.punchValue(f'TG{i}')), None)
+    result["FS"] = next((f'FS{i}' for i in range(30) if cm.punchValue(f'FS{i}')), None)
+    result["TS"] = next((f'TS{i}' for i in range(20) if cm.punchValue(f'TS{i}')), None)
+    result["LC"] = next((f'LC{i}' for i in range(10) if cm.punchValue(f'LC{i}')), None)
+    result["LV"] = next((f'LV{i}' for i in range(2, 10) if cm.punchValue(f'LV{i}')), None)
+
+    return result
 
 def status_flag_getmeta(card, describe: bool = False):
     '''
     Evaluates which status flag is set, if any.
 
     returns that punch if true
+    returns an array containing the punch and its description if describe is true
+    returns multiple punches if multiple punches are true
+    
     '''
     print(">>> evaluating marker status flags...")
-    names = (['TRS', 'TGT', 'FCG', 'LR', 'DCK', 'GT5', 'SQA'])
-    for n in names:
-        if cm.punchValue(n):
-            return (n)
-    else:
-        return (None)
+    cm.set_current_card(card)
+    names = ['TRS', 'TGT', 'FCG', 'LR', 'DCK', 'GT5', 'SQA']
+
+    status_flags = [n for n in names if cm.punchValue(n)]
+    if not status_flags:
+        return None
+
+    if describe:
+        described_flags = [(n, describe_punch(n)) for n in status_flags]
+        return described_flags[0] if len(described_flags) == 1 else described_flags
+
+    return status_flags[0] if len(status_flags) == 1 else status_flags
 
 def x_check(card, describe: bool = False):
     '''
@@ -99,24 +148,41 @@ def x_check(card, describe: bool = False):
             'XT', 'XCLC', 'XCKR', 'XTC', 'XTC1', 'XTRK', 'XTRL', 'XBT', 'XRL', 'XMRL', 'XAN', 'XCH', 'XVGA',
             'XVGB'])
     crosses = []
-    for n in names:
-        if cm.punchValue(n):
-            crosses.append(n)
-    return crosses
+
+    crosses = [n for n in names if cm.punchValue(n)]
+    if not crosses:
+        return None
+
+    if describe:
+        described_flags = [(n, describe_punch(n)) for n in crosses]
+        return described_flags[0] if len(described_flags) == 1 else described_flags
+
+    return crosses[0] if len(crosses) == 1 else crosses
 
 def ps_getmeta(card, describe: bool = False):
     '''
     Permanent Signal & Partial Dial calls.
     PS or PD punched.
     '''
-    # check for PS, PD, PK, or SCN, SCK, and bounce out to those handlers if needed
-    if cm.punchValue('OR') and cm.punchValue('PS'):
-        # this is a permanent signal call
-        return 'PS'
-    if cm.punchValue('OR') and cm.punchValue('PD'):
-        return 'PD'
-    else:
-        return None
+    # check for PS, PD, PK and bounce out to those handlers if needed
+    
+    punches = ['PS', 'PD', 'PK'] 
+
+    perm_sig = next((n for n in punches if cm.punchValue(n)), None)
+
+    return (perm_sig, describe_punch(perm_sig)) if describe and perm_sig else perm_sig
+
+def coin_getmeta(card, describe: bool = False):
+    '''
+    Checks punches related to coin service for payphones.
+    SCK and SCN 
+    '''
+    # check for SCN, SCK, and bounce out to those handlers if needed
+    punches = ['SCK', 'SCN']
+
+    see_coin = next((n for n in punches if cm.punchValue(n)), None)
+
+    return (see_coin, describe_punch(see_coin)) if describe and see_coin else see_coin
 
 def register_check(card):
     '''
@@ -260,7 +326,7 @@ def orlm_check(card):
     '''
     Verify that the digits stored in the ORLM are valid 2-of-5
 
-    The originating line location is recorded in the ORLM in reed packs.  
+    The originating line location is recorded in the ORLM in reed packs.
     Each *digit* in the line location occupies one reed pack and is
     encoded using the two‑out‑of‑five scheme: exactly two of the positions
     ``0, 1, 2, 4, 7`` must be punched.  The exception to this is the ``FT``
@@ -316,7 +382,7 @@ def orlm_check(card):
     for k in decoded:
         if k == "CT" or k == "FT" or k == "VF":
             # these have special rules and are not two-of-five, so we check them first
-            
+
             #FT must always have values 0 + 3
             if k == "FT":
                 punched = [pos for pos in [0, 1, 2, 3] if cm.punchValue(f"{k}{pos}")]
@@ -334,7 +400,7 @@ def orlm_check(card):
                     record_error(f"CT digit must be 0, but found {punched}")
                 decoded[k] = sum(punched)
                 continue
-            
+
             # VF must be 0, 1, 2, 3, or 4
             if k == "VF":
                 punched = [pos for pos in [0, 1, 2, 3, 4] if cm.punchValue(f"{k}{pos}")]
@@ -370,8 +436,8 @@ def os_getmeta(card, outsender=None):
     * ``OSG0-4`` punches indicate the selected outsender group. One and only one may be punched.
     * ``OS0-4`` punches indicate the selected sender in the group. One and only one may be punched.
     * One and only one of ``SSA`` and ``SSB`` should be punched.
-    * Originating line information deposited into the sender must be correct (almost exactly the same as :func:`orlm_check`, 
-      but with different field names and the additional constraint that the ``OR`` punch must be present to indicate that 
+    * Originating line information deposited into the sender must be correct (almost exactly the same as :func:`orlm_check`,
+      but with different field names and the additional constraint that the ``OR`` punch must be present to indicate that
       this information is valid at all).
 
     When valid, this populates and returns an ``outsender`` dict containing
@@ -416,25 +482,25 @@ def os_reedcheck(card, outsender=None):
     '''
     Verify that the digits stored in the sender reed packs are valid
 
-    On calls requiring an outsender, the originating line location 
+    On calls requiring an outsender, the originating line location
     is passed to the sender by the marker and stored in the sender's reed packs.
-    This info includes both the CLI (calling line identification), and 
-    the number to be outpulseed. The sender uses CLI for AMA, which itself 
+    This info includes both the CLI (calling line identification), and
+    the number to be outpulseed. The sender uses CLI for AMA, which itself
     is checked elsewhere.
 
-    If the call is SOG, each digit in the calling line identification portion 
+    If the call is SOG, each digit in the calling line identification portion
     should match what was passed into the CM from the OR. These are all in 2-of-5 format.
 
     Each *digit* in the CLI (line location) occupies one reed pack and is
     encoded using the two‑out‑of‑five scheme: exactly two of the positions
     ``0, 1, 2, 4, 7`` must be punched.  The exceptions to this are the ``FT``
     frame tens digit that is 0,1,2,3, and the ``VF`` vertical file digit which is
-    0, 1, 2, 3, 4. 
-    
+    0, 1, 2, 3, 4.
+
     The following additional constraints are present.
 
     * CLI reed packs must all be full. Nothing may be omitted.
-    * one and only one of ``OBS`` and ``NOB`` must be punched to indicate 
+    * one and only one of ``OBS`` and ``NOB`` must be punched to indicate
       whether the line is observed or not observed.
 
     When a valid sequence is present the return value is a list of integers
@@ -502,16 +568,16 @@ def os_reedcheck(card, outsender=None):
                         decoded["OBS'"] = obs_punched
                         decoded["NOB'"] = nob_punched
                     continue
-                
+
                 # FT must always have values 0 + 3
                 if k == "FT'":
                     punched = [pos for pos in [0, 1, 2, 3] if cm.punchValue(f"{k}{pos}")]
                     packs_calling_line[k] = punched.copy()
                     if punched != [0, 3]:
                         record_error(f"FT' digit must be 0 and 3 (holes at 0 and 3), but found {punched}")
-                    decoded[k] = sum(punched) # add up the values of punched and store the total in the packs dict for later output
+                    decoded[k] = sum(punched)
                     continue
-                
+
                 # VF must be 0, 1, 2, 3, or 4
                 if k == "VF'":
                     punched = [pos for pos in [0, 1, 2, 3, 4] if cm.punchValue(f"{k}{pos}")]
@@ -530,6 +596,7 @@ def os_reedcheck(card, outsender=None):
                 decoded[k] = rev[tuple(sorted(punched))]
 
                 # maintain standard 5XB ordering for consistency
+                # sadly, this is ineffective for raw JSON output
                 desired_order = ["FT'", "FU'", "VG'", "HG'", "VF'", "OBS'", "NOB'"]
                 decoded = {k: decoded[k] for k in desired_order}
 
@@ -595,7 +662,7 @@ def os_reedcheck(card, outsender=None):
 
         if errors:
             raise OSReedCheckError("; ".join(errors),
-                            packs_calling_line=packs_calling_line, packs_outpulse=packs_outpulse,   
+                            packs_calling_line=packs_calling_line, packs_outpulse=packs_outpulse,
                             decoded=decoded, sender_prime_decoded=sender_prime_decoded, bin="OS_CLI_FAILURE")
 
         outsender["reeds_calling_line"] = decoded
@@ -610,8 +677,8 @@ def ng_getmeta(card):
     * One and only one of each of the above may be punched.
     * If ``SNG`` detected, skip the ``FTT-``, ``FUT-``, etc. related tests, and check the ``HN-``, ``T-``, and ``U-`` punches instead.
     * Number group numericals ``HN0-9``, ``T0-9``, ``U0-9`` must correspond to the base-10 values of the
-        digits stored in the register reed packs. 
-    * 
+        digits stored in the register reed packs.
+    *
 
     Returns a dictionary containing the decoded number group information when valid, otherwise raises an exception with details about the failure.
     '''
@@ -619,8 +686,8 @@ def ng_getmeta(card):
     cm.set_current_card(card)
     print(">>> evaluating number group punches...")
 
-    if card_has(card, "RNG"):
-        # NG has been released; check the values transmitted to the CM
+    if card_has(card, "NGK1"):
+        # we should have a translation. check the values transmitted to the CM
         ng_fields = {
             "FTT": [f"FTT{i}" for i in range(6)],
             "FUT": [f"FUT{i}" for i in range(10)],
@@ -653,7 +720,7 @@ def ng_getmeta(card):
 
     if card_has(card, "SNG"):
         # If number group has been seized but not released, we should check these active punches.
-        # H,T,U punches should correspond to the digits stored in the register reed packs. 
+        # H,T,U punches should correspond to the digits stored in the register reed packs.
         try:
             register_digits, reg_number, kind = register_check(card)
         except RegCheckError as exc:
@@ -667,18 +734,17 @@ def ng_getmeta(card):
                 },
             ) from exc
 
-        # Work from units to tens to hundreds using the decoded register digits.
         expected = {
-            "U": register_digits[-1] if len(register_digits) >= 1 else None,
-            "T": register_digits[-2] if len(register_digits) >= 2 else None,
             "HN": register_digits[-3] if len(register_digits) >= 3 else None,
+            "T": register_digits[-2] if len(register_digits) >= 2 else None,
+            "U": register_digits[-1] if len(register_digits) >= 1 else None,
         }
         observed = {}
         errors = []
         for prefix in ("HN", "T", "U"):
             punched = [i for i in range(10) if cm.punchValue(f"{prefix}{i}")]
             if len(punched) == 1:
-                observed[prefix] = punched[0] 
+                observed[prefix] = punched[0]
             if len(punched) > 1:
                 observed[prefix] = punched
                 errors.append(f"multiple punches found for {prefix}: {punched}")
@@ -709,77 +775,96 @@ def cm_check(card):
     """Evaluates a whole bunch of things to ensure that the completing marker's operation is sane.
     Source: BSP 218-404-50_ and various 5XB troubleshooting books
 
+    Checks below are listed in the same order as the function body.
+
     # Number group registration checks
-    * If ``SNG`` then must have ``NGK``: raise NO_NGK
-    * If ``NGK`` then must have ``HTUK``: raise NO_HTUK
-    * If ``HTUK`` and ``WT``: raise: WT_WHILE_IN_NG
+    * If SNG then must have NGK: raise NO_NGK
+    * If NGK then must have HTUK: raise NO_HTUK
+    * If HTUK and WT: raise WT_WHILE_IN_NG
+    * If FLG and SNG then must have RNG: raise SNG_NO_RNG
+
     # TER calls
-    * If ``TER`` or ``TOG`` then must have ``FLG``: raise NO_FLG
-    * If ``TER`` then must have ``TF4`` + ``TF7``: raise INC_NO_TF
-    * If ``TER`` and (``BY`` or ``OV`` or ``OFH``) then must have ``RS9``: raise NO_RS9
-    * If ``RCT1-9`` then must have ``RSK``: raise NO_RSK
-    * If ``TER`` and ``BY`` then must have ``RS1``: raise BY_NO_RS1
-    * If ``TER`` and ``OV`` then must have ``RS0``: raise OV_NO_RS0
-    * If ``TER`` and ``RS9`` then must have ``RSK``: raise NO_RSK
-    * If ``TER`` and ``RCK2`` then must have ``RCK3``: raise NO_RCK3
-    * If ``TER`` and ``RSK`` then must have ``SRK``: raise NO_SRK
-    * If ``TER`` and ``SRK`` then must have ``LI``: raise SRK_NO_LI
-    * If ``TER`` and ``LI`` then must have ``DIS1``: raise TER_NO_DIS1
+    * If TER or TOG then must have FLG: raise NO_FLG
+    * If TER then must have TF4 and TF7: raise INC_NO_TF
+    * If TER and (BY or OV or OFH) then must have RS9: raise NO_RS9
+    * If RCT1-9 then must have RSK: raise NO_RSK
+    * If TER and BY then must have RS1: raise BY_NO_RS1
+    * If TER and OV then must have RS0: raise OV_NO_RS0
+    * If TER and RS9 then must have RSK: raise NO_RSK
+    * If TER and RCK2 then must have RCK3: raise NO_RCK3
+    * If TER and RSK then must have SRK: raise NO_SRK
+    * If TER and SRK then must have LI: raise SRK_NO_LI
+    * If TER and LI then must have DIS1: raise TER_NO_DIS1
+
     # Double Connection Tests
-    * If ``GT2`` or ``AVK1`` or ``RCK3`` or ``CLK`` then must have ``DCT1``: raise NO_DCT1
-    * IF ``RCK3`` and not ``DCT1`` then must have DCT: raise TER_NO_DCT
-    * If ``DCT1`` must not have ``DCT`` and must have DIS1: raise DCT1_NO_DIS1
-    * If ``DCT1`` then must have ``LK1``: raise NO_LK1
-    * If (``DCT1`` and ``LK1``) or ``DCT2`` or ``LK1`` then must have ``DIS1``: raise NO_DIS1
+    * If GT2 or AVK1 or RCK3 or CLK then must have DCT1: raise NO_DCT1
+    * If RCK3 and not DCT1 then must have DCT: raise TER_NO_DCT
+    * If DCT1 then must have DIS1 and must not have DCT: raise DCT1_NO_DIS1
+    * If DCT1 then must have LK1: raise NO_LK1
+    * If (DCT1 and LK1) or DCT2 or LK1 then must have DIS1: raise NO_DIS1
+
     # TLF checks
-    * If ``LV2-9`` then must have ``FAK`` or ``FBK``: raise NO_FAK_FBK
-    * If ``FUT0-9`` or ``JG0-4``, zero or one (but not both) of ``LK``, ``RK`` may operate: raise LK_RK_CONFLICT
-    * If (not ``TER``) and ``MAK1`` then must have one and only one ``TS0-19``: raise NO_TS
-    * If ``TS0-19`` then must have one and only one ``LV2-9``: raise NO_LV
-    * If ``LV2-9`` then must have one and only one ``LC0-9``: raise NO_LC
-    * If ``LC0-9`` then must have ``LCK``: raise NO_LCK
+    * If LV2-9 then must have FAK or FBK: raise NO_FAK_FBK
+    * If FUT0-9 or JG0-4 and both LK and RK operate: raise LK_RK_CONFLICT
+    * If (not TER) and MAK1 then must have one and only one TS0-19: raise NO_TS
+    * If TS0-19 then must have one and only one LV2-9: raise NO_LV
+    * If LV2-9 then must have one and only one LC0-9: raise NO_LC
+    * If LC0-9 then must have LCK: raise NO_LCK
+
     # Crosspoint checks
-    * If no ``HMS1``, then must NOT have ``SL``: raise FALSE_SL
-    * If (not ``HTR``) and no ``HMS1`` then must NOT have ``JXP1'' or ``LXP1``: raise FALSE_JXP1_LXP1
-    * If ``HMS1`` then must have ``SL``: raise NO_SL
-    * If ``JXP1`` then must have ``LXP1``: raise NO_LXP1
-    * If ``SL`` then must have ``JXP1``: raise NO_JXP1
-    * If ``SL`` and ``JXP1`` and ``LXP1``, must have ``GT2``: raise NO_GT2
-    * If ``CH0-9`` then must have ``HMS1``: raise NO_HMS1
-    * If ``JC0-9`` then must have ``JCK``: raise NO_JCK
-    * If (not ``TER``) and (``P0-9`` or ``PNR`` or ``PA`` or ``PB`` or ``PC`` or ``PE``) then must have ``TCHK``: raise NO_TCHK
+    * If no HMS1 then must not have SL: raise FALSE_SL
+    * If no HTR and no HMS1 then must not have JXP1 or LXP1: raise FALSE_JXP1_LXP1
+    * If HMS1 then must have SL: raise NO_SL
+    * If JXP1 then must have LXP1: raise NO_LXP1
+    * If SL then must have JXP1: raise NO_JXP1
+    * If SL and JXP1 and LXP1 then must have GT2: raise NO_GT2
+    * If CH0-9 then must have HMS1: raise NO_HMS1
+    * If JC0-9 then must have JCK: raise NO_JCK
+    * If (not TER) and (P0-9 or PNR or PA or PB or PC or PE) then must have TCHK: raise NO_TCHK
+
     # IRL LR Checks
-    * If ``LR`` and no ``DCK``: raise LR_INC_XPTS
-    * If ``LR`` and ``DCK`` and one of ``INC``, ``TOL``, ``TAN``: raise LR_FAILURE_TO_ATTACH
-    * If ``LR`` and ``DCK`` then must have one of ``INC``, ``TOL``, ``TAN``: raise LR_NOCLASS
-    * If ``LR`` then must have ``LV2-9``: raise LR_NO_TRUNK
+    * If LR and no DCK: raise LR_INC_XPTS
+    * If LR and DCK and one of INC, TOL, TAN: raise LR_FAILURE_TO_ATTACH
+    * If LR and DCK then must have one of INC, TOL, TAN: raise LR_NOCLASS
+    * If LR then must have LV2-9: raise LR_NO_TRUNK
+
     # Outgoing calls with sender
-    * If ``OSG0-4`` then must have ``SOG``: raise NO_SOG
-    * If ``SOG`` then must have ``OSK``: raise NO_OSK
-    * If ``OSK`` then must have ``SLK2``: raise NO_SLK2
-    * If ``OS0-4`` then must have ``RSC``: raise NO_RSC
-    * If ``TI`` and ``RSC`` and  ``SLK2`` then must have ``AVK1``: raise NO_AVK1
-    * If ``LT1`` then must have ``AMA``: raise NO_AMA
-    * If ``TGT``: raise TG_FAIL
+    * If OSG0-4 then must have SOG: raise NO_SOG
+    * If SOG then must have OSK: raise NO_OSK
+    * If OSK then must have SLK2: raise NO_SLK2
+    * If OS0-4 then must have RSC: raise NO_RSC
+    * If TI and RSC and SLK2 then must have AVK1: raise NO_AVK1
+    * If LT1 then must have AMA: raise NO_AMA
+    * If TGT: raise TG_FAIL
+
     # Barebones checks if all others fall thru
-    * If ``FLG`` then must have all of (``JCK``, ``LCK``, ``HGK``, ``TCHK``, ``LK/RK``, ``RK3``): raise NO_{missing_punch}
-    * If ``FLG`` and all of (``JCK``, ``LCK``, ``HGK``, ``TCHK``, ``LK/RK``, ``RK3``) then must have ``TK``: raise: NO_TK
-    * If ``SCB`` then must have all of (``FAK``, ``LCK``, ``JCK``, ``DTK``, ``HGK``, ``RK3``): raise NO_{missing_punch}
-    * If ``SCB and all of (``FAK``, ``LCK``, ``JCK``, ``DTK``, ``HGK``, ``RK3``) then must have ``TK``: raise NO_TK
-    * If ``TK`` then must have ``HMS1``: raise NO_HMS1
-    * If ``HMS1`` then must have ``DCT1``: raise NO_DCT1
-    * If ``TK`` then must have ``CK``: raise NO_CK
-    * If ``TI`` and (``SOG`` or ``ITR`` or ``TOG`` or ``NSO``) then must have one and only one``TG0-5``: raise NO_TG
-    * If ``TM`` and (``OR`` or ``TOG``) then must have one and only one ``TB0-4``: raise NO_TB
-    * If (not ``TER``) and ``TB0-4`` then must have one and only one ``TS0-19``: raise NO_TS
-    * If (not ``TER``) and``TB0-5`` then must have one and only one ``FS0-9``: raise NO_FS
-    * If ``FS0`` then must have ``FTCK``
-    * If ``LK1`` then must have ``SCB``: raise NO_SCB
-    * If ``FLG`` and ``LB``, then must have ``BY`` or ``OV``: raise NO_BY_OV
-    * If ``FLG`` and not ``RNG`` then must have ``SNG``: raise FLG_NO_SNG
-    * If ``FLG`` and ``SNG`` then must have ``RNG``: raise SNG_NO_RNG
-    * If all(``HGK``, ``JCK``, ``TCHK``, ``LCK``) and (``FAK`` or ``FBK``) then must have ``TK``: raise NO_TK
-    * If ``TM`` and ``CKG`` then must NOT have ``TSE``: raise TSE_NO_TRUNK
+    * If FLG then must have JCK: raise NO_JCK
+    * If FLG then must have LCK: raise NO_LCK
+    * If FLG then must have HGK: raise NO_HGK
+    * If FLG then must have TCHK: raise NO_TCHK
+    * If FLG then must have LK or RK: raise NO_LK_RK
+    * If FLG then must have RK3: raise NO_RK3
+    * If FLG and JCK and LCK and HGK and TCHK and RK3 and (LK or RK) then must have TK: raise NO_TK
+    * If SCB then must have FAK: raise NO_FAK
+    * If SCB then must have LCK: raise NO_LCK
+    * If SCB then must have JCK: raise NO_JCK
+    * If SCB then must have DTK: raise NO_DTK
+    * If SCB then must have HGK: raise NO_HGK
+    * If SCB then must have RK3: raise NO_RK3
+    * If SCB and FAK and LFK and LCK and JCK and HGK and RK3 then must have TK: raise NO_TK
+    * If FLG and HGK and JCK and TCHK and LCK and (FAK or FBK) then must have TK: raise NO_TK
+    * If TK then must have HMS1: raise NO_HMS1
+    * If HMS1 then must have DCT1: raise NO_DCT1
+    * If TK then must have CK: raise NO_CK
+    * If TI and one of (SOG, ITR, TOG, NSO) then must have one and only one TG0-19: raise NO_TG
+    * If TI and one of (SOG, ITR, TOG, NSO) then must have one and only one TB0-5: raise NO_TB
+    * If TI and one of (SOG, ITR, TOG, NSO) and TB0-4 then must have one and only one TS0-19: raise NO_TS
+    * If TI and one of (SOG, ITR, TOG, NSO) and TB0-5 then must have one and only one FS0-29: raise NO_FS
+    * If FS0 then must have FTCK: raise NO_FTCK
+    * If LK1 then must have SCB: raise NO_SCB
+    * If FLG and LB then must have BY or OV: raise NO_BY_OV
+    * If TM and CKG then must have TK: raise NO_TK
+    * If TM and CKG and TSE: raise TSE_NO_TRUNK
     """
 
     cm.set_current_card(card)
@@ -793,14 +878,13 @@ def cm_check(card):
     lc_punches = [f"LC{i}" for i in range(10)]
     osg_punches = [f"OSG{i}" for i in range(5)]
     tb_0_5_punches = [f"TB{i}" for i in range(6)]
-    tb_0_4_punches = [f"TB{i}" for i in range(5)]
+    tg_0_19_punches = [f"TG{i}" for i in range(20)]
     ts_punches = [f"TS{i}" for i in range(20)]
-    fs_punches = [f"FS{i}" for i in range(10)]
+    fs_punches = [f"FS{i}" for i in range(30)]
     jg_0_4_punches = [f"JG{i}" for i in range(5)]
     rs_0_1_punches = ["RS0", "RS1"]
     rs_2_9_punches = [f"RS{i}" for i in range(2, 10)]
     rs_all_punches = rs_0_1_punches + rs_2_9_punches
-    tg_0_5_punches = [f"TG{i}" for i in range(6)]
     os_0_4_punches = [f"OS{i}" for i in range(5)]
     rct_punches = [f"RCT{i}" for i in range(1, 10)]
 
@@ -884,7 +968,8 @@ def cm_check(card):
         raise_cm_error("SRK_NO_LI", "TER with SRK requires LI", required=["LI"], trigger=["TER", "SRK"], bin="RSS_CHECK")
 
     if card_has_all(card, "TER", "LI") and card_lacks(card, "DIS1"):
-        raise_cm_error("TER_NO_DIS1", "TER with LI requires DIS1", required=["DIS1"], trigger=["TER", "LI"], bin="NO_DIS1")
+        raise_cm_error("TER_NO_DIS1", "TER with LI requires DIS1. "
+        "Possible RSS failure?", required=["DIS1"], trigger=["TER", "LI"], bin="TER_NO_DIS1")
 
     # --- Double Connection Tests ---
     if card_has(card, ["GT2", "AVK1", "RCK3", "CLK"]) and card_lacks(card, "DCT1"):
@@ -1039,7 +1124,7 @@ def cm_check(card):
         raise_cm_error("NO_JCK", "SCB requires JCK", required=["JCK"], trigger=["SCB"], bin="XPT_CHECK")
 
     if card_has(card, "SCB") and card_lacks(card, "DTK"):
-        raise_cm_error("NO_DTK", "SCB requires DTK", required=["DTK"], trigger=["SCB"])
+        raise_cm_error("NO_DTK", "SCB requires DTK", required=["DTK"], trigger=["SCB"], bin="XPT_CHECK")
 
     if card_has(card, "SCB") and card_lacks(card, "HGK"):
         raise_cm_error("NO_HGK", "SCB requires HGK", required=["HGK"], trigger=["SCB"], bin="XPT_CHECK")
@@ -1047,9 +1132,13 @@ def cm_check(card):
     if card_has(card, "SCB") and card_lacks(card, "RK3"):
         raise_cm_error("NO_RK3", "SCB requires RK3", required=["RK3"], trigger=["SCB"], bin="XPT_CHECK")
 
-    if card_has_all(card, "SCB", "FAK", "LCK", "JCK", "DTK", "HGK", "RK3") and card_lacks(card, "TK"):
+    if card_has_all(card, "SCB", "FAK", "LFK", "LCK", "JCK", "HGK", "RK3") and card_lacks(card, "TK"):
         raise_cm_error("NO_TK", "TK failed to operate when it should have on SCB linkage",
                        required=["TK"], trigger=["SCB", "FAK", "LCK", "JCK", "DTK", "HGK", "RK3"], bin="NO_TK")
+
+    if card_has_all(card, "FLG", "HGK", "JCK", "TCHK", "LCK") and card_has(card, ["FAK", "FBK"]) and card_lacks(card, "TK"):
+        raise_cm_error("NO_TK", "TK failed to operate when it should have on FLG linkage",
+                       required=["TK"], trigger=["HGK", "JCK", "TCHK", "LCK", "FAK", "FBK"], bin="NO_TK")
 
     if card_has(card, "TK") and card_lacks(card, "HMS1"):
         raise_cm_error("NO_HMS1", "TK is punched without HMS1", required=["HMS1"], trigger=["TK"], bin="NO_HMS1")
@@ -1060,21 +1149,21 @@ def cm_check(card):
     if card_has(card, "TK") and card_lacks(card, "CK"):
         raise_cm_error("NO_CK", "TK is punched without CK", required=["CK"], trigger=["TK"], bin="NO_CK")
 
-    if card_has(card, "TI") and card_has(card, ["SOG", "ITR", "TOG", "NSO"]) and found_count(tg_0_5_punches) != 1:
-        raise_cm_error("NO_TG", "TI with SOG/ITR/TOG/NSO requires one and only one TG0-5",
-                       trigger=["TI", "SOG", "ITR", "TOG", "NSO"], context=tg_0_5_punches, requirement="exactly_one", bin="INV_TG")
+    if card_has(card, "TI") and card_has(card, ["SOG", "ITR", "TOG", "NSO"]) and found_count(tg_0_19_punches) != 1:
+        raise_cm_error("NO_TG", "SOG/ITR/TOG/NSO requires one and only one TG0-19",
+                       trigger=["TI", "SOG", "ITR", "TOG", "NSO"], context=tg_0_19_punches, requirement="exactly_one", bin="INV_TG")
 
-    if card_has(card, "TM") and card_has(card, ["OR", "TOG"]) and found_count(tb_0_4_punches) != 1:
-        raise_cm_error("NO_TB", "TM with OR or TOG requires one and only one TB0-4",
-                       trigger=["TM", "OR", "TOG"], context=tb_0_4_punches, requirement="exactly_one", bin="INV_TB")
+    if card_has(card, "TI") and card_has(card, ["SOG", "ITR", "TOG", "NSO"]) and found_count(tb_0_5_punches) != 1:
+        raise_cm_error("NO_TB", "TI with SOG/ITR/TOG/NSO requires one and only one TB0-5",
+                       trigger=["TI", "SOG", "ITR", "TOG", "NSO"], context=tb_0_5_punches, requirement="exactly_one", bin="INV_TB")
 
-    if card_lacks(card, "TER") and card_has(card, tb_0_4_punches) and found_count(ts_punches) != 1:
-        raise_cm_error("NO_TS", "TB0-4 requires one and only one TS0-19",
-                       trigger=tb_0_4_punches, context=ts_punches, requirement="exactly_one", bin="INV_TS")
+    if card_has(card, "TI") and card_has(card, ["SOG", "ITR", "TOG", "NSO"]) and card_has(card, tb_0_4_punches) and found_count(ts_punches) != 1:
+        raise_cm_error("NO_TS", "TI with SOG/ITR/TOG/NSO and TB0-4 requires one and only one TS0-19",
+                       trigger=["TI", "SOG", "ITR", "TOG", "NSO"] + tb_0_4_punches, context=ts_punches, requirement="exactly_one", bin="INV_TS")
 
-    if card_lacks(card, "TER") and card_has(card, tb_0_5_punches) and found_count(fs_punches) != 1:
-        raise_cm_error("NO_FS", "TB0-5 requires one and only one FS0-9",
-                       trigger=tb_0_5_punches, context=fs_punches, requirement="exactly_one", bin="INV_FS")
+    if card_has(card, "TI") and card_has(card, ["SOG", "ITR", "TOG", "NSO"]) and card_has(card, tb_0_5_punches) and found_count(fs_punches) != 1:
+        raise_cm_error("NO_FS", "TI with SOG/ITR/TOG/NSO and TB0-5 requires one and only one FS0-29",
+                       trigger=["TI", "SOG", "ITR", "TOG", "NSO"] + tb_0_5_punches, context=fs_punches, requirement="exactly_one", bin="INV_FS")
 
     if card_has(card, "FS0") and card_lacks(card, "FTCK"):
         raise_cm_error("NO_FTCK", "FS0 is punched without FTCK", required=["FTCK"], trigger=["FS0"], bin="NO_FTCK")
@@ -1086,17 +1175,17 @@ def cm_check(card):
         raise_cm_error("NO_BY_OV", "FLG and LB requires BY or OV",
                        required=["BY", "OV"], trigger=["FLG", "LB"], requirement="any", bin="LB_BY_OV_FAIL")
 
-    if card_has_all(card, "HGK", "JCK", "TCHK", "LCK") and card_has(card, ["FAK", "FBK"]) and card_lacks(card, "TK"):
-        raise_cm_error("NO_TK", "HGK/JCK/TCHK/LCK with FAK or FBK requires TK",
-                       required=["TK"], trigger=["HGK", "JCK", "TCHK", "LCK", "FAK", "FBK"], bin="NO_TK")
-        
+    if card_has_all(card, ["TM", "CKG"]) and card_lacks(card, "TK"):
+        raise_cm_error("TK check fallthrough. Please examine card and create a bin for this",
+                       required=["TK"], trigger=["FLG", "LB"], bin="NO_TK")
+
     if card_has_all(card, "TM", "CKG", "TSE"):
-        raise_cm_error("TSE_NO_TRUNK", "TSE indicates marker unable to begin trunk selection. Probable translation or route relay failure.",
+        raise_cm_error("TSE_NO_TRUNK", "TSE indicates marker unable to complete trunk selection. Probable translation or route relay failure.",
                        trigger=["TM", "CKG"], context=["TSE"], bin="TSE_NO_TRUNK")
-        
+
     return {"ok": True}
 
-def evaluate(card, describe: bool = False):
+def evaluate(card, describe: bool = True):
     """Evaluate a card and return a serializable metadata dict.
 
     This is useful for generating reports and persisting results.
@@ -1105,13 +1194,16 @@ def evaluate(card, describe: bool = False):
 
     meta = {
         "type": type_of_card(card, describe),                       # does not bin, binned below
-        "marker": marker_no(card, describe),                        # does not bin
-        "trial": trial_getmeta(card, describe),                     # does not bin
-        "timer": timer_getmeta(card, describe),                     # does not bin
-        "status_flag": status_flag_getmeta(card, describe),         # does not bin yet
+        "coin": coin_getmeta(card, describe),
+        "marker": marker_no(card, describe),
+        "channel": ch_tk_getmeta(card, describe),
+        "trial": trial_getmeta(card, describe),
+        "timer": timer_getmeta(card, describe),
+        "status_flag": status_flag_getmeta(card, describe),
         "register": {"number": None, "digits": None, "kind": None}, # checked and binned below
-        "perm_sig": ps_getmeta(card),                               # does not bin yet
+        "perm_sig": ps_getmeta(card),
         "crosses": [],                                              # checked and binned below
+        "bin": "unbinned",                                          # default bin, updated as checks are performed
     }
 
     def set_bin_if_unbinned(bin_name):
@@ -1140,7 +1232,7 @@ def evaluate(card, describe: bool = False):
         set_bin_if_unbinned("REG_ERROR")
 
     # ORLM check + binning
-    if meta["register"].get("kind") == "OR": 
+    if meta["register"].get("kind") == "OR":
         try:
             orlm_decoded = orlm_check(card)
             meta["orlm"] = orlm_decoded
@@ -1177,7 +1269,7 @@ def evaluate(card, describe: bool = False):
         meta["outsender"] = outsender
         set_bin_if_unbinned(outsender.get("os_reed_check", {}).get("bin") or outsender.get("os_getmeta", {}).get("bin"))
 
-    # Number Group check. Binning for errors here is done in func:`cm_check()`, since we can get 
+    # Number Group check. Binning for errors here is done in func:`cm_check()`, since we can get
     # better granularity on the failure mode there.
     try:
         number_group = ng_getmeta(card)

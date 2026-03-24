@@ -42,7 +42,7 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'DR8': 'This call was handled by the Dial Tone Marker, SD-26001-01',
     '1TR': (
         'This card was the result of the markers first attempt to handle the call. '
-        'If there was a second attempt, there may be a card immediately '
+        'If there was also a failure on a second attempt, there may be a card immediately '
         'following this one.'
     ),
     '2TR': (
@@ -68,8 +68,7 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     ),
     'TGT': (
         'Trunk Guard Test. The outgoing sender failed to complete its trunk guard (TG) '
-        'test in the allotted time. This may indicate a problem with the '
-        'outgoing trunk, '
+        'test in the allotted time. This may indicate a problem with the outgoing trunk, '
         'since the TG test requires a wet loop to complete.'
     ),
     'FCG': (
@@ -82,8 +81,7 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     ),
     'DCK': (
         'Operated when the IR has detected NO double connection at the IRL. '
-        'It is likely '
-        'that this is not wired at the museum as of 2026.'
+        'It is likely that this is not wired at the museum as of 2026.'
     ),
     'GT5': (
         'Ground Test Failure on a subscriber line. This test is normally canceled at '
@@ -106,7 +104,7 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'indistinguishable from outgoing calls.'
     ),
     'TER': (
-        'This was a Terminating call. The call originated from a line in a different '
+        'This was a Terminating call. The call originated in a different '
         'office, and terminated here via an incoming trunk and incoming register.'
     ),
     'TOG': (
@@ -171,21 +169,57 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'CN-': 'Connector Number of the following frames: LLMC, ORMC, IRMC.',
     'HT-': (
         'Hundreds Trunk. Used on tandem calls to identify the hundreds digit of '
-        'the Line Link appearance of the tandem trunk in the number group.'
+        'the line link appearance of the tandem trunk in the number group.'
     ),
     'TT-': (
-        'Tens Trunk. Used on tandem calls to identify the tens digit of the Line Link '
+        'Tens Trunk. Used on tandem calls to identify the tens digit of the line link '
         'appearance of the tandem trunk in the number group.'
     ),
     'UT-': (
-        'Units Trunk. Used on tandem calls to identify the units digit of the Line Link '
+        'Units Trunk. Used on tandem calls to identify the units digit of the line link '
         'appearance of the tandem trunk in the number group.'
     ),
-    'CN-RG-': (
+    'CN-RG0': (
         'The position of the OR in the ORMC connector group. In the museum, this '
         'is identical to the OR number.'
     ),
-    'FG-': 'Trunk Link Frame Group. Always 0 in the museum.',
+    'CN-RG1': (
+        'The position of the OR in the ORMC connector group. In the museum, this '
+        'is identical to the OR number.'
+    ),
+    'CN-RG2': (
+        'The position of the OR in the ORMC connector group. In the museum, this '
+        'is identical to the OR number.'
+    ),
+    'CN-RG3': (
+        'The position of the OR in the ORMC connector group. In the museum, this '
+        'is identical to the OR number.'
+    ),
+    'CN-RG4': (
+        'The position of the OR in the ORMC connector group. In the museum, this '
+        'is identical to the OR number.'
+    ),
+    'CN-RG5': (
+        'The position of the OR in the ORMC connector group. In the museum, this '
+        'is identical to the OR number.'
+    ),
+    'CN-RG6': (
+        'The position of the OR in the ORMC connector group. In the museum, this '
+        'is identical to the OR number.'
+    ),
+    'CN-RG7': (
+        'The position of the OR in the ORMC connector group. In the museum, this '
+        'is identical to the OR number.'
+    ),
+    'CN-RG8': (
+        'The position of the OR in the ORMC connector group. In the museum, this '
+        'is identical to the OR number.'
+    ),
+    'CN-RG9': (
+        'The position of the OR in the ORMC connector group. In the museum, this '
+        'is identical to the OR number.'
+    ),
+    'FG0': 'Trunk Link Frame Group. Always 0 in the museum.',
     'ECN': (
         'Even Connector. The even-numbered marker connector in the IRMC. This '
         'information is used to steer the marker to a preferred number group for '
@@ -202,10 +236,11 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'for calls originated by 5XB subscriber lines.'
     ),
     'TT': (
-        'A register has directed the marker to employ its TT translator for this '
+        'A register has directed the marker to employ its Toll translator for this '
         'connection.'
     ),
     '2DT': (
+        'Two-Digit translator. Not used at museum. '
         'On incoming calls, the office code transmitted to the marker is the last '
         'two digits of a 3-digit code where the first digit of the 3-digit code has '
         'been absorbed by the originating office.'
@@ -216,18 +251,18 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     ),
     'X11': (
         'A register has directed the marker to employ its service code translator '
-        'for this connection.'
+        'for this connection. e.g. 411, 511, 911, etc.'
     ),
     '11': (
-        'A register has directed the marker to employ its 11 translator for '
+        'A register has directed the marker to employ its +11 translator for '
         'this connection.'
     ),
     'OA': (
-        'On an incoming trunk connection, this is the office unit to which the '
+        'Office A. On an incoming trunk connection, this is the office unit to which the '
         'marker should complete the connection.'
     ),
     'OB': (
-        'On an incoming trunk connection, this is the office unit to which the '
+        'Office B. On an incoming trunk connection, this is the office unit to which the '
         'marker should complete the connection.'
     ),
     'PHC': (
@@ -270,7 +305,23 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'Reorder. Incoming register signaled the marker for a reorder (overflow) '
         'signal.'
     ),
-    'TF-': (
+    'TF0': (
+        'Indicates the trunk link frame that an incoming call came in on. Always '
+        '0 (4,7) at the museum.'
+    ),
+    'TF1': (
+        'Indicates the trunk link frame that an incoming call came in on. Always '
+        '0 (4,7) at the museum.'
+    ),
+    'TF2': (
+        'Indicates the trunk link frame that an incoming call came in on. Always '
+        '0 (4,7) at the museum.'
+    ),
+    'TF4': (
+        'Indicates the trunk link frame that an incoming call came in on. Always '
+        '0 (4,7) at the museum.'
+    ),
+    'TF7': (
         'Indicates the trunk link frame that an incoming call came in on. Always '
         '0 (4,7) at the museum.'
     ),
@@ -368,7 +419,7 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'Ground Supply 1. The marker has advanced to Ground Supply 2, since it was unable to establish '
         'a route for the call in GS1. GS2 contains route relays 30-39 and is not used in the museum.). '
         '(A punch here indicates we have *advanced* past Ground Supply 1 and the operation that dropped '
-        'this card was using GS2.)', 
+        'this card was using GS2)', 
     ),
     'GS2': (
         'Ground Supply 2. The marker has advanced to Ground Supply 3. GS3 contains route relays 20-29, '
@@ -376,27 +427,27 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'a first choice route. Routes here include Kercheep, and any primary route that does not have its '
         'own alternate.'
         '(A punch here indicates we have *advanced* past Ground Supply 2 and the operation that dropped '
-        'this card was using GS3.)'
+        'this card was using GS3)'
     ),
     'GS3': (
         'Ground Supply 3. The marker has advanced to Ground Supply 4. GS4 contains route relays 10-19, '
         'and is used for third-choice routes when the marker is unable to establish a connection using ' 
         'a second choice route. Not used in the museum. '
         '(A punch here indicates we have *advanced* past Ground Supply 3 and the operation that dropped '
-        'this card was using GS4.)'
+        'this card was using GS4)'
     ),
     'GS4': (
         'Ground Supply 4. The marker has advanced to Ground Supply 5. GS5 contains route relays 6-9, '
         'or 0-5 depending on the marker. Routes in this ground supply are generally reserved for intercept, '
         'permanent signal, or an announcement, and do not usually have an alternate. '
         '(A punch here indicates we have *advanced* past Ground Supply 4 and the operation that dropped '
-        'this card was using GS5.)'
+        'this card was using GS5)'
     ),
     'GS5': (
         'Ground Supply 5. THe marker has advanced to Ground Supply 6. GS6 contains routes of last resort, '
         'and there can be no further advancement past here. '
         '(A punch here indicates we have *advanced* past Ground Supply 5 and the operation that dropped '
-        'this card was using GS6.)'
+        'this card was using GS6)'
     ),
     'CNS': (
         'Coin Service. This call is a coin class.'
@@ -417,7 +468,7 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'Route transfer 4 relay operated in the marker because the \'RT 4\' key was operated in the MTF'
     ),
     'RP': (
-        'The originating reg ister signaled the marker that this is a ring party call.'
+        'The originating register signaled the marker that this is a ring party call.'
     ),
     'FR0': (
         'Outgoing Sender Connector (OSC) frame zero was used on this call.'
@@ -545,6 +596,94 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'RO\'': (
         'Operation of the RO (Reorder) relay In the outgoing sender to set the outgoing trunk for reorder.'
     ),
+    'RN-SPC-ITC0': 'Incoming trunk class NN',
+    'RN-SPC-ITC1': 'Incoming trunk class TB',
+    'RN-SPC-ITC2': 'Incoming trunk class MB',
+    'RN-SPC-ITC3': 'Incoming trunk class FB',
+    'RN-SPC-ITC4': 'Incoming trunk class TT',
+    'RN-SPC-ITC5': 'Incoming trunk class MT',
+    'RN-SPC-ITC6': 'Incoming trunk class FT',
+    'RN-SPC-ITC7': 'Incoming trunk class TP',
+    'RN-SPC-ITC8': 'Incoming trunk class MP',
+    'RN-SPC-ITC9': 'Incoming trunk class FP',
+    'SC': 'The SC relay in the sender should have operated to indicate this is an AMA service call.',
+    'TVT': 'The TVT relay in the sender should have operated to indicate this is an AMA test call.',
+    'OBS\'': 'The OBS\' relay in the sender should have operated to indicate this call is on service observation.',
+    'NOB': 'The NOB relay in the sender should have operated to indicate this call is not on service observation.',
+    'CP0': 'The Code Pattern indication transmitted from the marker to the sender on a LAMA call.',
+    'CP1': 'The Code Pattern indication transmitted from the marker to the sender on a LAMA call.',
+    'CP2': 'The Code Pattern indication transmitted from the marker to the sender on a LAMA call.',
+    'CP4': 'The Code Pattern indication transmitted from the marker to the sender on a LAMA call.',
+    'CP7': 'The Code Pattern indication transmitted from the marker to the sender on a LAMA call.',
+    'MB0': 'The message billing index transmitted from the marker to the sender on a LAMA call.',
+    'MB1': 'The message billing index transmitted from the marker to the sender on a LAMA call.',
+    'MB2': 'The message billing index transmitted from the marker to the sender on a LAMA call.',
+    'MB4': 'The message billing index transmitted from the marker to the sender on a LAMA call.',
+    'MB7': 'The message billing index transmitted from the marker to the sender on a LAMA call.',
+    'RN0': 'The recorder number transmitted from the marker to the sender on a LAMA call.',
+    'RN1': 'The recorder number transmitted from the marker to the sender on a LAMA call.',
+    'RN2': 'The recorder number transmitted from the marker to the sender on a LAMA call.',
+    'RN4': 'The recorder number transmitted from the marker to the sender on a LAMA call.',
+    'RN7': 'The recorder number transmitted from the marker to the sender on a LAMA call.',
+    'DL1': 'The marker informed the sender to delete the A digit of the called number before outpulsing.',
+    'DL2': 'The marker informed the sender to delete the A+B digits of the called number before outpulsing.',
+    'DL3': 'The marker informed the sender to delete the A+B+C digits of the called number before outpulsing.',
+    'DL4': 'The marker informed the sender to delete the A+B+C+D digits of the called number before outpulsing.',
+    'DL5': 'The marker informed the sender to delete the A+B+C+D+E digits of the called number before outpulsing.',
+    'DL6': 'The marker informed the sender to delete the A+B+C+D+E+F digits of the called number before outpulsing.',
+    'CL1': (
+        'To DP and MF senders, that a 11 is to be outpulsed before the called number. '
+        'To RP senders, that the call is to a No. 1 Crossbar office.'
+    ),
+    'CL2': (
+        'To DP sender, that the call is over a 2-way trunk. '
+        'To an MF sender, to give immediate trunk closure on this call. '
+        'To an RP sender, that the call is to a 2 digit office in a 2-3 digit area.'
+    ),
+    'CL3': (
+        'To a DP sender, to delay dialing until a start signal is received from the distant office. '
+        'To RP sender, that the call is to a non-repeating incoming panel ground cutoff office and thus a '
+        'marginal trunk test is required.'
+    ),
+    'CL4': (
+        'To a DP sender, that battery and ground pulsing is required, as opposed to loop disconnect pulsing.'
+    ),
+    'CL5': (
+        'Subscriber access to CX In te rto ll or CX 2-way trunks.'
+    ),
+    'FT0': 'Frame Tens 0. The tens digit of the line link frame associated with the calling line.',
+    'FT1': 'Frame Tens 1. The tens digit of the line link frame associated with the calling line.',
+    'FT2': 'Frame Tens 2. The tens digit of the line link frame associated with the calling line.',
+    'FT3': 'Frame Tens 3. The tens digit of the line link frame associated with the calling line.',
+    'FU0': 'Frame Units 0. The units digit of the line link frame associated with the calling line.',
+    'FU1': 'Frame Units 1. The units digit of the line link frame associated with the calling line.',
+    'FU2': 'Frame Units 2. The units digit of the line link frame associated with the calling line.',
+    'FU4': 'Frame Units 4. The units digit of the line link frame associated with the calling line.',
+    'FU7': 'Frame Units 7. The units digit of the line link frame associated with the calling line.',
+    'VG0': 'Vertical Group 0. The vertical group associated with the calling line.',
+    'VG1': 'Vertical Group 1. The vertical group associated with the calling line.',
+    'VG2': 'Vertical Group 2. The vertical group associated with the calling line.',
+    'VG4': 'Vertical Group 4. The vertical group associated with the calling line.',
+    'VG7': 'Vertical Group 7. The vertical group associated with the calling line.',
+    'VG10': 'Vertical Group 10. The vertical group associated with the calling line.',
+    'HG0': 'Horizontal Group 0. The horizontal group associated with the calling line.',
+    'HG1': 'Horizontal Group 1. The horizontal group associated with the calling line.',
+    'HG2': 'Horizontal Group 2. The horizontal group associated with the calling line.',
+    'HG4': 'Horizontal Group 4. The horizontal group associated with the calling line.',
+    'HG7': 'Horizontal Group 7. The horizontal group associated with the calling line.',
+    'VF0': 'Vertical File 0. The vertical file associated with the calling line.',
+    'VF1': 'Vertical File 1. The vertical file associated with the calling line.',
+    'VF2': 'Vertical File 2. The vertical file associated with the calling line.',
+    'VF3': 'Vertical File 3. The vertical file associated with the calling line.',
+    'VF4': 'Vertical File 4. The vertical file associated with the calling line.',
+    'CT0': 'Class of Service, Tens 0. The tens digit of the class of service of the calling line.',
+    'CT1': 'Class of Service, Tens 1. The tens digit of the class of service of the calling line.',
+    'CT2': 'Class of Service, Tens 2. The tens digit of the class of service of the calling line.',
+    'CU0': 'Class of Service, Units 0. The units digit of the class of service of the calling line.',
+    'CU1': 'Class of Service, Units 1. The units digit of the class of service of the calling line.',
+    'CU2': 'Class of Service, Units 2. The units digit of the class of service of the calling line.',
+    'CU4': 'Class of Service, Units 4. The units digit of the class of service of the calling line.',
+    'CU7': 'Class of Service, Units 7. The units digit of the class of service of the calling line.',
     
 }
 

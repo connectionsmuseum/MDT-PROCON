@@ -68,8 +68,8 @@
                     <ul class="card-list">
                         {% for card in cards %}
                             <li>
-                                <a href="/card/{{ card }}">{{ card }}</a>
-                                <span class="meta">[<a href="/cardmeta/{{ card }}">meta</a>]</span>
+                                <a href="/card/{{ card.filename }}">{{ card.date }}</a>
+                                <span class="meta">[<a href="/cardmeta/view/{{ card.filename }}" rel="noopener noreferrer">meta</a>]</span>
                             </li>
                         {% endfor %}
                     </ul>

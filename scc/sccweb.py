@@ -186,7 +186,7 @@ def save_card_metadata(punchdate, card, metadata):
     """Save the card and its metadata for later inspection."""
     name = f"/tmp/cards/{punchdate}_front.json"
     with open(name, "w") as f:
-        json.dump({"card": card, "metadata": metadata}, f, indent=2)
+        json.dump({"z_card": card, "metadata": metadata}, f, indent=2)
 
 
 def _list_saved_cards(limit=30):
@@ -197,8 +197,29 @@ def _list_saved_cards(limit=30):
     return saved_cards[:limit]
 
 
+def _format_card_timestamp(filename):
+    """Extract and format timestamp from card filename.
+    
+    Converts '26-03-22_21-32-16_front.jpg' to '2026-03-22 21:32:16'
+    """
+    try:
+        # Extract the timestamp
+        timestamp_part = filename[:17]  # '26-03-22_21-32-16'
+        date_part, time_part = timestamp_part.split('_')
+        yy, mm, dd = date_part.split('-')
+        hh, minute, ss = time_part.split('-')
+        
+        # Convert YY to YYYY
+        yyyy = f"20{yy}"
+        
+        # Format as YYYY-MM-DD HH:MM:SS
+        return f"{yyyy}-{mm}-{dd} {hh}:{minute}:{ss}"
+    except Exception:
+        # Fallback to original filename if parsing fails
+        return filename
+
 def _get_bins():
-    """Return a mapping of bin -> list of JPG filenames."""
+    """Return a mapping of bin -> list of card data with filenames and formatted dates."""
     bins = {}
     for fn in os.listdir('/tmp/cards/'):
         if not fn.endswith('_front.json'):
@@ -211,12 +232,15 @@ def _get_bins():
             continue
         bin_name = data.get('metadata', {}).get('bin', 'unknown')
         jpg_name = fn[:-5] + '.jpg'
-        bins.setdefault(bin_name, []).append(jpg_name)
+        formatted_date = _format_card_timestamp(jpg_name)
+        bins.setdefault(bin_name, []).append({
+            'filename': jpg_name,
+            'date': formatted_date
+        })
 
-    # Filenames are timestamp-prefixed (yy-mm-dd_HH-MM-SS...), so reverse
-    # lexicographic sort gives newest punched cards first in each bin.
+    # Sort by filename (timestamp-prefixed), backwards
     for cards in bins.values():
-        cards.sort(reverse=True)
+        cards.sort(key=lambda x: x['filename'], reverse=True)
 
     return bins
 
@@ -316,17 +340,35 @@ def view_bins():
     return render_template('bins.html', bins=bins)
 
 
-@app.route('/cardmeta/<name>', methods=['GET'])
-def card_metadata(name):
-    """Return saved evaluation metadata for a card JPG."""
+def _load_card_metadata(name):
+    """Load saved card JSON (card + metadata) by card filename."""
     if not name.lower().endswith('.jpg'):
         name = f"{name}.jpg"
     base = os.path.splitext(name)[0]
     meta_path = os.path.join('/tmp/cards', f"{base}.json")
     if not os.path.exists(meta_path):
-        return jsonify({"error": "metadata not found"}), 404
+        return None
     with open(meta_path) as f:
-        return jsonify(json.load(f))
+        return json.load(f)
+
+
+@app.route('/cardmeta/<name>', methods=['GET'])
+def card_metadata(name):
+    """Return saved evaluation metadata for a card JPG."""
+    data = _load_card_metadata(name)
+    if data is None:
+        return jsonify({"error": "metadata not found"}), 404
+    return jsonify(data)
+
+
+@app.route('/cardmeta/view/<name>', methods=['GET'])
+def card_metadata_view(name):
+    """Render saved card JSON for a card JPG as pretty HTML."""
+    data = _load_card_metadata(name)
+    if data is None:
+        return render_template('cardmeta.html', card_name=name, pretty_json=None), 404
+    pretty = json.dumps(data, indent=2, sort_keys=True)
+    return render_template('cardmeta.html', card_name=name, pretty_json=pretty)
 
 
 @app.route('/bin/<binname>', methods=['GET'])
