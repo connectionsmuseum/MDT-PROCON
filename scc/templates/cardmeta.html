@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Card Metadata</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="apple-touch-icon" href="../static/touch-icon-iphone.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="../static/touch-icon-iphone-retina.png">
+        
+        <script>
+        // Source - https://stackoverflow.com/a/7220510
+        // Posted by user123444555621, modified by community. See post 'Timeline' for change history
+        // Retrieved 2026-03-20, License - CC BY-SA 3.0
+
+        function syntaxHighlight(json) {
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                var cls = 'number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'key';
+                    } else {
+                        cls = 'string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var jsonBlock = document.getElementById('metadata-json');
+            if (!jsonBlock) {
+                return;
+            }
+            jsonBlock.innerHTML = syntaxHighlight(jsonBlock.textContent);
+        });
+        </script>
+
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                background: #1b1b1b;
+                color: #eee;
+                margin: 0;
+                padding: 18px;
+            }
+            h1 {
+                margin: 0 0 12px;
+                font-size: 1.2rem;
+            }
+            a {
+                color: #7ac7ff;
+            }
+            pre {
+                margin: 0;
+                padding: 14px;
+                border: 1px solid #444;
+                border-radius: 6px;
+                background: #111;
+                color: #d9f0ff;
+                overflow: auto;
+                line-height: 1.35;
+            }
+            .string { color: #98c379; }
+            .number { color: #d19a66; }
+            .boolean { color: #61afef; }
+            .null { color: #c678dd; }
+            .key { color: #e06c75; }
+            .top-nav {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 16px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="top-nav">
+            <div>
+                <a href="/bins">Back to bins</a>
+            </div>
+            <div>
+                <a href="/cardmeta/{{ card_name }}">Raw JSON</a>
+            </div>
+        </div>
+
+        <h1>Metadata for {{ card_name }}</h1>
+
+        {% if pretty_json %}
+            <pre id="metadata-json">{{ pretty_json }}</pre>
+        {% else %}
+            <p>Metadata not found for this card.</p>
+        {% endif %}
+    </body>
+</html>

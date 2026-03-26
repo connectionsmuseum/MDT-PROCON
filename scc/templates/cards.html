@@ -21,6 +21,10 @@
                 const checkbox = document.getElementById("autoRefresh");
                 const dropdown = document.getElementById("cardSelect");
 
+                statusDot.addEventListener("click", function () {
+                    location.reload();location.href="/bins";
+                });
+
                 // Restore saved setting (default: true if nothing stored)
                 const saved = localStorage.getItem("autoRefresh");
                 checkbox.checked = saved === null ? true : (saved === "true");
@@ -120,6 +124,7 @@
             display: inline-block;
             margin-left: 10px;
             margin-right: 10px;
+            cursor: pointer;
             box-shadow: 0 0 4px rgba(0,0,0,0.6);
             transition: all 0.3s ease-in-out;
         }
@@ -160,7 +165,7 @@
                 Auto-refresh on new card
             </label> 
             <div class="rightcontrols">
-                <span id="statusDot" class="status-dot disconnected" title="Connection status"></span>
+                <span id="statusDot" class="status-dot disconnected" title="Connection status (click to open bins)"></span>
                 <button onClick="window.location.reload();">Reload Page</button>
             </div>
         </div>

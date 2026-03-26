@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Card Bins</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="apple-touch-icon" href="../static/touch-icon-iphone.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="../static/touch-icon-iphone-retina.png">
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                background: #1b1b1b;
+                color: #eee;
+                margin: 0;
+                padding: 18px;
+            }
+            h1 {
+                margin-top: 0;
+            }
+            a {
+                color: #7ac7ff;
+            }
+            .bin {
+                margin-bottom: 18px;
+                padding: 12px;
+                border: 1px solid #444;
+                border-radius: 6px;
+            }
+            .bin h2 {
+                margin: 0 0 8px;
+            }
+            .card-list {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+            .card-list li {
+                margin: 2px 0;
+            }
+            .meta {
+                opacity: 0.7;
+                font-size: 0.9em;
+            }
+            .top-nav {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 16px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="top-nav">
+            <div>
+                <a href="/">Back to cards</a>
+            </div>
+            <div>
+                <a href="/bins">Refresh</a>
+            </div>
+        </div>
+
+        <h1>Card Bins</h1>
+
+        {% if bins %}
+            {% for bin_name, cards in bins.items() %}
+                <div class="bin">
+                    <h2>{{ bin_name }} ({{ cards|length }})</h2>
+                    <ul class="card-list">
+                        {% for card in cards %}
+                            <li>
+                                <a href="/card/{{ card.filename }}">{{ card.date }}</a>
+                                <span class="meta">[<a href="/cardmeta/view/{{ card.filename }}" rel="noopener noreferrer">meta</a>]</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No bins found yet; wait for cards to be processed.</p>
+        {% endif %}
+    </body>
+</html>
