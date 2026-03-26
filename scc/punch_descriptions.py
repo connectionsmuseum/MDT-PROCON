@@ -684,6 +684,75 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'CU2': 'Class of Service, Units 2. The units digit of the class of service of the calling line.',
     'CU4': 'Class of Service, Units 4. The units digit of the class of service of the calling line.',
     'CU7': 'Class of Service, Units 7. The units digit of the class of service of the calling line.',
+    'FT0\'': 'Frame Tens 0. The tens digit of the line link frame as registered in the sender.',
+    'FT1\'': 'Frame Tens 1. The tens digit of the line link frame as registered in the sender.',
+    'FT2\'': 'Frame Tens 2. The tens digit of the line link frame as registered in the sender.',
+    'FT3\'': 'Frame Tens 3. The tens digit of the line link frame as registered in the sender.',
+    'FU0\'': 'Frame Units 0. The units digit of the line link frame as registered in the sender.',
+    'FU1\'': 'Frame Units 1. The units digit of the line link frame as registered in the sender.',
+    'FU2\'': 'Frame Units 2. The units digit of the line link frame as registered in the sender.',
+    'FU4\'': 'Frame Units 4. The units digit of the line link frame as registered in the sender.',
+    'FU7\'': 'Frame Units 7. The units digit of the line link frame as registered in the sender.',
+    'VG0\'': 'Vertical Group 0. The vertical group as registered in the sender.',
+    'VG1\'': 'Vertical Group 1. The vertical group as registered in the sender.',
+    'VG2\'': 'Vertical Group 2. The vertical group as registered in the sender.',
+    'VG4\'': 'Vertical Group 4. The vertical group as registered in the sender.',
+    'VG7\'': 'Vertical Group 7. The vertical group as registered in the sender.',
+    'VG10\'': 'Vertical Group 10. The vertical group as registered in the sender.',
+    'HG0\'': 'Horizontal Group 0. The horizontal group as registered in the sender.',
+    'HG1\'': 'Horizontal Group 1. The horizontal group as registered in the sender.',
+    'HG2\'': 'Horizontal Group 2. The horizontal group as registered in the sender.',
+    'HG4\'': 'Horizontal Group 4. The horizontal group as registered in the sender.',
+    'HG7\'': 'Horizontal Group 7. The horizontal group as registered in the sender.',
+    'VF0\'': 'Vertical File 0. The vertical file as registered in the sender.',
+    'VF1\'': 'Vertical File 1. The vertical file as registered in the sender.',
+    'VF2\'': 'Vertical File 2. The vertical file as registered in the sender.',
+    'VF3\'': 'Vertical File 3. The vertical file as registered in the sender.',
+    'VF4\'': 'Vertical File 4. The vertical file as registered in the sender.',
+    'TM': 'Timing. The timing lead has been grounded by the marker connector.',
+    'CKG': (
+        'Checking Ground is closed from marker connector relays to provide '
+        'off-normal grounds and remove certain standing tests.'
+    ),
+    'TC1': (
+        'Traffic Control 1. Used for dial tone calls only. Marker has assumed control of the LLMC.'
+    ),
+    'NE': (
+        'One of the N1A/N2A/N3A/N4A (number translator cut-in '
+        'auxiliary) relays in the marker operated on an incoming '
+        'or intra-office trunk connection. These relays '
+        'are operated for number group translation of the '
+        'called number.'
+    ),
+    'TRN': (
+        'The (trunk number) relay in the marker, operated to pass the trunk number '
+        '(numerical digits) into the number group for a tandem or toll trunk connection.'
+    ),
+    'GTL': (
+        'GTL (ground transmitting lead) relay in the marker functions to apply ground '
+        'on transmitting leads to registers or senders.'
+    ),
+    'TSE': (
+        'Trunk Selection End. When punched, indicates that the marker was '
+        'unable to complete trunk selection. Should be unpunched for a successful call.'
+    ),
+    'FCK': ( 
+        'The cut-in relay of a selected route operated, thus closing the test leads to the '
+        'trunk link connector frames serving this route.'
+    ),
+    'FTCK': (
+        'Frame Test Check. Trunk link frames have been tested for the presence of an idle trunk '
+        'for the selected route, and at least one frame has an idle route available.'
+    ),
+    'SNK': (
+        'If not perforated, the marker released the selections made before a recycle takes place.'
+    ),
+    'CK': 'Marker preference (MP or E) relay on the selected trunk link frame operated.',
+    'FML': (
+        'Frame Memory Lock relay in the marker operated to insure a different trunk link frame '
+        'is selected on the next call.'
+    ),
+    
     
 }
 

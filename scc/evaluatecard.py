@@ -1185,7 +1185,7 @@ def cm_check(card):
 
     return {"ok": True}
 
-def evaluate(card, describe: bool = True):
+def evaluate(card, describe: bool = False):
     """Evaluate a card and return a serializable metadata dict.
 
     This is useful for generating reports and persisting results.
@@ -1211,7 +1211,7 @@ def evaluate(card, describe: bool = True):
             meta["bin"] = bin_name
 
     if meta["type"][0] in ("MTPT", "SRT", "TKT", "MLV"):
-        meta["bin"] = "TEST_CARD"
+        set_bin_if_unbinned("TEST_CARD")
 
     # Cross check supersedes all other bins, so run this first.
     meta["crosses"] = x_check(card)
