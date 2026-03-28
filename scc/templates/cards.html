@@ -6,76 +6,182 @@
         <meta name="apple-mobile-web-app-capable" content="yes">
         <link rel="apple-touch-icon" href="../static/touch-icon-iphone.png">
         <link rel="apple-touch-icon" sizes="180x180" href="../static/touch-icon-iphone-retina.png">
+        <meta id="card-geom"
+            data-orig-x="{{ orig_x }}"
+            data-orig-y="{{ orig_y }}"
+            data-off-x="{{ off_x }}"
+            data-off-y="{{ off_y }}">
         <script>
-            function loadCard() {
-                // used only when a card is selected from the dropdown.
-                // loads a card from somewhere below the top of the stack
-                const name = document.getElementById("cardSelect").value;
-                var img = document.getElementById("card");
-                img.src = "card/" + name;
-                console.log("older card loaded");
+            // Punch geometry from cardpack/offsets.txt via data attributes.
+            const cardGeom = document.getElementById("card-geom").dataset;
+            const CARD_ORIG_X = parseFloat(cardGeom.origX);
+            const CARD_ORIG_Y = parseFloat(cardGeom.origY);
+            const CARD_OFF_X  = parseFloat(cardGeom.offX);
+            const CARD_OFF_Y  = parseFloat(cardGeom.offY);
+            const HOLE_SIZE   = 15; // px in original image coords
+
+            let blankCardImage = null;
+            let placeholderImage = null;
+
+            // lazy loading time
+            function ensureBlankCard(callback) {
+                if (blankCardImage) { callback(blankCardImage); return; }
+                const img = new Image();
+                img.onload = function () { blankCardImage = img; callback(img); };
+                img.src = '/blank-card';
             }
+
+            function ensurePlaceholder(callback) {
+                if (placeholderImage) { callback(placeholderImage); return; }
+                const img = new Image();
+                img.onload = function () { placeholderImage = img; callback(img); };
+                img.src = '/static/placeholder.png';
+            }
+
+            function renderPlaceholder() {
+                ensurePlaceholder(function (img) {
+                    const canvas = document.getElementById('card');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    ctx.drawImage(img, 0, 0);
+                });
+            }
+
+            function renderCard(cardData) {
+                try {       // throw this whole thing in a try block to catch errors
+                    ensureBlankCard(function (img) {
+                        const canvas = document.getElementById('card');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width  = img.naturalWidth;
+                        canvas.height = img.naturalHeight;
+                        ctx.drawImage(img, 0, 0);
+                        if (!cardData || !cardData.z_card) return;
+                        const bits = cardData.z_card;
+                        ctx.fillStyle = 'black';
+                        for (let xidx = 0; xidx < 69; xidx++) {
+                            if (xidx > 30 && xidx < 38) continue; // middle gap
+                            for (let yidx = 0; yidx < 18; yidx++) {
+                                // It's hole punchin' time. KACHUKACHUKA!
+                                if (bits[yidx][xidx]) {
+                                    const cx = CARD_ORIG_X + xidx * CARD_OFF_X;
+                                    const cy = CARD_ORIG_Y + yidx * CARD_OFF_Y;
+                                    ctx.beginPath();
+                                    ctx.arc(cx, cy, HOLE_SIZE, 0, Math.PI * 2);
+                                    ctx.fill();
+                                }
+                            }
+                        }
+                    });
+                } catch (err) {
+                    console.error('Error rendering card:', err);
+                    renderPlaceholder();
+                }
+            }
+
+            function loadLatestCard() {
+                fetch('/latest-card-data')
+                    .then(r => { if (!r.ok) throw new Error('no data'); return r.json(); })
+                    .then(data => renderCard(data))
+                    .catch(() => renderPlaceholder()); // show claire's placeholder if no card data available
+            }
+
+            function loadCard() {
+                // called when a card is selected from the dropdown
+                const name = document.getElementById("cardSelect").value;
+                if (!name) {
+                    renderPlaceholder();
+                    return;
+                }
+                fetch('/cardmeta/' + name)
+                    .then(r => r.json())
+                    .then(data => renderCard(data))
+                    .catch(err => {
+                        console.error('Error loading card:', err);
+                        renderPlaceholder(); // show claire's placeholder if card data cannot be loaded
+                    });
+            }
+
+            function refreshCardDropdown(selectNewest = false) {
+                return fetch('/cardnames')
+                    .then(response => response.json())
+                    .then(entries => {
+                        const select = document.getElementById('cardSelect');
+                        const previous = select.value;
+                        select.innerHTML = '';
+                        entries.forEach(entry => {
+                            const option = document.createElement('option');
+                            option.value = entry.name;
+                            option.textContent = entry.date;
+                            select.appendChild(option);
+                        });
+
+                        // keep the last item of the dropdown empty
+                        const emptyOption = document.createElement('option');
+                        select.appendChild(emptyOption);
+
+                        if (selectNewest && entries.length > 0) {
+                            select.value = entries[0].name;
+                            return;
+                        }
+
+                        const hasPrevious = Array.from(select.options).some(o => o.value === previous);
+                        if (hasPrevious) {
+                            select.value = previous;
+                        }
+                    })
+                    .catch(error => console.error('Error fetching cardnames:', error));
+            }
+
             document.addEventListener("DOMContentLoaded", function () {
                 const statusDot = document.getElementById("statusDot");
                 const evtSource = new EventSource("/events");
-                const checkbox = document.getElementById("autoRefresh");
-                const dropdown = document.getElementById("cardSelect");
+                const checkbox  = document.getElementById("autoRefresh");
 
                 statusDot.addEventListener("click", function () {
-                    location.reload();location.href="/bins";
+                    location.reload(); location.href = "/bins";
                 });
 
                 // Restore saved setting (default: true if nothing stored)
                 const saved = localStorage.getItem("autoRefresh");
                 checkbox.checked = saved === null ? true : (saved === "true");
 
-                // Save whenever user checks or unchecks
                 checkbox.addEventListener("change", function () {
                     localStorage.setItem("autoRefresh", checkbox.checked);
                 });
-                
-                // listener for server-sent events; reload image on "update" if auto-refresh enabled
-                evtSource.onmessage = function(event) {
-                    const img = document.getElementById("card");
-                    if (event.data === "update" && checkbox.checked) {  
-                        console.log("UPDATE GET!");
-                        // Trigger flash
-                        img.classList.remove("flash");   // reset if already applied
-                        void img.offsetWidth;            // force reflow (important for some reason)
-                        img.classList.add("flash");
-                        img.src = "static/front.jpg?t=" + Date.now(); // bust-a-cache
 
-                        // Update the dropdown list
-                        fetch('/cardnames')
-                            .then(response => response.json())
-                            .then(cardnames => {
-                                const select = document.getElementById('cardSelect');
-                                select.innerHTML = '';
-                                cardnames.forEach(name => {
-                                    const option = document.createElement('option');
-                                    option.value = name;
-                                    option.textContent = name;
-                                    select.appendChild(option);
-                                });
-                                // easter egg
-                                const emptyOption = document.createElement('option');
-                                select.appendChild(emptyOption);
-                            })
-                            .catch(error => console.error('Error fetching cardnames:', error));
+                // listener for server-sent events; re-render card on "update" if auto-refresh enabled
+                evtSource.onmessage = function (event) {
+                    const canvas = document.getElementById("card");
+                    if (event.data === "update") {
+                        console.log("UPDATE GET!");
+                        if (checkbox.checked) {
+                            refreshCardDropdown(true);
+                            // Trigger flash
+                            canvas.classList.remove("flash");
+                            void canvas.offsetWidth; // force reflow (important for some reason)
+                            canvas.classList.add("flash");
+                            loadLatestCard();
+                        } else {
+                            refreshCardDropdown();
+                        }
                     }
-                }
-                // Update status dot based on connection state
-                evtSource.onopen = function() {
+                };
+
+                evtSource.onopen = function () {
                     console.log("SSE OPEN");
                     statusDot.classList.remove("disconnected");
                     statusDot.classList.add("connected");
                 };
-                evtSource.onerror = function() {
+                evtSource.onerror = function () {
                     console.log("SSE ERROR", evtSource.readyState);
                     statusDot.classList.remove("connected");
                     statusDot.classList.add("disconnected");
                 };
 
+                // Render the most recent card on initial page load
+                refreshCardDropdown();
+                loadLatestCard();
             });
         </script>
         <style>
@@ -91,6 +197,8 @@
         }
         #card {
             width: 100%;
+            height: auto;
+            display: block;
             border: 3px solid transparent;
             transition: opacity 0.2s ease;
         }
@@ -153,9 +261,9 @@
     <body>
         <div class="controls">
             <select name="card" id="cardSelect" onchange="loadCard()">
-                {% for cardname in cardnames %}
-                <option value="{{cardname}}">
-                    {{cardname}}
+                {% for card in card_entries %}
+                <option value="{{card.name}}">
+                    {{card.date}}
                 </option>
                 {% endfor %}
                 <option></option>
@@ -169,7 +277,6 @@
                 <button onClick="window.location.reload();">Reload Page</button>
             </div>
         </div>
-        <img id="card" src="static/front.jpg" 
-        onerror="this.src='static/placeholder.png';"/>
+        <canvas id="card"></canvas>
     </body>
 </html>

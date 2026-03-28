@@ -1176,7 +1176,7 @@ def cm_check(card):
                        required=["BY", "OV"], trigger=["FLG", "LB"], requirement="any", bin="LB_BY_OV_FAIL")
 
     if card_has_all(card, ["TM", "CKG"]) and card_lacks(card, "TK"):
-        raise_cm_error("TK check fallthrough. Please examine card and create a bin for this",
+        raise_cm_error("FALLTHROUGH", "TK check fallthrough. Please examine card and create a bin for this",
                        required=["TK"], trigger=["FLG", "LB"], bin="NO_TK")
 
     if card_has_all(card, "TM", "CKG", "TSE"):

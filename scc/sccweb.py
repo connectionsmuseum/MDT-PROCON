@@ -14,12 +14,15 @@ clients = []
 _offsets = None
 
 # The virtual card is scanned in 120 points (two rows) at a time, in the same
-# way as the actual card is punched when it is transported through the trouble recorder.
+# way as the actual card is punched when it is transported through the trouble 
+# recorder.
 # (bw0 .. bw59) -> R, RA section
 # (bw60 .. bw119) -> S, SA section
-# The following list gives the order of the scan points for the two rows of each scan as we get
-# them from the MDT.
+# The following list gives the order of the scan points for the two rows of 
+# each scan as we get them from the MDT.
 # The final card will contain this list 9 times, once for each of the 9 punch cycles (S0 to S8).
+# The 'STR', 'SPL', 'RSVx.y', entries do not actually exist on the card, but
+# are used by the MDT for its own internal functions.
 scanpts_order = [
     [ 7,  6,  5,  4,  3,  2,  1,  0, 'STRA1', 'STR'],
     [15, 14, 13, 12, 11, 10,  9,  8, 'TRC', 'SPL'],
@@ -47,7 +50,7 @@ two_of_five = {
     3: [1,2],
     4: [0,3],
     5: [1,3],
-    6: [2,4],
+    6: [2,3],
     7: [0,4],
     8: [1,4],
     9: [2,4]
@@ -111,10 +114,47 @@ def get_offsets():
             )
     return _offsets
 
-def punch_card(bits):
+def punch_date(bits):
+    '''
+    punches the current time into the card bits in the correct two-of-five holes for each digit
+    '''
+    orig_x, orig_y, off_x, off_y, t_start_x, t_start_y = get_offsets()
+    f_im = Image.open('cardpack/front.jpg')
+
+    holesize = 15
+    now = datetime.now()
+    punchdate = now.strftime("%y-%m-%d_%H-%M-%S")
+
+    time_dict = {
+        'day_tens': int(now.strftime("%d")) // 10,
+        'day_units': int(now.strftime("%d")) % 10,
+        'hour_tens': int(now.strftime("%H")) // 10,
+        'hour_units': int(now.strftime("%H")) % 10,
+        'minute_tens': int(now.strftime("%M")) // 10,
+        'minute_units': int(now.strftime("%M")) % 10
+    }
+    print(f"Punching time {punchdate} into card with values: {time_dict}")
+    
+    for key, value in time_dict.items():
+        holes = two_of_five[value]
+        for hole in holes:
+            # print(f"Punching hole for {key} in position {hole}")
+            bits[t_start_y][t_start_x + hole] = True
+        t_start_x += 5
+
+    return punchdate
+
+def save_card_metadata(punchdate, card, metadata):
+    """Save the card and its metadata for later inspection."""
+    name = f"/tmp/cards/{punchdate}_front.json"
+    with open(name, "w") as f:
+        json.dump({"z_card": card, "metadata": metadata}, f, indent=2)
+
+def _punch_card(bits):
     '''
     creates a card image complete with holes punched in the right places,
     and saves it to disk with a timestamped filename
+    ** NOT CALLED
     '''
     orig_x, orig_y, off_x, off_y, t_start_x, t_start_y = get_offsets()
     f_im = Image.open('cardpack/front.jpg')
@@ -163,9 +203,10 @@ def punch_card(bits):
 
     return punchdate
 
-def ascii_card(card):
+def _ascii_card(card):
     '''
     mostly not used in production. provides a text representation of the card in the terminal
+    ** NOT CALLED
     '''
     text = ''
     text += ('+'+('—'*69)+'+\n')
@@ -182,29 +223,27 @@ def ascii_card(card):
     text += ('+'+('—'*69)+'+\n')
     return text
 
-def save_card_metadata(punchdate, card, metadata):
-    """Save the card and its metadata for later inspection."""
-    name = f"/tmp/cards/{punchdate}_front.json"
-    with open(name, "w") as f:
-        json.dump({"z_card": card, "metadata": metadata}, f, indent=2)
-
-
-def _list_saved_cards(limit=30):
-    """Return the most recent saved card JPG filenames."""
-    saved_cards = [f for f in os.listdir('/tmp/cards/') if f.lower().endswith('.jpg')]
-    saved_cards.sort(key=lambda x: os.path.getmtime('/tmp/cards/' + x))
-    saved_cards = saved_cards[::-1]
-    return saved_cards[:limit]
-
+def _list_saved_card_json_entries(limit=30):
+    """Return newest saved card JSON entries with human-readable timestamps."""
+    saved_json = [f for f in os.listdir('/tmp/cards/') if f.lower().endswith('_front.json')]
+    saved_json.sort(key=lambda x: os.path.getmtime('/tmp/cards/' + x), reverse=True)
+    entries = []
+    for name in saved_json[:limit]:
+        entries.append({
+            "name": name,
+            "date": _format_card_timestamp(name)
+        })
+    return entries
 
 def _format_card_timestamp(filename):
     """Extract and format timestamp from card filename.
     
-    Converts '26-03-22_21-32-16_front.jpg' to '2026-03-22 21:32:16'
+    Converts '26-03-22_21-32-16_front.jpg' or '_front.json' to
+    '2026-03-22 21:32:16'
     """
     try:
         # Extract the timestamp
-        timestamp_part = filename[:17]  # '26-03-22_21-32-16'
+        timestamp_part = os.path.basename(filename)[:17]  # '26-03-22_21-32-16'
         date_part, time_part = timestamp_part.split('_')
         yy, mm, dd = date_part.split('-')
         hh, minute, ss = time_part.split('-')
@@ -250,13 +289,14 @@ def receive_trouble_card():
     if request.content_length < 2**16:
         data = request.get_data(as_text=True)
         split_data = data.split(',')
+        print(f"Received card data: {split_data}")
         decoded_data = list(map(lambda x: int(x, 16), split_data))
+        print(f"Decoded card data: {decoded_data}")
         card = convert_to_card(decoded_data)
         # update cardmap so punchValue() works without an explicit card arg
         cm.set_current_card(card)
-
-        punchdate = punch_card(card)
-
+        # slap the date into the card so it shows up in the right place
+        punchdate = punch_date(card)
         # generate and persist metadata for this card (binning, decoded values, etc.)
         metadata = ec.evaluate(card)
         save_card_metadata(punchdate, card, metadata)
@@ -290,11 +330,8 @@ def test():
     if card is None:
         return {"error": "no card data provided"}, 400
 
-    punchdate = punch_card(card)
+    punchdate = punch_date(card)
     
-    # this should eventually be moved into /trouble-card [POST] and
-    # potentially moved into its own thread, so we can evaluate
-    # out-of-band and release the marker as quickly as possible.
     metadata = ec.evaluate(card)
     save_card_metadata(punchdate, card, metadata)
 
@@ -319,19 +356,34 @@ def events():
 
     return Response(stream(), mimetype="text/event-stream")
 
+@app.route('/blank-card', methods=['GET'])
+def blank_card():
+    """Serve the blank (unpunched) card template image."""
+    return send_from_directory('cardpack', 'front.jpg')
+
+@app.route('/latest-card-data', methods=['GET'])
+def latest_card_data():
+    """Return card bits + metadata for the most recently saved card."""
+    entries = _list_saved_card_json_entries(limit=1)
+    if not entries:
+        return jsonify({"error": "no cards available"}), 404
+    data = _load_card_metadata(entries[0]["name"])
+    if data is None:
+        return jsonify({"error": "metadata not found"}), 404
+    return jsonify(data)
 
 @app.route('/', methods=['GET'])
 def display_cards():
     """# main page showing the most recent cards and allowing selection of past cards"""
-    saved_cards = _list_saved_cards()
-    return render_template("cards.html", cardnames=saved_cards)
-
+    saved_cards = _list_saved_card_json_entries()
+    orig_x, orig_y, off_x, off_y, _t_start_x, _t_start_y = get_offsets()
+    return render_template("cards.html", card_entries=saved_cards,
+                           orig_x=orig_x, orig_y=orig_y, off_x=off_x, off_y=off_y)
 
 @app.route('/cardnames', methods=['GET'])
 def get_cardnames():
-    """Gets a JSON list of saved cardnames."""
-    return jsonify(_list_saved_cards())
-
+    """Gets a JSON list of newest saved card metadata entries."""
+    return jsonify(_list_saved_card_json_entries())
 
 @app.route('/bins', methods=['GET'])
 def view_bins():
@@ -339,18 +391,19 @@ def view_bins():
     bins = _get_bins()
     return render_template('bins.html', bins=bins)
 
-
 def _load_card_metadata(name):
-    """Load saved card JSON (card + metadata) by card filename."""
-    if not name.lower().endswith('.jpg'):
-        name = f"{name}.jpg"
-    base = os.path.splitext(name)[0]
+    """Load saved card JSON (card + metadata) by JPG name, JSON name, or base."""
+    if name.lower().endswith('.json'):
+        base = os.path.splitext(name)[0]
+    elif name.lower().endswith('.jpg'):
+        base = os.path.splitext(name)[0]
+    else:
+        base = name
     meta_path = os.path.join('/tmp/cards', f"{base}.json")
     if not os.path.exists(meta_path):
         return None
     with open(meta_path) as f:
         return json.load(f)
-
 
 @app.route('/cardmeta/<name>', methods=['GET'])
 def card_metadata(name):
@@ -359,7 +412,6 @@ def card_metadata(name):
     if data is None:
         return jsonify({"error": "metadata not found"}), 404
     return jsonify(data)
-
 
 @app.route('/cardmeta/view/<name>', methods=['GET'])
 def card_metadata_view(name):
@@ -370,34 +422,25 @@ def card_metadata_view(name):
     pretty = json.dumps(data, indent=2, sort_keys=True)
     return render_template('cardmeta.html', card_name=name, pretty_json=pretty)
 
-
-@app.route('/bin/<binname>', methods=['GET'])
-def cards_in_bin(binname):
-    """Return the list of card JPG names in a specific bin."""
-    cards = []
-    for fn in os.listdir('/tmp/cards/'):
-        if not fn.endswith('_front.json'):
-            continue
-        path = os.path.join('/tmp/cards', fn)
-        try:
-            with open(path) as f:
-                data = json.load(f)
-        except Exception:
-            continue
-        if data.get('metadata', {}).get('bin') == binname:
-            cards.append(fn[:-5] + '.jpg')
-    return jsonify(cards)
-
-
 @app.route('/cards', methods=['GET'])
 # for backward compatibility with older versions of the frontend
 def go_away():
     return redirect('/', code=301)
 
 @app.route('/card/<name>', methods=['GET'])
-# used by the frontend to request a specific card from a dropdown
 def single_card(name):
-    return send_from_directory('/tmp/cards', name)
+    """Render a card view page, drawing the card from stored JSON data."""
+    data = _load_card_metadata(name)
+    orig_x, orig_y, off_x, off_y, _t_start_x, _t_start_y = get_offsets()
+    if data is None:
+        return render_template('card_view.html', card_name=name,
+                               card_data_json='null',
+                               orig_x=orig_x, orig_y=orig_y,
+                               off_x=off_x, off_y=off_y), 404
+    return render_template('card_view.html', card_name=name,
+                           card_data_json=json.dumps(data),
+                           orig_x=orig_x, orig_y=orig_y,
+                           off_x=off_x, off_y=off_y)
 
 if __name__ == '__main__':
     app.run(host = '0.0.0.0', port = 5220)
