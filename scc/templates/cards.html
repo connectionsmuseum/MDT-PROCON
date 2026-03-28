@@ -48,6 +48,9 @@
                 });
             }
 
+            // ok lets render a card! this is the main event. 
+            // the cardData.z_card is a 2d array of booleans representing punched holes, 
+            // which we render as black circles on top of the blank card image
             function renderCard(cardData) {
                 try {       // throw this whole thing in a try block to catch errors
                     ensureBlankCard(function (img) {
