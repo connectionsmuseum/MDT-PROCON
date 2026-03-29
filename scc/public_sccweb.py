@@ -56,48 +56,6 @@ two_of_five = {
     9: [2,4]
 }
 
-def convert_to_card(data):
-    """Convert scan data into a 2D card representation."""
-
-    card = [[False for x in range(69)] for y in range(18)]
-
-    for scan_group in range(9):
-        for i in range(16):
-            for j in range(8):
-                row = 8 - scan_group
-                scanpt_val = scanpts_order[i][j]
-                if isinstance(scanpt_val, int):
-                    col = scanpt_val % 30
-                    if 0 <= scanpt_val and scanpt_val <= 29:
-                        # bottom left 'R'
-                        row += 9
-                    if 30 <= scanpt_val and scanpt_val <= 59:
-                        # bottom right 'RA'
-                        row += 9
-                        col += 39
-                    if 60 <= scanpt_val and scanpt_val <= 89:
-                        # top left 'S'
-                        pass
-                    if 90 <= scanpt_val and scanpt_val <= 119:
-                        # top right 'SA'
-                        col += 39
-                # Note: these are never written, regardless of value, due to the isinstance check below
-                elif scanpt_val == 'BWX0':
-                    col = 30
-                    row += 9
-                elif scanpt_val == 'BWX1':
-                    col = 38
-                    row += 9
-                elif scanpt_val == 'BWX2':
-                    col = 30
-                elif scanpt_val == 'BWX3':
-                    col = 38
-
-                if (((data[scan_group * 16 + i] >> j) & 1) == 1) and isinstance(scanpt_val, int):
-                    if row < 18 and col < 69:
-                        card[row][col] = True
-    return card
-
 def get_offsets():
     global _offsets
     if _offsets is None:
@@ -113,114 +71,6 @@ def get_offsets():
                 int(config['Front']['t_start_y'])
             )
     return _offsets
-
-def punch_date(bits):
-    '''
-    punches the current time into the card bits in the correct two-of-five holes for each digit
-    '''
-    orig_x, orig_y, off_x, off_y, t_start_x, t_start_y = get_offsets()
-
-    holesize = 15
-    now = datetime.now()
-    punchdate = now.strftime("%y-%m-%d_%H-%M-%S")
-
-    time_dict = {
-        'day_tens': int(now.strftime("%d")) // 10,
-        'day_units': int(now.strftime("%d")) % 10,
-        'hour_tens': int(now.strftime("%H")) // 10,
-        'hour_units': int(now.strftime("%H")) % 10,
-        'minute_tens': int(now.strftime("%M")) // 10,
-        'minute_units': int(now.strftime("%M")) % 10
-    }
-    print(f"Punching time {punchdate} into card with values: {time_dict}")
-    
-    for key, value in time_dict.items():
-        holes = two_of_five[value]
-        for hole in holes:
-            # print(f"Punching hole for {key} in position {hole}")
-            bits[t_start_y][t_start_x + hole] = True
-        t_start_x += 5
-
-    return punchdate
-
-def save_card_metadata(punchdate, card, metadata):
-    """Save the card and its metadata for later inspection."""
-    name = f"/tmp/cards/{punchdate}_front.json"
-    with open(name, "w") as f:
-        json.dump({"z_card": card, "metadata": metadata}, f, indent=2)
-
-def _punch_card(bits):
-    '''
-    creates a card image complete with holes punched in the right places,
-    and saves it to disk with a timestamped filename
-    ** NOT CALLED
-    '''
-    orig_x, orig_y, off_x, off_y, t_start_x, t_start_y = get_offsets()
-    f_im = Image.open('cardpack/front.jpg')
-
-    holesize = 15
-    now = datetime.now()
-    punchdate = now.strftime("%y-%m-%d_%H-%M-%S")
-
-    time_dict = {
-        'day_tens': int(now.strftime("%d")) // 10,
-        'day_units': int(now.strftime("%d")) % 10,
-        'hour_tens': int(now.strftime("%H")) // 10,
-        'hour_units': int(now.strftime("%H")) % 10,
-        'minute_tens': int(now.strftime("%M")) // 10,
-        'minute_units': int(now.strftime("%M")) % 10
-    }
-    
-    for key, value in time_dict.items():
-        holes = two_of_five[value]
-        for hole in holes:
-            # print(f"Punching hole for {key} in position {hole}")
-            bits[t_start_y][t_start_x + hole] = True
-        t_start_x += 5
-    
-    #Render the JPG
-    f_draw = ImageDraw.Draw(f_im)
-    for xidx in range(69):
-        for yidx in range(18):
-            if xidx>30 and xidx<38: continue
-            #Don't tell Professor Mead, these numbers are magic
-            f_xcen=orig_x+(xidx*off_x)
-            f_ycen=orig_y+(yidx*off_y)
-
-            #It's hole-punchin' time! KACHUKACHUKACHUKA
-            if bits[yidx][xidx]:
-                f_draw.ellipse([(f_xcen - holesize, f_ycen - holesize),
-                                (f_xcen + holesize, f_ycen + holesize)],
-                                'black', 'black')
-
-    # save the cards to be used via the web frontend
-    f_im.save("/tmp/front.jpg", optimize=True)
-
-    # and save the cards to a directory so I can look at them later
-    jpg_path = f"/tmp/cards/{punchdate}_front.jpg"
-    f_im.save(jpg_path, optimize=True)
-
-    return punchdate
-
-def _ascii_card(card):
-    '''
-    mostly not used in production. provides a text representation of the card in the terminal
-    ** NOT CALLED
-    '''
-    text = ''
-    text += ('+'+('—'*69)+'+\n')
-    for y in range(18):
-        text += ('|')
-        for x in range(69): #nice
-            if x==31 or x==37:
-                text += ('|')
-            elif x>31 and x<37:
-                text += (' ')
-            else:
-                text += ('#' if card[y][x] else '·')
-        text += ('|\n')
-    text += ('+'+('—'*69)+'+\n')
-    return text
 
 def _list_saved_card_json_entries(limit=30):
     """Return newest saved card JSON entries with human-readable timestamps."""
@@ -269,10 +119,10 @@ def _get_bins():
         except Exception:
             continue
         bin_name = data.get('metadata', {}).get('bin', 'unknown')
-        card_name = fn[:-5] + '.json'
-        formatted_date = _format_card_timestamp(card_name)
+        jpg_name = fn[:-5] + '.jpg'
+        formatted_date = _format_card_timestamp(jpg_name)
         bins.setdefault(bin_name, []).append({
-            'filename': card_name,
+            'filename': jpg_name,
             'date': formatted_date
         })
 
@@ -282,70 +132,41 @@ def _get_bins():
 
     return bins
 
-@app.route('/trouble-card', methods=['POST'])
-# MDT posts cards here
-def receive_trouble_card():
-    if request.content_length < 2**16:
-        try:
-            data = request.get_data(as_text=True)
-            split_data = data.split(',')
-            print(f"Received card data: {split_data}")
-            decoded_data = list(map(lambda x: int(x, 16), split_data))
-            print(f"Decoded card data: {decoded_data}")
-            card = convert_to_card(decoded_data)
-            # update cardmap so punchValue() works without an explicit card arg
-            cm.set_current_card(card)
-            # slap the date into the card so it shows up in the right place
-            punchdate = punch_date(card)
-            # generate and persist metadata for this card (binning, decoded values, etc.)
-            metadata = ec.evaluate(card)
-            save_card_metadata(punchdate, card, metadata)
-        except Exception as e:
-            print(f"Error processing card data: {e}")
-            return {"error": "invalid card data"}, 400
-        # notify any connected clients that a new card is available
-        for q in clients:
-            q.put("update")
 
-        return {}, 200
+@app.route('/eat_json', methods=['POST'])
+# Accepts a JSON representation of a card (same format as ``cardpack/cardout_sample.json``)
 
-    return {"error": "payload too large"}, 413
-
-@app.route('/test', methods=['POST'])
-# test endpoint for manually triggering an update event to connected
-# clients without needing to send a card from the MDT.  Accepts a JSON
-# representation of a card (same format as ``cardpack/cardout_sample.json``)
-
-def test():
+def yumyum():
     card = None
     # first, try to parse the body as JSON
     if request.is_json:
+        data = request.get_json() # this is the full card with metadata
         try:
-            data = request.get_json()
-            card = data["card"]
-        except Exception as e:
-            print(f"Error parsing JSON: {e}")
-            return {"error": "invalid JSON format"}, 400
+            card = data["card"] # extracts just the holes
+        except Exception:
+            card = data["z_card"] # extracts just the holes
     else:
         # fallback: try reading raw data and parsing
         try:
             card = json.loads(request.get_data(as_text=True))
-        except Exception as e:
-            print(f"Error parsing raw data: {e}")
-            return {"error": "invalid raw data format"}, 400
+        except Exception:
             pass
 
     if card is None:
         return {"error": "no card data provided"}, 400
 
-    punchdate = punch_date(card)
-    
-    metadata = ec.evaluate(card)
-    save_card_metadata(punchdate, card, metadata)
+    now = datetime.now()
+    punchdate = now.strftime("%y-%m-%d_%H-%M-%S")
+    os.makedirs("/tmp/cards", exist_ok=True)
+    # this stores the entire card with metadata which is used for the bins page
+    with open(f"/tmp/cards/{punchdate}_front.json", "w") as f:
+        json.dump(data, f)
 
+    # scream at clients and tell them there's a new card
     for q in clients:
         q.put("update")
-    return jsonify({"z_card": card, "metadata": metadata}), 200
+
+    return "Success", 200
 
 @app.route('/events', methods=['GET'])
 def events():
