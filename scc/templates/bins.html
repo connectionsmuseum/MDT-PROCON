@@ -47,6 +47,28 @@
                 align-items: center;
                 margin-bottom: 16px;
             }
+            .filters {
+                margin-bottom: 16px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            .filters label {
+                font-weight: 600;
+            }
+            .filters select {
+                background: #2a2a2a;
+                color: #eee;
+                border: 1px solid #555;
+                border-radius: 4px;
+                padding: 6px 10px;
+                font-size: 0.95rem;
+            }
+            .empty-filter-result {
+                margin: 12px 0 18px;
+                opacity: 0.8;
+            }
         </style>
     </head>
     <body>
@@ -62,12 +84,24 @@
         <h1>Card Bins</h1>
 
         {% if bins %}
+            <div class="filters">
+                <label for="time-filter">Show bins from:</label>
+                <select id="time-filter">
+                    <option value="last-hour">Last hour</option>
+                    <option value="today">Today</option>
+                    <option value="this-week">This week</option>
+                    <option value="all" selected>All</option>
+                </select>
+            </div>
+
+            <p id="empty-filter-result" class="empty-filter-result" style="display: none;">No bins found for the selected time range.</p>
+
             {% for bin_name, cards in bins.items() %}
                 <div class="bin">
-                    <h2>{{ bin_name }} ({{ cards|length }})</h2>
+                    <h2><span class="bin-name">{{ bin_name }}</span> (<span class="bin-count">{{ cards|length }}</span>)</h2>
                     <ul class="card-list">
                         {% for card in cards %}
-                            <li>
+                            <li data-card-date="{{ card.date }}">
                                 <a href="/card/{{ card.filename }}">{{ card.date }}</a>
                                 <span class="meta">[<a href="/cardmeta/view/{{ card.filename }}" rel="noopener noreferrer">meta</a>]</span>
                             </li>
@@ -78,5 +112,119 @@
         {% else %}
             <p>No bins found yet; wait for cards to be processed.</p>
         {% endif %}
+
+        <script>
+            (function () {
+                var FILTER_STORAGE_KEY = 'cardBinsTimeFilter';
+
+                function parseCardDate(value) {
+                    if (!value) {
+                        return null;
+                    }
+
+                    var parsed = new Date(value);
+                    if (!isNaN(parsed.getTime())) {
+                        return parsed;
+                    }
+
+                    // Handle common format like: YYYY-MM-DD HH:MM:SS
+                    parsed = new Date(value.replace(' ', 'T'));
+                    if (!isNaN(parsed.getTime())) {
+                        return parsed;
+                    }
+                    return null;
+                }
+
+                function getStartOfWeek(now) {
+                    var start = new Date(now);
+                    var day = start.getDay();
+                    var diffToMonday = day === 0 ? 6 : day - 1;
+                    start.setHours(0, 0, 0, 0);
+                    start.setDate(start.getDate() - diffToMonday);
+                    return start;
+                }
+
+                function getRangeStart(filter, now) {
+                    if (filter === 'last-hour') {
+                        return new Date(now.getTime() - (60 * 60 * 1000));
+                    }
+                    if (filter === 'today') {
+                        var startOfDay = new Date(now);
+                        startOfDay.setHours(0, 0, 0, 0);
+                        return startOfDay;
+                    }
+                    if (filter === 'this-week') {
+                        return getStartOfWeek(now);
+                    }
+                    return null;
+                }
+
+                function applyFilter() {
+                    var filter = document.getElementById('time-filter').value;
+                    var now = new Date();
+                    var rangeStart = getRangeStart(filter, now);
+                    var bins = document.querySelectorAll('.bin');
+                    var visibleBinCount = 0;
+
+                    bins.forEach(function (bin) {
+                        var cards = bin.querySelectorAll('.card-list li');
+                        var visibleCardCount = 0;
+
+                        cards.forEach(function (cardItem) {
+                            var cardDate = parseCardDate(cardItem.getAttribute('data-card-date'));
+                            var showCard = false;
+
+                            if (filter === 'all') {
+                                showCard = true;
+                            } else if (cardDate && rangeStart) {
+                                showCard = cardDate >= rangeStart;
+                            }
+
+                            cardItem.style.display = showCard ? '' : 'none';
+                            if (showCard) {
+                                visibleCardCount += 1;
+                            }
+                        });
+
+                        var countEl = bin.querySelector('.bin-count');
+                        if (countEl) {
+                            countEl.textContent = String(visibleCardCount);
+                        }
+
+                        var showBin = visibleCardCount > 0;
+                        bin.style.display = showBin ? '' : 'none';
+                        if (showBin) {
+                            visibleBinCount += 1;
+                        }
+                    });
+
+                    var emptyMessage = document.getElementById('empty-filter-result');
+                    if (emptyMessage) {
+                        emptyMessage.style.display = visibleBinCount === 0 ? '' : 'none';
+                    }
+                }
+
+                var filterSelect = document.getElementById('time-filter');
+                if (filterSelect) {
+                    try {
+                        var savedFilter = localStorage.getItem(FILTER_STORAGE_KEY);
+                        if (savedFilter && filterSelect.querySelector('option[value="' + savedFilter + '"]')) {
+                            filterSelect.value = savedFilter;
+                        }
+                    } catch (err) {
+                        // Ignore storage access errors and continue with default filter.
+                    }
+                    filterSelect.addEventListener('change', function () {
+                        try {
+                            localStorage.setItem(FILTER_STORAGE_KEY, filterSelect.value);
+                        } catch (err) {
+                            // Ignore storage write errors and still apply the filter.
+                        }
+                        applyFilter();
+                    });
+                    applyFilter();
+                }
+            })();
+        </script>
     </body>
 </html>

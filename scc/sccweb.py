@@ -119,7 +119,6 @@ def punch_date(bits):
     punches the current time into the card bits in the correct two-of-five holes for each digit
     '''
     orig_x, orig_y, off_x, off_y, t_start_x, t_start_y = get_offsets()
-    f_im = Image.open('cardpack/front.jpg')
 
     holesize = 15
     now = datetime.now()
@@ -270,10 +269,10 @@ def _get_bins():
         except Exception:
             continue
         bin_name = data.get('metadata', {}).get('bin', 'unknown')
-        jpg_name = fn[:-5] + '.jpg'
-        formatted_date = _format_card_timestamp(jpg_name)
+        card_name = fn[:-5] + '.json'
+        formatted_date = _format_card_timestamp(card_name)
         bins.setdefault(bin_name, []).append({
-            'filename': jpg_name,
+            'filename': card_name,
             'date': formatted_date
         })
 
@@ -287,20 +286,23 @@ def _get_bins():
 # MDT posts cards here
 def receive_trouble_card():
     if request.content_length < 2**16:
-        data = request.get_data(as_text=True)
-        split_data = data.split(',')
-        print(f"Received card data: {split_data}")
-        decoded_data = list(map(lambda x: int(x, 16), split_data))
-        print(f"Decoded card data: {decoded_data}")
-        card = convert_to_card(decoded_data)
-        # update cardmap so punchValue() works without an explicit card arg
-        cm.set_current_card(card)
-        # slap the date into the card so it shows up in the right place
-        punchdate = punch_date(card)
-        # generate and persist metadata for this card (binning, decoded values, etc.)
-        metadata = ec.evaluate(card)
-        save_card_metadata(punchdate, card, metadata)
-
+        try:
+            data = request.get_data(as_text=True)
+            split_data = data.split(',')
+            print(f"Received card data: {split_data}")
+            decoded_data = list(map(lambda x: int(x, 16), split_data))
+            print(f"Decoded card data: {decoded_data}")
+            card = convert_to_card(decoded_data)
+            # update cardmap so punchValue() works without an explicit card arg
+            cm.set_current_card(card)
+            # slap the date into the card so it shows up in the right place
+            punchdate = punch_date(card)
+            # generate and persist metadata for this card (binning, decoded values, etc.)
+            metadata = ec.evaluate(card)
+            save_card_metadata(punchdate, card, metadata)
+        except Exception as e:
+            print(f"Error processing card data: {e}")
+            return {"error": "invalid card data"}, 400
         # notify any connected clients that a new card is available
         for q in clients:
             q.put("update")
@@ -318,13 +320,19 @@ def test():
     card = None
     # first, try to parse the body as JSON
     if request.is_json:
-        data = request.get_json()
-        card = data["card"]
+        try:
+            data = request.get_json()
+            card = data["card"]
+        except Exception as e:
+            print(f"Error parsing JSON: {e}")
+            return {"error": "invalid JSON format"}, 400
     else:
         # fallback: try reading raw data and parsing
         try:
             card = json.loads(request.get_data(as_text=True))
-        except Exception:
+        except Exception as e:
+            print(f"Error parsing raw data: {e}")
+            return {"error": "invalid raw data format"}, 400
             pass
 
     if card is None:

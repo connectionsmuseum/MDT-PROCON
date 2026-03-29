@@ -93,9 +93,19 @@
         }
         .nav {
             padding: 10px;
+            display: flex;
+            align-items: center;
         }
         .nav a {
             color: #7ac7ff;
+            white-space: nowrap;
+        }
+        .nav h1.card-title {
+            flex: 1;
+            text-align: center;
+            margin: 0;
+            font-size: 1em;
+            color: #ccc;
         }
         #card {
             width: 100%;
@@ -106,7 +116,8 @@
     </head>
     <body>
         <div class="nav">
-            <a href="/bins">Back to bins</a>
+            <a href="/bins">Back to binned cards</a>
+            <!-- <h1 class="card-title">{{ card_name }}</h1> -->
         </div>
         <canvas id="card"></canvas>
     </body>

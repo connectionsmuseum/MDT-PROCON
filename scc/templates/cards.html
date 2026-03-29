@@ -22,6 +22,8 @@
 
             let blankCardImage = null;
             let placeholderImage = null;
+            let creditsImage = null;
+            let showingCredits = false;
 
             // lazy loading time
             function ensureBlankCard(callback) {
@@ -31,11 +33,28 @@
                 img.src = '/blank-card';
             }
 
+            function ensureCredits(callback) {
+                if (creditsImage) { callback(creditsImage); return; }
+                const img = new Image();
+                img.onload = function () { creditsImage = img; callback(img); };
+                img.src = '/static/back-credits.png';
+            }
+            
             function ensurePlaceholder(callback) {
                 if (placeholderImage) { callback(placeholderImage); return; }
                 const img = new Image();
                 img.onload = function () { placeholderImage = img; callback(img); };
                 img.src = '/static/placeholder.png';
+            }
+
+            function renderCredits() {
+                ensureCredits(function (img) {
+                    const canvas = document.getElementById('card');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    ctx.drawImage(img, 0, 0);
+                });
             }
 
             function renderPlaceholder() {
@@ -142,7 +161,12 @@
                 const checkbox  = document.getElementById("autoRefresh");
 
                 statusDot.addEventListener("click", function () {
-                    location.reload(); location.href = "/bins";
+                    showingCredits = !showingCredits;
+                    if (showingCredits) {
+                        renderCredits();
+                    } else {
+                        loadCard();
+                    }
                 });
 
                 // Restore saved setting (default: true if nothing stored)
@@ -215,18 +239,30 @@
         #card.flash {
             animation: fadePulse 0.4s ease;
         }
-        .controls {
+        .leftcontrols {
             display: flex;
             flex-direction: row;
             justify-content: space-between;
             padding-bottom: 10px;
             gap: 10px;
         }
-        .controls label {
+        .leftcontrols label {
             display: flex;         /* keeps checkbox + text inline */
             align-items: center;
             gap: 6px;              /* spacing between box and text */
             cursor: pointer;
+        }
+        .card-select-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card-select-group a {
+            color: #7ac7ff;
+            text-decoration: none;
+        }
+        .card-select-group a:hover {
+            text-decoration: underline;
         }
         .status-dot {
             width: 12px;
@@ -262,21 +298,24 @@
         </style>
     </head>
     <body>
-        <div class="controls">
-            <select name="card" id="cardSelect" onchange="loadCard()">
-                {% for card in card_entries %}
-                <option value="{{card.name}}">
-                    {{card.date}}
-                </option>
-                {% endfor %}
-                <option></option>
-            </select>
+        <div class="leftcontrols">
+            <div class="card-select-group">
+                <select name="card" id="cardSelect" onchange="loadCard()">
+                    {% for card in card_entries %}
+                    <option value="{{card.name}}">
+                        {{card.date}}
+                    </option>
+                    {% endfor %}
+                    <option></option>
+                </select>
+                <a href="/bins">Card Bins</a>
+            </div>
             <label>
                 <input type="checkbox" id="autoRefresh" checked>  
                 Auto-refresh on new card
             </label> 
             <div class="rightcontrols">
-                <span id="statusDot" class="status-dot disconnected" title="Connection status (click to open bins)"></span>
+                <span id="statusDot" class="status-dot disconnected" title="Connection status"></span>
                 <button onClick="window.location.reload();">Reload Page</button>
             </div>
         </div>
