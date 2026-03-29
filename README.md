@@ -4,4 +4,4 @@ MDT-PROCON functions as a replacement for both the PK-AA32 PROCON in the No. 5 C
 
 Using these two applications, we can do the same. The MDT portion of the code runs on an ESP-32, which reads a matrix of 160 inputs multipled several times in order to produce a trouble record. (Kids these days would refer to this as a core dump.) The trouble record is then sent to the SCC via an HTTP POST, where it is converted to an a JSON representation of a card, which can then be viewed in a browser.
 
-![an image of MDT-PROCON displaying a trouble card](https://github.com/connectionsmuseum/MDT-PROCON/blob/draw_cards/preview.png?raw=true)
+![an image of MDT-PROCON displaying a trouble card](https://github.com/connectionsmuseum/MDT-PROCON/blob/master/preview.png?raw=true)
