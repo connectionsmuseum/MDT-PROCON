@@ -37,7 +37,7 @@
                 if (creditsImage) { callback(creditsImage); return; }
                 const img = new Image();
                 img.onload = function () { creditsImage = img; callback(img); };
-                img.src = '/static/back-credits.png';
+                img.src = '/static/back-credits.jpg';
             }
             
             function ensurePlaceholder(callback) {

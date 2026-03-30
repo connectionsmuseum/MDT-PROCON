@@ -15,21 +15,24 @@ punchValue - 'punch name' -> bool
 def type_of_card(card, describe: bool = False):
     cm.set_current_card(card)
     print(">>> evaluating card type...")
-    if cm.punchValue('TI'):
-        for n in ('MOR', 'MIR', 'MOS'):
+    if cm.punchValue('TI'):         #if trouble indication
+        for n in ('MOR', 'MIR', 'MOS'):         # was this TI dropped by the monitor?
             if cm.punchValue(n):
                 punch = n
                 break
         else:
-            punch = 'TI'
+            punch = 'TI'                        # if not, it's just a regular TI
         result = (punch, )
     else:
-        for n in ('MTPT', 'SRT', 'TKT', 'MLV'):
+
+        for n in ('MTPT', 'SRT', 'TKT', 'MLV'): # otherwise, is it a test call?
             if cm.punchValue(n):
                 result = (n, )
                 break
-        else:
-            result = (None, )
+            else:
+                result = (None, )                   # nothing else left to check
+        if cm.punchValue('M'):                  # this was an RST. Why is this punch not working?
+            result = ('M', )
     if describe and result[0] is not None:
         return result + (describe_punch(result[0]),)
     return result
@@ -563,7 +566,8 @@ def os_reedcheck(card, outsender=None):
                     if obs_punched and nob_punched:
                         record_error("both OBS' and NOB' punched; exactly one must be punched to indicate observed vs not observed")
                     elif not obs_punched and not nob_punched:
-                        record_error("neither OBS' nor NOB' punched; exactly one must be punched to indicate observed vs not observed")
+                        if card_lacks(card,'M'):
+                            record_error("neither OBS' nor NOB' punched; exactly one must be punched to indicate observed vs not observed")
                     else:
                         decoded["OBS'"] = obs_punched
                         decoded["NOB'"] = nob_punched
@@ -657,13 +661,16 @@ def os_reedcheck(card, outsender=None):
             record_error("sender H' data must include a single-7 terminator")
 
         if register_digits is not None and sender_prime_decoded != register_digits:
-            record_error(
-                f"sender A'-H' decoded digits {sender_prime_decoded} do not match register data {register_digits}")
+            if card_has(card, ['M', 'MOS']):
+                record_error(f"sender A'-H' decoded digits {sender_prime_decoded} do not match the monitor digits {register_digits} on a AMRST call")
+            else:
+                record_error(
+                    f"sender A'-H' decoded digits {sender_prime_decoded} do not match register data {register_digits}")
 
         if errors:
             raise OSReedCheckError("; ".join(errors),
                             packs_calling_line=packs_calling_line, packs_outpulse=packs_outpulse,
-                            decoded=decoded, sender_prime_decoded=sender_prime_decoded, bin="OS_CLI_FAILURE")
+                            decoded=decoded, sender_prime_decoded=sender_prime_decoded, bin="OS_REED_FAILURE")
 
         outsender["reeds_calling_line"] = decoded
         outsender["reeds_outpulse"] = sender_prime_decoded
@@ -1157,9 +1164,9 @@ def cm_check(card):
         raise_cm_error("NO_TB", "TI with SOG/ITR/TOG/NSO requires one and only one TB0-5",
                        trigger=["TI", "SOG", "ITR", "TOG", "NSO"], context=tb_0_5_punches, requirement="exactly_one", bin="INV_TB")
 
-    if card_has(card, "TI") and card_has(card, ["SOG", "ITR", "TOG", "NSO"]) and card_has(card, tb_0_4_punches) and found_count(ts_punches) != 1:
+    if card_has(card, "TI") and card_has(card, ["SOG", "ITR", "TOG", "NSO"]) and card_has(card, tb_0_5_punches) and found_count(ts_punches) != 1:
         raise_cm_error("NO_TS", "TI with SOG/ITR/TOG/NSO and TB0-4 requires one and only one TS0-19",
-                       trigger=["TI", "SOG", "ITR", "TOG", "NSO"] + tb_0_4_punches, context=ts_punches, requirement="exactly_one", bin="INV_TS")
+                       trigger=["TI", "SOG", "ITR", "TOG", "NSO"] + tb_0_5_punches, context=ts_punches, requirement="exactly_one", bin="INV_TS")
 
     if card_has(card, "TI") and card_has(card, ["SOG", "ITR", "TOG", "NSO"]) and card_has(card, tb_0_5_punches) and found_count(fs_punches) != 1:
         raise_cm_error("NO_FS", "TI with SOG/ITR/TOG/NSO and TB0-5 requires one and only one FS0-29",
