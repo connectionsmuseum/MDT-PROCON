@@ -2,11 +2,28 @@
 import cardmap as cm
 import punch_descriptions as pd
 
-'''
-punchName - row, col or (row,col) -> punch name
-punchCoords - 'punch name' -> (row, col)
-punchValue - 'punch name' -> bool
-'''
+
+# Calling-line locations represented as AA-BB-CC and mapped to ORLM fields:
+#   AA -> FT, FU
+#   BB -> VG (two-digit text, single numeric value)
+#   CC -> HG, VF
+CALL_SIM_LINES = (
+    "30-02-94",
+    "30-00-94",
+    "30-04-71",
+    "30-01-81",
+    "30-00-72",
+    "30-04-44",
+    "30-01-21",
+    "30-02-63",
+    "30-00-34",
+    "30-01-71",
+    "30-04-53",
+    "30-01-51",
+    "30-05-62",
+    "30-01-32",
+    "30-02-24",
+)
 
 # ---------------------------------------------------------------------------
 # these are used to generate card metadata
@@ -15,27 +32,13 @@ punchValue - 'punch name' -> bool
 def type_of_card(card, describe: bool = False):
     cm.set_current_card(card)
     print(">>> evaluating card type...")
-    if cm.punchValue('TI'):         #if trouble indication
-        for n in ('MOR', 'MIR', 'MOS'):         # was this TI dropped by the monitor?
-            if cm.punchValue(n):
-                punch = n
-                break
-        else:
-            punch = 'TI'                        # if not, it's just a regular TI
-        result = (punch, )
+    if cm.punchValue('TI'):
+        punch = next((n for n in ('MOR', 'MIR', 'MOS') if cm.punchValue(n)), 'TI')
     else:
-
-        for n in ('MTPT', 'SRT', 'TKT', 'MLV'): # otherwise, is it a test call?
-            if cm.punchValue(n):
-                result = (n, )
-                break
-            else:
-                result = (None, )                   # nothing else left to check
-        if cm.punchValue('M'):                  # this was an RST. Why is this punch not working?
-            result = ('M', )
-    if describe and result[0] is not None:
-        return result + (describe_punch(result[0]),)
-    return result
+        punch = next((n for n in ('MTPT', 'TKT','SRT', 'MLV') if cm.punchValue(n)), None)
+    if describe and punch is not None:
+        return (punch, describe_punch(punch))
+    return (punch,)
 
 def marker_no(card, describe: bool = False):
     cm.set_current_card(card)
@@ -364,6 +367,40 @@ def orlm_check(card):
         9: [2, 7],
     }
 
+    def _line_loc_to_orlm_key(code: str):
+        """Convert an AA-BB-CC LL location to an (FT, FU, VG, HG, VF) key."""
+        aa, bb, cc = code.split("-")
+        if len(aa) != 2 or len(bb) != 2 or len(cc) != 2:
+            raise ValueError(f"invalid line link format: {code!r}")
+        if not (aa.isdigit() and bb.isdigit() and cc.isdigit()):
+            raise ValueError(f"line link address must contain only digits: {code!r}")
+
+        return (
+            int(aa[0]),
+            int(aa[1]),
+            int(bb),
+            int(cc[0]),
+            int(cc[1]),
+        )
+
+
+    CALLING_LINE_LOCATION_KEYS = frozenset(
+        _line_loc_to_orlm_key(code) for code in CALL_SIM_LINES
+    )
+
+
+    def is_known_calling_line(decoded_orlm: dict) -> bool:
+        """Return True if decoded ORLM fields are in the known location list."""
+        key = (
+            decoded_orlm.get("FT"),
+            decoded_orlm.get("FU"),
+            decoded_orlm.get("VG"),
+            decoded_orlm.get("HG"),
+            decoded_orlm.get("VF"),
+        )
+        return key in CALLING_LINE_LOCATION_KEYS
+
+
     print(">>> evaluating ORLM reed packs...")
 
 
@@ -429,6 +466,8 @@ def orlm_check(card):
         raise ORLMCheckError("; ".join(errors),
                            packs=packs,
                            decoded=decoded, bin="ORLM_FAILURE")
+
+    decoded["call_sim_line"] = is_known_calling_line(decoded)
 
     return decoded
 
@@ -563,14 +602,14 @@ def os_reedcheck(card, outsender=None):
                     nob_punched = cm.punchValue("NOB'")
                     packs_calling_line["OBS'"] = obs_punched
                     packs_calling_line["NOB'"] = nob_punched
-                    if obs_punched and nob_punched:
-                        record_error("both OBS' and NOB' punched; exactly one must be punched to indicate observed vs not observed")
-                    elif not obs_punched and not nob_punched:
-                        if card_lacks(card,'M'):
+                    if cm.punchValue('AMA'):
+                        if obs_punched and nob_punched:
+                            record_error("both OBS' and NOB' punched; exactly one must be punched to indicate observed vs not observed")
+                        elif not obs_punched and not nob_punched:
                             record_error("neither OBS' nor NOB' punched; exactly one must be punched to indicate observed vs not observed")
-                    else:
-                        decoded["OBS'"] = obs_punched
-                        decoded["NOB'"] = nob_punched
+                        else:
+                            decoded["OBS'"] = obs_punched
+                            decoded["NOB'"] = nob_punched
                     continue
 
                 # FT must always have values 0 + 3
@@ -808,7 +847,7 @@ def cm_check(card):
     * If RCK3 and not DCT1 then must have DCT: raise TER_NO_DCT
     * If DCT1 then must have DIS1 and must not have DCT: raise DCT1_NO_DIS1
     * If DCT1 then must have LK1: raise NO_LK1
-    * If (DCT1 and LK1) or DCT2 or LK1 then must have DIS1: raise NO_DIS1
+    * If (SCB and DCT1 and LK1) or DCT2 or LK1 then must have DIS1: raise NO_DIS1
 
     # TLF checks
     * If LV2-9 then must have FAK or FBK: raise NO_FAK_FBK
@@ -852,12 +891,6 @@ def cm_check(card):
     * If FLG then must have LK or RK: raise NO_LK_RK
     * If FLG then must have RK3: raise NO_RK3
     * If FLG and JCK and LCK and HGK and TCHK and RK3 and (LK or RK) then must have TK: raise NO_TK
-    * If SCB then must have FAK: raise NO_FAK
-    * If SCB then must have LCK: raise NO_LCK
-    * If SCB then must have JCK: raise NO_JCK
-    * If SCB then must have DTK: raise NO_DTK
-    * If SCB then must have HGK: raise NO_HGK
-    * If SCB then must have RK3: raise NO_RK3
     * If SCB and FAK and LFK and LCK and JCK and HGK and RK3 then must have TK: raise NO_TK
     * If FLG and HGK and JCK and TCHK and LCK and (FAK or FBK) then must have TK: raise NO_TK
     * If TK then must have HMS1: raise NO_HMS1
@@ -870,8 +903,8 @@ def cm_check(card):
     * If FS0 then must have FTCK: raise NO_FTCK
     * If LK1 then must have SCB: raise NO_SCB
     * If FLG and LB then must have BY or OV: raise NO_BY_OV
-    * If TM and CKG then must have TK: raise NO_TK
     * If TM and CKG and TSE: raise TSE_NO_TRUNK
+    * If TM and CKG then must have TK: raise NO_TK
     """
 
     cm.set_current_card(card)
@@ -888,7 +921,6 @@ def cm_check(card):
     tg_0_19_punches = [f"TG{i}" for i in range(20)]
     ts_punches = [f"TS{i}" for i in range(20)]
     fs_punches = [f"FS{i}" for i in range(30)]
-    jg_0_4_punches = [f"JG{i}" for i in range(5)]
     rs_0_1_punches = ["RS0", "RS1"]
     rs_2_9_punches = [f"RS{i}" for i in range(2, 10)]
     rs_all_punches = rs_0_1_punches + rs_2_9_punches
@@ -994,9 +1026,9 @@ def cm_check(card):
     if card_has(card, "DCT1") and card_lacks(card, "LK1"):
         raise_cm_error("NO_LK1", "DCT1 is punched without LK1", required=["LK1"], trigger=["DCT1"], bin="DCT_FAILURES")
 
-    if (card_has_all(card, "DCT1", "LK1") or card_has(card, ["DCT2", "LK1"])) and card_lacks(card, "DIS1"):
+    if (card_has_all(card, "SCB", "DCT1", "LK1") or card_has(card, ["DCT2", "LK1"])) and card_lacks(card, "DIS1"):
         raise_cm_error("NO_DIS1", "DCT/LK combination requires DIS1",
-                       required=["DIS1"], trigger=["DCT1", "DCT2", "LK1"], bin="NO_DIS1")
+                       required=["DIS1"], trigger=["SCB", "DCT1", "DCT2", "LK1"], bin="NO_DIS1")
 
     # --- TLF checks ---
     if card_has(card, lv_punches) and card_lacks(card, ["FAK", "FBK"]):
@@ -1141,7 +1173,7 @@ def cm_check(card):
 
     if card_has_all(card, "SCB", "FAK", "LFK", "LCK", "JCK", "HGK", "RK3") and card_lacks(card, "TK"):
         raise_cm_error("NO_TK", "TK failed to operate when it should have on SCB linkage",
-                       required=["TK"], trigger=["SCB", "FAK", "LCK", "JCK", "DTK", "HGK", "RK3"], bin="NO_TK")
+                       required=["TK"], trigger=["SCB", "FAK", "LFK", "LCK", "JCK", "HGK", "RK3"], bin="NO_TK")
 
     if card_has_all(card, "FLG", "HGK", "JCK", "TCHK", "LCK") and card_has(card, ["FAK", "FBK"]) and card_lacks(card, "TK"):
         raise_cm_error("NO_TK", "TK failed to operate when it should have on FLG linkage",
@@ -1165,7 +1197,7 @@ def cm_check(card):
                        trigger=["TI", "SOG", "ITR", "TOG", "NSO"], context=tb_0_5_punches, requirement="exactly_one", bin="INV_TB")
 
     if card_has(card, "TI") and card_has(card, ["SOG", "ITR", "TOG", "NSO"]) and card_has(card, tb_0_5_punches) and found_count(ts_punches) != 1:
-        raise_cm_error("NO_TS", "TI with SOG/ITR/TOG/NSO and TB0-4 requires one and only one TS0-19",
+        raise_cm_error("NO_TS", "TI with SOG/ITR/TOG/NSO and TB0-5 requires one and only one TS0-19",
                        trigger=["TI", "SOG", "ITR", "TOG", "NSO"] + tb_0_5_punches, context=ts_punches, requirement="exactly_one", bin="INV_TS")
 
     if card_has(card, "TI") and card_has(card, ["SOG", "ITR", "TOG", "NSO"]) and card_has(card, tb_0_5_punches) and found_count(fs_punches) != 1:
@@ -1182,13 +1214,15 @@ def cm_check(card):
         raise_cm_error("NO_BY_OV", "FLG and LB requires BY or OV",
                        required=["BY", "OV"], trigger=["FLG", "LB"], requirement="any", bin="LB_BY_OV_FAIL")
 
+    if card_has_all(card, "TM", "CKG", "TSE"):
+        raise_cm_error("TSE_NO_TRUNK", "TSE indicates marker unable to complete trunk selection. Probable translation or route relay failure.",
+                       trigger=["TM", "CKG"], context=["TSE"], bin="TSE_NO_TRUNK")
+
     if card_has_all(card, ["TM", "CKG"]) and card_lacks(card, "TK"):
         raise_cm_error("FALLTHROUGH", "TK check fallthrough. Please examine card and create a bin for this",
                        required=["TK"], trigger=["FLG", "LB"], bin="NO_TK")
 
-    if card_has_all(card, "TM", "CKG", "TSE"):
-        raise_cm_error("TSE_NO_TRUNK", "TSE indicates marker unable to complete trunk selection. Probable translation or route relay failure.",
-                       trigger=["TM", "CKG"], context=["TSE"], bin="TSE_NO_TRUNK")
+
 
     return {"ok": True}
 
@@ -1207,6 +1241,7 @@ def evaluate(card, describe: bool = False):
         "trial": trial_getmeta(card, describe),
         "timer": timer_getmeta(card, describe),
         "status_flag": status_flag_getmeta(card, describe),
+        "line_verification": None,                                      # checked and binned below
         "register": {"number": None, "digits": None, "kind": None}, # checked and binned below
         "perm_sig": ps_getmeta(card),
         "crosses": [],                                              # checked and binned below
@@ -1217,8 +1252,16 @@ def evaluate(card, describe: bool = False):
         if bin_name and meta.get("bin") == "unbinned":
             meta["bin"] = bin_name
 
-    if meta["type"][0] in ("MTPT", "SRT", "TKT", "MLV"):
-        set_bin_if_unbinned("TEST_CARD")
+    if meta["type"][0] in ("MTPT", "TKT"):
+        set_bin_if_unbinned("TEST_CARD_MKR_TRK")
+    if meta["type"][0] == "SRT":
+        set_bin_if_unbinned("TEST_CARD_SRT")
+    if meta["type"][0] == "MLV":
+        set_bin_if_unbinned("TEST_CARD_MLV")
+        if card_has(card, "LVM"):
+            meta["line_verification"] = "Match"
+        else:
+            meta["line_verification"] = "Fail"
 
     # Cross check supersedes all other bins, so run this first.
     meta["crosses"] = x_check(card)
@@ -1309,7 +1352,6 @@ def evaluate(card, describe: bool = False):
     return meta
 
 
-
 # ---------------------------------------------------------------------------
 # helper routines for binning/sorting by punches
 # ---------------------------------------------------------------------------
@@ -1385,7 +1427,7 @@ def bin_card(card, rules, default=None):
 # ---------------------------------------------------------------------------
 
 def describe_punch(name):
-    # Shorthand for clients that don't feel like importing the module
+    # Shorthand for clients that don't feel like importing the punch_descriptions module
     return pd.describe(name)
 
 def truthy_punches(card):

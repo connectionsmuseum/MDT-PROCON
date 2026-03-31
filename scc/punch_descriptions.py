@@ -750,10 +750,132 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'CK': 'Marker preference (MP or E) relay on the selected trunk link frame operated.',
     'FML': (
         'Frame Memory Lock relay in the marker operated to insure a different trunk link frame '
-        'is selected on the next call.'
+        'is selected on the next call. Ineffective at museum, but important from a sequence-of-events perspective.'
     ),
-    
-    
+    'MAK1': (
+        'Marker Connector Cut-In Check. Both halves of the MCA relay operated in the selected Trunk Link Connector (TLC).'
+    ),
+    'TBK': (
+        'Trunk Block Check. A TB- relay of the selected trunk link connector operated.'
+    ),
+    'ORK': (
+        'Originating Register Check. Also coincident with RK1. '
+        'RK1 indicates that no false ground is present on the calling-line identification '
+        'leads from the OR. '
+        'ORK indicates that the called number from the OR/IR has been properly received and validated.'
+    ),
+    'RK2': (
+        'Register Check 2. Indicates that no false battery was detected on the calling line leads from the OR. '
+        'Operation of both RK1 and RK2 indicates that the calling line information from the OR has been properly '
+        'received and validated.'
+    ),
+    'VTK1': (
+        'Vertical Group Test Check. When punched, indicates that only one of the VGT0-11 relays is locked operated '
+        'in the marker for vertical group selection. This is a test for the presence of a valid vertical group selection.'
+    ),
+    'HTK1': (
+        'Horizontal Group Test Check. When punched, indicates that only one of the HGT0-9 relays is locked operated '
+        'in the marker for horizontal group selection. This is a test for the presence of a valid horizontal group selection.'
+    ),
+    'FTK1': (
+        'Vertical File Test Check. When punched, indicates that only one of the VFT0-4 relays is locked operated for '
+        'vertical file selection. This is a test for the presence of a valid vertical file selection.'
+    ),
+    'LFK1': (
+        'Line Link Frame Check. Indicates that the associated Marker Cut In (MCA) relay has operated in the selected '
+        'line link frame (LLF).'
+    ),
+    'DTK': (
+        'Dial Tone Check. Used only by the dial tone marker (DTM). Indicates that the DT relay in the associated '
+        'line link connector (LLC) has operated.'
+    ),
+    'FAK': (
+        'Frame A Appearance Check. The FA- relay in the selected TLF has operated, indicating that the A appearance '
+        'location in the selected trunk link frame will be used.'
+    ),
+    'FBK': (
+        'Frame B Appearance Check. The FB- relay in the selected TLF has operated, indicating that the B appearance '
+        'location in the selected trunk link frame will be used.'
+    ),
+    'LCK': (
+        'Link Connector Check. The LC- relay in the selected trunk link connector has operated.'
+    ),
+    'RK3': (
+        'RK3 relay in the marker has operated to show that all necessary information '
+        'has been forwarded and is locked into the originating register. With the RK1 '
+        'and RK2 punched, an absence of the indicates that the check of the register '
+        'locking path is incomplete.'
+    ),
+    'HGK': (
+        'Horizontal Group Check. One of the HG0-9 relays has operated in associated LLF.'
+    ),
+    'RK': (
+        'RK (right-half frame check) relay in the marker operated from an operated R (right) relay on the '
+        'selected trunk link frame. This causes the marker to test Junctors serving the right half of the trunk '
+        'link frame.'
+    ),
+    'LK': (
+        'LK (left-half frame check) relay in the marker operated from an operated L (left) relay on the '
+        'selected trunk link frame. This causes the marker to test Junctors serving the left half of the trunk '
+        'link frame.'
+    ),
+    'JCK': (
+        'Operation of a JC- (Junctor cut-in) relay in the selected trunk link connector has operated the JCKO '
+        'and JCK1 relays in the marker. If CHO or CH1 operates, JCKO and JCK1 will release.'
+    ),
+    'TCHK': (
+        'Marker TCHO-9 (test channel) relay operated to indicate channel numbers in the selected Junctor '
+        'subgroup associated with the trunk link frame.'
+    ),
+    'TK': (
+        'Test Check. The marker has completed all necessary functions to enable it to close a channel.'
+    ),
+    'RL': (
+        'Marker grounded the RL lead to the originating register marker connector.'
+    ),
+    'HTR': (
+        'Heavy Traffic. The marker has been idle less than one second from the previous marker seizure. '
+        'When HTR is operated the marker skips or shortens the length of certain tests in order to speed up '
+        'job completion time.'
+    ),
+    'HMS1': (
+        'Hold Magnet Start 1. Marker initiated the operation of the selected channel hold magnets.'
+    ),
+    'LXPA': (
+        'Line hold magnet. Indicates operation of the line hold magnet.'
+    ),
+    'JXPA': (
+        'Junctor sleeve continuity has been checked.'
+    ),
+    'SL': (
+        'Sleeve lead (TLF). Indicates the closure of the trunk link frame crosspoints.'
+    ),
+    'JXP1': (
+        'Junctor crosspoints closed.'
+    ),
+    'LXP1': (
+        'Line Crosspoints 1. When punched, indicates its friend, the LXP relay is released. When unpunched, indicates that its friend, the '
+        'LXP relay is operated.'
+    ),
+    'GLH': (
+        'Ground Line Hold Magnet. The marker started to operate the hold magnet for the line on the LLF.'
+    ),
+    'CON': (
+        'Continuity test has been successfully completed. This test is canceled at the museum via the operation of the CCT key in the MTC.'
+    ),
+    'GT2': (
+        'Ground Test 2. Checks the operation of CON1, CON2, SL, and LLCl and '
+        'the nonoperation of LXP1, LXP, and SP relays.'
+    ),
+    'DCT': (
+        'Double Connection Test. Double connection did not exist on the selected channel. This is good. '
+        'ref CD-25550-01 7.5332'
+    ),
+    'RSC': (
+        'Release Sender Connector. Registration of information transmitted by the marker to the outgoing sender was successful. The OSC may '
+        'now release.'
+    ),
+
 }
 
 def describe(name: str) -> str:

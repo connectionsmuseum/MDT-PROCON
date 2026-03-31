@@ -3,7 +3,6 @@ import json
 
 card_map = {}
 
-
 def _build_card_map():
     """Populate :data:`card_map` from the CSV file.
 

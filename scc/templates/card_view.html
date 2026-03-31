@@ -80,8 +80,34 @@
                 }
             }
 
+            // Source - https://stackoverflow.com/a/7220510
+            // Posted by user123444555621, modified by community. See post 'Timeline' for change history
+            // Retrieved 2026-03-20, License - CC BY-SA 3.0
+            function syntaxHighlight(json) {
+                json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                    var cls = 'number';
+                    if (/^"/.test(match)) {
+                        if (/:$/.test(match)) {
+                            cls = 'key';
+                        } else {
+                            cls = 'string';
+                        }
+                    } else if (/true|false/.test(match)) {
+                        cls = 'boolean';
+                    } else if (/null/.test(match)) {
+                        cls = 'null';
+                    }
+                    return '<span class="' + cls + '">' + match + '</span>';
+                });
+            }
+
             document.addEventListener("DOMContentLoaded", function () {
                 renderCard(CARD_DATA);
+                var jsonBlock = document.getElementById('metadata-json');
+                if (jsonBlock) {
+                    jsonBlock.innerHTML = syntaxHighlight(jsonBlock.textContent);
+                }
             });
         </script>
         <style>
@@ -99,6 +125,10 @@
         .nav a {
             color: #7ac7ff;
             white-space: nowrap;
+            text-decoration: none;
+        }
+        .nav a:hover {
+            text-decoration: underline;
         }
         .nav h1.card-title {
             flex: 1;
@@ -112,13 +142,65 @@
             height: auto;
             display: block;
         }
+        .metadata {
+            padding: 12px 10px 16px;
+        }
+        .metadata h2 {
+            margin: 0 0 8px;
+            font-size: 1.05rem;
+            color: #ccc;
+        }
+        .metadata pre {
+            margin: 0;
+            padding: 14px;
+            border: 1px solid #444;
+            border-radius: 6px;
+            background: #111;
+            color: #d9f0ff;
+            overflow: auto;
+            line-height: 1.35;
+        }
+        .metadata .string { color: #98c379; }
+        .metadata .number { color: #d19a66; }
+        .metadata .boolean { color: #61afef; }
+        .metadata .null { color: #c678dd; }
+        .metadata .key { color: #e06c75; }
+        .card-nav {
+            margin-left: auto;
+            display: flex;
+            gap: 12px;
+            font-size: 1.4em;
+            font-weight: bold;
+        }
+        .card-nav a {
+            color: #7ac7ff;
+            text-decoration: none;
+        }
+        .card-nav a:hover {
+            text-decoration: underline;
+        }
+        .card-nav .nav-disabled {
+            color: #555;
+        }
         </style>
     </head>
     <body>
         <div class="nav">
             <a href="/bins">Back to binned cards</a>
             <!-- <h1 class="card-title">{{ card_name }}</h1> -->
+            <div class="card-nav">
+                {% if prev_card %}<a href="/card/{{ prev_card }}">&larr;</a>{% else %}<span class="nav-disabled">&larr;</span>{% endif %}
+                {% if next_card %}<a href="/card/{{ next_card }}">&rarr;</a>{% else %}<span class="nav-disabled">&rarr;</span>{% endif %}
+            </div>
         </div>
         <canvas id="card"></canvas>
+        <section class="metadata">
+            <h2>Metadata</h2>
+            {% if pretty_json %}
+                <pre id="metadata-json">{{ pretty_json }}</pre>
+            {% else %}
+                <p>Metadata not found for this card.</p>
+            {% endif %}
+        </section>
     </body>
 </html>

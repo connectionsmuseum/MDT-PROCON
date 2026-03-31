@@ -271,9 +271,18 @@ def _get_bins():
         bin_name = data.get('metadata', {}).get('bin', 'unknown')
         card_name = fn[:-5] + '.json'
         formatted_date = _format_card_timestamp(card_name)
+        register_digits = data.get('metadata', {}).get('register', {}).get('digits')
+        if isinstance(register_digits, list):
+            register_digits_display = ''.join(str(d) for d in register_digits)
+        elif register_digits is None:
+            register_digits_display = None
+        else:
+            register_digits_display = str(register_digits)
         bins.setdefault(bin_name, []).append({
             'filename': card_name,
-            'date': formatted_date
+            'date': formatted_date,
+            'register_digits': register_digits,
+            'register_digits_display': register_digits_display,
         })
 
     # Sort by filename (timestamp-prefixed), backwards
@@ -421,15 +430,6 @@ def card_metadata(name):
         return jsonify({"error": "metadata not found"}), 404
     return jsonify(data)
 
-@app.route('/cardmeta/view/<name>', methods=['GET'])
-def card_metadata_view(name):
-    """Render saved card JSON for a card JPG as pretty HTML."""
-    data = _load_card_metadata(name)
-    if data is None:
-        return render_template('cardmeta.html', card_name=name, pretty_json=None), 404
-    pretty = json.dumps(data, indent=2, sort_keys=True)
-    return render_template('cardmeta.html', card_name=name, pretty_json=pretty)
-
 @app.route('/cards', methods=['GET'])
 # for backward compatibility with older versions of the frontend
 def go_away():
@@ -440,13 +440,30 @@ def single_card(name):
     """Render a card view page, drawing the card from stored JSON data."""
     data = _load_card_metadata(name)
     orig_x, orig_y, off_x, off_y, _t_start_x, _t_start_y = get_offsets()
+
+    # Determine prev/next card by time (filename sort order)
+    base = os.path.splitext(name)[0]
+    json_name = f"{base}.json" if not base.endswith('_front') else f"{base}.json"
+    all_cards = sorted(f for f in os.listdir('/tmp/cards/') if f.endswith('_front.json'))
+    prev_card = next_card = None
+    if json_name in all_cards:
+        idx = all_cards.index(json_name)
+        prev_card = all_cards[idx - 1] if idx > 0 else None
+        next_card = all_cards[idx + 1] if idx < len(all_cards) - 1 else None
+
+    pretty_json = None if data is None else json.dumps(data, indent=2, sort_keys=True)
+
     if data is None:
         return render_template('card_view.html', card_name=name,
                                card_data_json='null',
+                               pretty_json=pretty_json,
+                               prev_card=prev_card, next_card=next_card,
                                orig_x=orig_x, orig_y=orig_y,
                                off_x=off_x, off_y=off_y), 404
     return render_template('card_view.html', card_name=name,
                            card_data_json=json.dumps(data),
+                           pretty_json=pretty_json,
+                           prev_card=prev_card, next_card=next_card,
                            orig_x=orig_x, orig_y=orig_y,
                            off_x=off_x, off_y=off_y)
 

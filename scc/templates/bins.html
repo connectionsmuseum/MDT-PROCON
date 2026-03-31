@@ -19,6 +19,10 @@
             }
             a {
                 color: #7ac7ff;
+                text-decoration: none;
+            }
+            a:hover {
+                text-decoration: underline;
             }
             .bin {
                 margin-bottom: 18px;
@@ -96,14 +100,14 @@
 
             <p id="empty-filter-result" class="empty-filter-result" style="display: none;">No bins found for the selected time range.</p>
 
-            {% for bin_name, cards in bins.items() %}
+            {% for bin_name, cards in bins|dictsort %}
                 <div class="bin">
                     <h2><span class="bin-name">{{ bin_name }}</span> (<span class="bin-count">{{ cards|length }}</span>)</h2>
                     <ul class="card-list">
                         {% for card in cards %}
                             <li data-card-date="{{ card.date }}">
                                 <a href="/card/{{ card.filename }}">{{ card.date }}</a>
-                                <span class="meta">[<a href="/cardmeta/view/{{ card.filename }}" rel="noopener noreferrer">meta</a>]</span>
+                                <span class="meta">Dialed number: {{ card.register_digits_display if card.register_digits_display is not none else 'None' }}</span>
                             </li>
                         {% endfor %}
                     </ul>
@@ -138,9 +142,9 @@
                 function getStartOfWeek(now) {
                     var start = new Date(now);
                     var day = start.getDay();
-                    var diffToMonday = day === 0 ? 6 : day - 1;
+                    var diffToSunday = day;
                     start.setHours(0, 0, 0, 0);
-                    start.setDate(start.getDate() - diffToMonday);
+                    start.setDate(start.getDate() - diffToSunday);
                     return start;
                 }
 
