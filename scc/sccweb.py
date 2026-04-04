@@ -99,6 +99,7 @@ def convert_to_card(data):
     return card
 
 def get_offsets():
+    """Magic numbers to align the holes on the card image"""
     global _offsets
     if _offsets is None:
         with open('cardpack/offsets.txt') as offsets:
@@ -288,8 +289,19 @@ def _get_bins():
     # Sort by filename (timestamp-prefixed), backwards
     for cards in bins.values():
         cards.sort(key=lambda x: x['filename'], reverse=True)
-
     return bins
+
+def _load_card_metadata(name):
+    """Load saved card JSON (card + metadata) by JSON name, or base."""
+    if name.lower().endswith('.json'):
+        base = os.path.splitext(name)[0]
+    else:
+        base = name
+    meta_path = os.path.join('/tmp/cards', f"{base}.json")
+    if not os.path.exists(meta_path):
+        return None
+    with open(meta_path) as f:
+        return json.load(f)
 
 @app.route('/trouble-card', methods=['POST'])
 # MDT posts cards here
@@ -408,36 +420,31 @@ def view_bins():
     bins = _get_bins()
     return render_template('bins.html', bins=bins)
 
-def _load_card_metadata(name):
-    """Load saved card JSON (card + metadata) by JPG name, JSON name, or base."""
-    if name.lower().endswith('.json'):
-        base = os.path.splitext(name)[0]
-    elif name.lower().endswith('.jpg'):
-        base = os.path.splitext(name)[0]
-    else:
-        base = name
-    meta_path = os.path.join('/tmp/cards', f"{base}.json")
-    if not os.path.exists(meta_path):
-        return None
-    with open(meta_path) as f:
-        return json.load(f)
 
 @app.route('/cardmeta/<name>', methods=['GET'])
 def card_metadata(name):
-    """Return saved evaluation metadata for a card JPG."""
+    """Return saved evaluation metadata for the card renderer."""
     data = _load_card_metadata(name)
     if data is None:
         return jsonify({"error": "metadata not found"}), 404
     return jsonify(data)
 
 @app.route('/cards', methods=['GET'])
-# for backward compatibility with older versions of the frontend
 def go_away():
+    """
+    Redirect /cards to the main page, which lists all cards. 
+    This is a convenience for users who might try to navigate to /cards expecting to see the card list.
+    """
+
     return redirect('/', code=301)
 
 @app.route('/card/<name>', methods=['GET'])
 def single_card(name):
-    """Render a card view page, drawing the card from stored JSON data."""
+    """
+    Render a card view page, drawing the card from stored JSON data.
+    The user-facing page also displays the card metadata (decoded values, binning, etc.) 
+    that is saved in the JSON alongside the card bits.
+    """
     data = _load_card_metadata(name)
     orig_x, orig_y, off_x, off_y, _t_start_x, _t_start_y = get_offsets()
 

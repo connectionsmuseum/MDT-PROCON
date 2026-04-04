@@ -3,6 +3,7 @@ import json
 
 card_map = {}
 
+
 def _build_card_map():
     """Populate :data:`card_map` from the CSV file.
 
@@ -20,6 +21,16 @@ def _build_card_map():
         for row in range(18):
             for col in range(69):   # has to include the 9 blank punches in the center of the card
                 card_map[(row, col)] = next(names)
+
+
+def set_current_card(card):
+    """Remember a card grid so :func:`punchValue` can work implicitly.
+
+    ``card`` is expected to be a 2‑dimensional list/tuple indexed as
+    ``card[row][col]`` containing truthy values for holes.
+    """
+    global _current_card
+    _current_card = card
 
 
 def punchName(rno, cno=None):
@@ -73,15 +84,6 @@ def punchCoords(name):
 # print(json.dumps(json_map))
 # card currently being processed, stored by the caller
 _current_card = None
-
-def set_current_card(card):
-    """Remember a card grid so :func:`punchValue` can work implicitly.
-
-    ``card`` is expected to be a 2‑dimensional list/tuple indexed as
-    ``card[row][col]`` containing truthy values for holes.
-    """
-    global _current_card
-    _current_card = card
 
 
 def punchValue(name, card=None):

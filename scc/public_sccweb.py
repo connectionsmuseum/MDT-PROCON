@@ -87,7 +87,7 @@ def _list_saved_card_json_entries(limit=30):
 def _format_card_timestamp(filename):
     """Extract and format timestamp from card filename.
     
-    Converts '26-03-22_21-32-16_front.jpg' or '_front.json' to
+    Converts '26-03-22_21-32-16_front.json' to
     '2026-03-22 21:32:16'
     """
     try:
@@ -119,8 +119,8 @@ def _get_bins():
         except Exception:
             continue
         bin_name = data.get('metadata', {}).get('bin', 'unknown')
-        jpg_name = fn[:-5] + '.jpg'
-        formatted_date = _format_card_timestamp(jpg_name)
+        json_name = fn[:-5] + '.json'
+        formatted_date = _format_card_timestamp(json_name)
         register_digits = data.get('metadata', {}).get('register', {}).get('digits')
         if isinstance(register_digits, list):
             register_digits_display = ''.join(str(d) for d in register_digits)
@@ -129,7 +129,7 @@ def _get_bins():
         else:
             register_digits_display = str(register_digits)
         bins.setdefault(bin_name, []).append({
-            'filename': jpg_name,
+            'filename': json_name,
             'date': formatted_date,
             'register_digits': register_digits,
             'register_digits_display': register_digits_display,
@@ -233,8 +233,6 @@ def _load_card_metadata(name):
     """Load saved card JSON (card + metadata) by JPG name, JSON name, or base."""
     if name.lower().endswith('.json'):
         base = os.path.splitext(name)[0]
-    elif name.lower().endswith('.jpg'):
-        base = os.path.splitext(name)[0]
     else:
         base = name
     meta_path = os.path.join('/tmp/cards', f"{base}.json")
@@ -245,7 +243,7 @@ def _load_card_metadata(name):
 
 @app.route('/cardmeta/<name>', methods=['GET'])
 def card_metadata(name):
-    """Return saved evaluation metadata for a card JPG."""
+    """Return saved evaluation metadata for a card."""
     data = _load_card_metadata(name)
     if data is None:
         return jsonify({"error": "metadata not found"}), 404

@@ -485,117 +485,43 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'FR4': (
         'Outgoing Sender Connector (OSC) frame four was used on this call.'
     ),
-    'CN0': (
-        'Connector 0 in the selected OSC was used on this call.'
-    ),
-    'CN1': (
-        'Connector 1 in the selected OSC was used on this call.'
-    ),
-    'CN2': (
-        'Connector 2 in the selected OSC was used on this call.'
-    ),
-    'CN3': (
-        'Connector 3 in the selected OSC was used on this call.'
-    ),
-    'S0': (
-        'Sender 0 in the selected OSC was used on this call.'
-    ),
-    'S1': (
-        'Sender 1 in the selected OSC was used on this call.'
-    ),
-    'S2': (
-        'Sender 2 in the selected OSC was used on this call.'
-    ),
-    'S3': (
-        'Sender 3 in the selected OSC was used on this call.'
-    ),
-    'S4': (
-        'Sender 4 in the selected OSC was used on this call.'
-    ),
-    'S5': (
-        'Sender 5 in the selected OSC was used on this call.'
-    ),
-    'S6': (
-        'Sender 6 in the selected OSC was used on this call.'
-    ),
-    'S7': (
-        'Sender 7 in the selected OSC was used on this call.'
-    ),
-    'S8': (
-        'Sender 8 in the selected OSC was used on this call.'
-    ),
-    'S9': (
-        'Sender 9 in the selected OSC was used on this call.'
-    ),
-    'S10': (
-        'Sender 10 in the selected OSC was used on this call.'
-    ),
-    'S11': (
-        'Sender 11 in the selected OSC was used on this call.'
-    ),
-    'S12': (
-        'Sender 12 in the selected OSC was used on this call.'
-    ),
-    'OSG0': (
-        'Outgoing Sender Group 0 was selected by the marker.'
-    ),
-    'OSG1': (
-        'Outgoing Sender Group 1 was selected by the marker.'
-    ),
-    'OSG2': (
-        'Outgoing Sender Group 2 was selected by the marker.'
-    ),
-    'OSG3': (
-        'Outgoing Sender Group 3 was selected by the marker.'
-    ),
-    'OSG4': (
-        'Outgoing Sender Group 4 was selected by the marker.'
-    ),
-    'OSG5': (
-        'Outgoing Sender Group 5 was selected by the marker.'
-    ),
-    'OSG6': (
-        'Outgoing Sender Group 6 was selected by the marker.'
-    ),
-    'OSG7': (
-        'Outgoing Sender Group 7 was selected by the marker.'
-    ),
-    'OSG8': (
-        'Outgoing Sender Group 8 was selected by the marker.'
-    ),
-    'OSG9': (
-        'Outgoing Sender Group 9 was selected by the marker.'
-    ),
-    'OSG10': (
-        'Outgoing Sender Group 10 was selected by the marker.'
-    ),
-    'OSG11': (
-        'Outgoing Sender Group 11 was selected by the marker.'
-    ),
-    'SSA': (
-        'Outgoing sender subgroup A was seized by the marker.'
-    ),
-    'SSB': (
-        'Outgoing sender subgroup B was seized by the marker.'
-    ),
-    'OS0': (
-        'Outgoing sender 0 was selected in the sender group.'
-    ),
-    'OS1': (
-        'Outgoing sender 1 was selected in the sender group.'
-    ),
-    'OS2': (
-        'Outgoing sender 2 was selected in the sender group.'
-    ),
-    'OS3': (
-        'Outgoing sender 3 was selected in the sender group.'
-    ),
-    'OS4': (
-        'Outgoing sender 4 was selected in the sender group.'
-    ),
-    'RO\'': (
-        'Operation of the RO (Reorder) relay In the outgoing sender to set the outgoing trunk for reorder.'
-    ),
+    'CN0': 'Connector 0 in the selected OSC was used on this call.',
+    'CN1': 'Connector 1 in the selected OSC was used on this call.',
+    'CN2': 'Connector 2 in the selected OSC was used on this call.',
+    'CN3': 'Connector 3 in the selected OSC was used on this call.',
+    'S0': 'Sender 0 in the selected OSC was used on this call.',
+    'S1': 'Sender 1 in the selected OSC was used on this call.',
+    'S2': 'Sender 2 in the selected OSC was used on this call.',
+    'S3': 'Sender 3 in the selected OSC was used on this call.',
+    'S4': 'Sender 4 in the selected OSC was used on this call.',
+    'S5': 'Sender 5 in the selected OSC was used on this call.',
+    'S6': 'Sender 6 in the selected OSC was used on this call.',
+    'S7': 'Sender 7 in the selected OSC was used on this call.',
+    'S8': 'Sender 8 in the selected OSC was used on this call.',
+    'S9': 'Sender 9 in the selected OSC was used on this call.',
+    'S10': 'Sender 10 in the selected OSC was used on this call.',
+    'S11': 'Sender 11 in the selected OSC was used on this call.',
+    'S12': 'Sender 12 in the selected OSC was used on this call.',
+    'OSG0': 'Outgoing Sender Group 0 was selected by the marker.',
+    'OSG1': 'Outgoing Sender Group 1 was selected by the marker.',
+    'OSG2': 'Outgoing Sender Group 2 was selected by the marker.',
+    'OSG3': 'Outgoing Sender Group 3 was selected by the marker.',
+    'OSG4': 'Outgoing Sender Group 4 was selected by the marker.',
+    'OSG5': 'Outgoing Sender Group 5 was selected by the marker.',
+    'OSG6': 'Outgoing Sender Group 6 was selected by the marker.',
+    'OSG7': 'Outgoing Sender Group 7 was selected by the marker.',
+    'OSG8': 'Outgoing Sender Group 8 was selected by the marker.',
+    'OSG9': 'Outgoing Sender Group 9 was selected by the marker.',
+    'OSG10': 'Outgoing Sender Group 10 was selected by the marker.',
+    'OSG11': 'Outgoing Sender Group 11 was selected by the marker.',
+    'SSA': 'Outgoing sender subgroup A was seized by the marker.',
+    'SSB': 'Outgoing sender subgroup B was seized by the marker.',
+    'OS0': 'Outgoing sender 0 was selected in the sender group.',
+    'OS1': 'Outgoing sender 1 was selected in the sender group.',
+    'OS2': 'Outgoing sender 2 was selected in the sender group.',
+    'OS3': 'Outgoing sender 3 was selected in the sender group.',
+    'OS4': 'Outgoing sender 4 was selected in the sender group.',
+    'RO\'': 'Operation of the RO (Reorder) relay In the outgoing sender to set the outgoing trunk for reorder.',
     'RN-SPC-ITC0': 'Incoming trunk class NN',
     'RN-SPC-ITC1': 'Incoming trunk class TB',
     'RN-SPC-ITC2': 'Incoming trunk class MB',
@@ -718,11 +644,9 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'Traffic Control 1. Used for dial tone calls only. Marker has assumed control of the LLMC.'
     ),
     'NE': (
-        'One of the N1A/N2A/N3A/N4A (number translator cut-in '
-        'auxiliary) relays in the marker operated on an incoming '
-        'or intra-office trunk connection. These relays '
-        'are operated for number group translation of the '
-        'called number.'
+        'One of the N1A/N2A/N3A/N4A (number translator cut-in auxiliary) relays in the marker '
+        'operated on an incoming or intra-office trunk connection. These relays '
+        'are operated for number group translation of the called number.'
     ),
     'TRN': (
         'The (trunk number) relay in the marker, operated to pass the trunk number '
@@ -753,21 +677,22 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'is selected on the next call. Ineffective at museum, but important from a sequence-of-events perspective.'
     ),
     'MAK1': (
-        'Marker Connector Cut-In Check. Both halves of the MCA relay operated in the selected Trunk Link Connector (TLC).'
+        'Marker Connector Cut-In Check. Both halves of the MCA relay operated in the selected '
+        'Trunk Link Connector (TLC).'
     ),
     'TBK': (
         'Trunk Block Check. A TB- relay of the selected trunk link connector operated.'
     ),
     'ORK': (
-        'Originating Register Check. Also coincident with RK1. '
+        'Originating Register Check. Also replaced by RK1 on dial tone calls. '
         'RK1 indicates that no false ground is present on the calling-line identification '
-        'leads from the OR. '
-        'ORK indicates that the called number from the OR/IR has been properly received and validated.'
+        'leads to the OR. ORK indicates that the called number from the OR/IR has been '
+        'properly received and validated.'
     ),
     'RK2': (
         'Register Check 2. Indicates that no false battery was detected on the calling line leads from the OR. '
-        'Operation of both RK1 and RK2 indicates that the calling line information from the OR has been properly '
-        'received and validated.'
+        'Operation of both RK1 and RK2 indicates that the calling line information has been properly transmitted '
+        'to the OR by the dial tone marker (DTM).'
     ),
     'VTK1': (
         'Vertical Group Test Check. When punched, indicates that only one of the VGT0-11 relays is locked operated '
@@ -854,14 +779,15 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'Junctor crosspoints closed.'
     ),
     'LXP1': (
-        'Line Crosspoints 1. When punched, indicates its friend, the LXP relay is released. When unpunched, indicates that its friend, the '
-        'LXP relay is operated.'
+        'Line Crosspoints 1. When punched, indicates its friend, the LXP relay is released. When unpunched, '
+        'indicates that its friend, the LXP relay is operated.'
     ),
     'GLH': (
         'Ground Line Hold Magnet. The marker started to operate the hold magnet for the line on the LLF.'
     ),
     'CON': (
-        'Continuity test has been successfully completed. This test is canceled at the museum via the operation of the CCT key in the MTC.'
+        'Continuity test has been successfully completed. This test is canceled at the museum via the operation '
+        'of the CCT key in the MTC.'
     ),
     'GT2': (
         'Ground Test 2. Checks the operation of CON1, CON2, SL, and LLCl and '
@@ -872,9 +798,98 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'ref CD-25550-01 7.5332'
     ),
     'RSC': (
-        'Release Sender Connector. Registration of information transmitted by the marker to the outgoing sender was successful. The OSC may '
-        'now release.'
+        'Release Sender Connector. Registration of information transmitted by the marker to the outgoing sender was successful. '
+        'The OSC may now release.'
     ),
+    'AVK1': (
+        'Sender advance check. The sender has successfully received the information transmitted by the marker, '
+        'and has operated its AV relay to indicate that it is ready to outpulse the called number. '
+        'The marker may now release the sender and complete the call.'
+    ),
+    'DCT1': (
+        'Double Connection Test 1. Locks in the indication of a successful double connection test on '
+        'terminating (call-forward) stage of an Intraoffice trunk connection. Also successful similar '
+        'test on a dial tone connection, an outgoing, or an incoming trunk connection.'
+    ),
+    'DCT3': (
+        'Double Connection Test 3. Indicates successful double connection test on a tandem or toll job. '
+        'Indicates that the linkage to the tandem or toll completing path is set up.'
+    ),
+    'LK1': (
+        'Linkage Check 1. This is a gating relay that indicates successful completion of the linkage between '
+        'an originating line and an OR, an incoming trunk and a called line, IAO trunk and a called line, '
+        'or outgoing trunk and a calling line. On IAO FLG calls, this relay operated allows the SCB to begin.'
+    ),
+    'DCT2': (
+        'Double Connection Test 2. Successful completion of a double connection test on the callback (SCB) '
+        'stage of an intraoffice (IAO) call.'
+    ),
+    'DIS1': (
+        'Disconnect 1. The marker has completed all its functions and is ready to request that the marker '
+        'connector make a normal disconnect. Sarah calls this "DIZZY.'
+    ),
+    'OSE': (
+        'Outgoing Sender End. Indicates that the outgoing sender selection process has completed.'
+    ),
+    'OSK': (
+        'Outgoing Sender Check. Indicates that the outgoing sender selection process has completed.'
+    ),
+    'TSR': (
+        'Timing Sender Registration. All sender connector relays had operated and the marker '
+        'is to start timing for the operation of the sender memory relays. '
+    ),
+    'OST2': (
+        'Outgoing Sender Timing 2. Sender registration timing is complete and the sender '
+        'memory relays are being checked for holding before releasing the sender connector (OSC).'
+    ),
+    'RNT2': (
+        'Recorder Number Timing 2. On AMA calls, the timing interval for operation of the '
+        'recorder number (RN-) relays in the sender has completed.'
+    ),
+    'RNK': (
+        'Recorder Number Check. On AMA calls, the marker has completed the check of the '
+        'recorder number (RN-) relays in the sender.'
+    ),
+    'SLK1': (
+        'Sender Link Check 1. Indicates that the lead through the sender link (OSL) hold '
+        'magnets is continuous.'
+    ),
+    'SLK2': (
+        'Sender Link Check 2. Indicates that the sender link (OSL) hold magnet has operated '
+        'and closed the connection between the sender and the associated trunk.'
+    ),
+    'CGT': (
+        'Cancel Ground Test. Indicates that the marker has canceled ground test as is required '
+        'on certain types of connections, such as all originating and certain types of terminating calls, '
+        'or if one of the cancel ground test keys is operated at the master test frame.'
+    ),
+    'XCL': 'Cross Class. More than one CL lead to an outgoing marker is grounded.',
+    'XCR': 'Cross Compensating Resistance. More than one CR lead to an outgoing sender is grounded.',
+    'XDL': 'Cross Deletion. More than on DL lead to an outgoing sender is grounded.',
+    'XMB': 'Cross Message Billing. More than one MB lead to an outgoing sender is grounded.',
+    'XCP': 'Cross Code Pattern. More than one CP lead to an outgoing sender is grounded.',
+    'XOB': 'Both the NOB and OBS leads to the marker have operated.',
+    'XTV': (
+        'Cross Transverter. Both the TVA and the SCC leads in the marker operated, indicating '
+        'this is somehow both a test call and a service call, which is not possible.'
+    ),
+    'XT5': 'Cross Transmission. False ground on unused transmission leads to the outgoing sender.',
+    'XTB': 'Cross Trunk Block. More than one TB- relay in the marker has operated.',
+    'XTG': 'Cross Trunk Group. More than one TG- relay in the marker has operated.',
+    'XTB1': 'Cross Trunk Block Leads. More than one TB- lead to the TLF has battery on it.',
+    'XTG1': 'Cross Trunk Group Leads. More than one TG- lead to the TLF has ground on it.',
+    'XJC': 'Cross Junctor Connector Leads to the TLF.',
+    'XJG': 'Cross Junctor Group Leads to the TLF.',
+    'XJS': 'Cross JS- (Junctor Select Magnet) leads to the TLF.',
+    'XLR': 'Cross Left and Right Side leads to the TLF.',
+    'XTS': 'Cross Trunk Switch select magnets on the TLF.',
+    'XLC': 'Crossed LC- (link connector) leads to the TLF.',
+    'XLV': 'Crossed LV- (level) leads to the TLF.',
+    'XAB': 'Indicates simultaneous operation of FAK and FBK in the marker, which is not allowed.',
+    'XF': 'Crossed RF (regular frame) and EF (extension frame) leads.',
+    'XSL': 'Crossed Sleeve Trunk. Indicates crossed AST and BST leads to the TLF.',
+    'XTS1': 'False ground on TSX- (trunk select magnet) lead to the TLF during trunk selection.',
+    'XPT': 'Crossed incoming trunk class and AMA recorder number leads to TLF.',
 
 }
 
