@@ -5,11 +5,11 @@ mapping of punch names to a human‑readable explanation.
 
 PUNCH_DESCRIPTIONS: dict[str, str] = {
     'TI': 'Trouble encountered on a service, monitored, or test call.',
-    'MTPT': 'Marker, transverter pretranslator test from MTF.',
-    'SRT': 'Sender-register test from MTF.',
-    'TKT': 'Trunk test from MTF.',
+    'MTPT': 'Marker, transverter, pretranslator test from master test frame.',
+    'SRT': 'Sender-register test from master test frame.',
+    'TKT': 'Trunk test from master test frame.',
     'M': "This call was being monitored by the AMRST",
-    'MLV': 'Marker Line Verification.',
+    'MLV': 'Marker Line Verification test from the master test frame.',
     'TLV': 'Transverter line verification.',
     'LVF': (
         'Line Verification Failed. The line information input into the MTF '
@@ -890,6 +890,55 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'XSL': 'Crossed Sleeve Trunk. Indicates crossed AST and BST leads to the TLF.',
     'XTS1': 'False ground on TSX- (trunk select magnet) lead to the TLF during trunk selection.',
     'XPT': 'Crossed incoming trunk class and AMA recorder number leads to TLF.',
+    'XRS': 'Crossed ringing switch select magnet leads to the TLF.',
+    'XRS1': 'Both RS0/RS1 or multiple RS2-9 relays in the marker have operated.',
+    'XFT': (
+        'An unused FTC lead in the selected trunk link frame is falsely grounded or that the marker '
+        'had been directed to a trunk link frame which does not include any trunks for the route.'
+    ),
+    'TRL': (
+        'Ground placed on TRL lead to marker connector by the marker after a trouble record or an attempt to seize '
+        'the trouble recorder on first trial failures. This causes the connector to reseize a marker on a second '
+        'trial basis.'
+    ),
+    'BT': (
+        'Busy Tone. The marker, by grounding BT lead to marker connector, requested: '
+        'a. Originating register to return busy tone to calling subscriber or to release because of a second trial failure. '
+        'b. Incoming register to release because of a second trial failure. '
+        'c. Line link to release because of a second trial failure.'
+    ),
+    'MRL': (
+        'Marker Release. The marker signaled the OR or IR through the connector to release the OR or IR.'
+    ),
+    'XHG': (
+        'More than one HG- (horizontal group) relay operated in line link connector.'
+    ),
+    'XLG': (
+        'More than one LG- (line group connector) relay operated in line link connector.'
+    ),
+    'XCS': (
+        'Crossed Class of Service. More than one CS- (class of service) relay in the '
+        'marker had operated due to crossed CS- leads in line link frame.'
+    ),
+    'XLS': (
+        'Crossed Line Select Magnets. Crossed SM- leads to the line link frame.'
+    ),
+    'XLH': (
+        'Crossed Line Hold Magnets. Crossed LH- leads to the line link frame.'
+    ),
+    'XLO': (
+        'False ground on L0/L0B/L0K/G leads to LO (lockout for dial tone calls) relay in line link frame.'
+    ),
+    'XFUT': (
+        'Crossed Frame Units and Tens. More than one FUT- (frame units test) or FTT- (frame '
+        'tens test) relay in the marker had operated.'
+    ),
+    'XSS': (
+        'Crossed Sender Select. More than one select magnet operated in the OSC (outsender connector).'
+    ),
+    'XS': (
+        'Crossed Sender Connector. More than one S- relay operated in the OSC (outsender connector).'
+    ),
 
 }
 

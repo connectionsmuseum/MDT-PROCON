@@ -7,7 +7,7 @@ card_map = {}
 def _build_card_map():
     """Populate :data:`card_map` from the CSV file.
 
-    This is extracted from ``punchname`` so that the same cache can be used
+    This is extracted from ``punchnames.csv`` so that the same cache can be used
     by other lookup helpers (e.g. reverse lookup by punch name).
     Calling it multiple times is safe; once the map is filled the function
     simply returns.

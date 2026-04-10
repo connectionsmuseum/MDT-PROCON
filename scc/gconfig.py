@@ -1,6 +1,6 @@
 # Worker Settings
 workers = 1
-threads = 5
+threads = 3
 worker_class = 'gevent'  # Use gevent async workers
 worker_connections = 1000  # Maximum concurrent connections per worker
 

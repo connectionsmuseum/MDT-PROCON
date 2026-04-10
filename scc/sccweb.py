@@ -14,11 +14,11 @@ clients = []
 _offsets = None
 
 # The virtual card is scanned in 120 points (two rows) at a time, in the same
-# way as the actual card is punched when it is transported through the trouble 
+# way as the actual card is punched when it is transported through the trouble
 # recorder.
 # (bw0 .. bw59) -> R, RA section
 # (bw60 .. bw119) -> S, SA section
-# The following list gives the order of the scan points for the two rows of 
+# The following list gives the order of the scan points for the two rows of
 # each scan as we get them from the MDT.
 # The final card will contain this list 9 times, once for each of the 9 punch cycles (S0 to S8).
 # The 'STR', 'SPL', 'RSVx.y', entries do not actually exist on the card, but
@@ -123,7 +123,9 @@ def punch_date(bits):
 
     holesize = 15
     now = datetime.now()
-    punchdate = now.strftime("%y-%m-%d_%H-%M-%S")
+    # Include microseconds so rapid POST bursts do not overwrite files created
+    # within the same second.
+    punchdate = now.strftime("%y-%m-%d_%H-%M-%S-%f")
 
     time_dict = {
         'day_tens': int(now.strftime("%d")) // 10,
@@ -134,7 +136,7 @@ def punch_date(bits):
         'minute_units': int(now.strftime("%M")) % 10
     }
     print(f"Punching time {punchdate} into card with values: {time_dict}")
-    
+
     for key, value in time_dict.items():
         holes = two_of_five[value]
         for hole in holes:
@@ -171,14 +173,14 @@ def _punch_card(bits):
         'minute_tens': int(now.strftime("%M")) // 10,
         'minute_units': int(now.strftime("%M")) % 10
     }
-    
+
     for key, value in time_dict.items():
         holes = two_of_five[value]
         for hole in holes:
             # print(f"Punching hole for {key} in position {hole}")
             bits[t_start_y][t_start_x + hole] = True
         t_start_x += 5
-    
+
     #Render the JPG
     f_draw = ImageDraw.Draw(f_im)
     for xidx in range(69):
@@ -237,7 +239,7 @@ def _list_saved_card_json_entries(limit=30):
 
 def _format_card_timestamp(filename):
     """Extract and format timestamp from card filename.
-    
+
     Converts '26-03-22_21-32-16_front.jpg' or '_front.json' to
     '2026-03-22 21:32:16'
     """
@@ -247,10 +249,10 @@ def _format_card_timestamp(filename):
         date_part, time_part = timestamp_part.split('_')
         yy, mm, dd = date_part.split('-')
         hh, minute, ss = time_part.split('-')
-        
+
         # Convert YY to YYYY
         yyyy = f"20{yy}"
-        
+
         # Format as YYYY-MM-DD HH:MM:SS
         return f"{yyyy}-{mm}-{dd} {hh}:{minute}:{ss}"
     except Exception:
@@ -343,7 +345,7 @@ def test():
     if request.is_json:
         try:
             data = request.get_json()
-            card = data["card"]
+            card = data["z_card"]
         except Exception as e:
             print(f"Error parsing JSON: {e}")
             return {"error": "invalid JSON format"}, 400
@@ -360,7 +362,7 @@ def test():
         return {"error": "no card data provided"}, 400
 
     punchdate = punch_date(card)
-    
+
     metadata = ec.evaluate(card)
     save_card_metadata(punchdate, card, metadata)
 
@@ -388,7 +390,7 @@ def events():
 @app.route('/blank-card', methods=['GET'])
 def blank_card():
     """Serve the blank (unpunched) card template image."""
-    return send_from_directory('cardpack', 'front.jpg')
+    return send_from_directory('cardpack', 'front_9a8sudf.jpg')
 
 @app.route('/latest-card-data', methods=['GET'])
 def latest_card_data():
@@ -420,7 +422,6 @@ def view_bins():
     bins = _get_bins()
     return render_template('bins.html', bins=bins)
 
-
 @app.route('/cardmeta/<name>', methods=['GET'])
 def card_metadata(name):
     """Return saved evaluation metadata for the card renderer."""
@@ -429,20 +430,11 @@ def card_metadata(name):
         return jsonify({"error": "metadata not found"}), 404
     return jsonify(data)
 
-@app.route('/cards', methods=['GET'])
-def go_away():
-    """
-    Redirect /cards to the main page, which lists all cards. 
-    This is a convenience for users who might try to navigate to /cards expecting to see the card list.
-    """
-
-    return redirect('/', code=301)
-
 @app.route('/card/<name>', methods=['GET'])
 def single_card(name):
     """
     Render a card view page, drawing the card from stored JSON data.
-    The user-facing page also displays the card metadata (decoded values, binning, etc.) 
+    The user-facing page also displays the card metadata (decoded values, binning, etc.)
     that is saved in the JSON alongside the card bits.
     """
     data = _load_card_metadata(name)

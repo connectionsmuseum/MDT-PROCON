@@ -152,14 +152,16 @@ def yumyum():
         data = request.get_json() # this is the full card with metadata
         try:
             card = data["card"] # extracts just the holes
-        except Exception:
-            card = data["z_card"] # extracts just the holes
+        except Exception as e:
+            print(f"Error extracting card data: {e}")
+            card = data.get("z_card") # extracts just the holes
     else:
         # fallback: try reading raw data and parsing
         try:
             card = json.loads(request.get_data(as_text=True))
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Error parsing raw data: {e}")
+            return {"error": "invalid JSON data"}, 400
 
     if card is None:
         return {"error": "no card data provided"}, 400
@@ -197,7 +199,7 @@ def events():
 @app.route('/blank-card', methods=['GET'])
 def blank_card():
     """Serve the blank (unpunched) card template image."""
-    return send_from_directory('cardpack', 'front.jpg')
+    return send_from_directory('cardpack', 'front_9a8sudf.jpg')
 
 @app.route('/latest-card-data', methods=['GET'])
 def latest_card_data():
@@ -248,11 +250,6 @@ def card_metadata(name):
     if data is None:
         return jsonify({"error": "metadata not found"}), 404
     return jsonify(data)
-
-@app.route('/cards', methods=['GET'])
-# for backward compatibility with older versions of the frontend
-def go_away():
-    return redirect('/', code=301)
 
 @app.route('/card/<name>', methods=['GET'])
 def single_card(name):
