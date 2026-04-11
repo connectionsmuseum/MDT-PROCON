@@ -1,60 +1,15 @@
 #!/usr/bin/python3
-from flask import Flask, request, Response, render_template, send_from_directory, redirect, jsonify
+from flask import Flask, request, Response, render_template, send_from_directory, jsonify
 import queue
-from PIL import Image, ImageDraw
 import configparser
 import os
 import json
-import cardmap as cm
-import evaluatecard as ec
 from datetime import datetime
 
 app = Flask(__name__)
 clients = []
 _offsets = None
 
-# The virtual card is scanned in 120 points (two rows) at a time, in the same
-# way as the actual card is punched when it is transported through the trouble 
-# recorder.
-# (bw0 .. bw59) -> R, RA section
-# (bw60 .. bw119) -> S, SA section
-# The following list gives the order of the scan points for the two rows of 
-# each scan as we get them from the MDT.
-# The final card will contain this list 9 times, once for each of the 9 punch cycles (S0 to S8).
-# The 'STR', 'SPL', 'RSVx.y', entries do not actually exist on the card, but
-# are used by the MDT for its own internal functions.
-scanpts_order = [
-    [ 7,  6,  5,  4,  3,  2,  1,  0, 'STRA1', 'STR'],
-    [15, 14, 13, 12, 11, 10,  9,  8, 'TRC', 'SPL'],
-    [23, 22, 21, 20, 19, 18, 17, 16, 'ROS', 'MB'],
-    ['BWX1', 'BWX0', 29, 28, 27, 26, 25, 24, 'RSV3.8', 'RSV3.9'],
-    [37, 36, 35, 34, 33, 32, 31, 30, 'RSV4.8', 'RSV4.9'],
-    [45, 44, 43, 42, 41, 40, 39, 38, 'RSV5.8', 'RSV5.9'],
-    [53, 52, 51, 50, 49, 48, 47, 46, 'RSV6.8', 'RSV6.9'],
-    [61, 60, 59, 58, 57, 56, 55, 54, 'RSV7.8', 'RSV7.9'],
-    [69, 68, 67, 66, 65, 64, 63, 62, 'RSV8.8', 'RSV8.9'],
-    [77, 76, 75, 74, 73, 72, 71, 70, 'RSV9.8', 'RSV9.9'],
-    [85, 84, 83, 82, 81, 80, 79, 78, 'RSV10.8', 'RSV10.9'],
-    [91, 90, 'BWX3', 'BWX2', 89, 88, 87, 86, 'RSV11.8', 'RSV11.9'],
-    [99, 98, 97, 96, 95, 94, 93, 92, 'RSV12.8', 'RSV12.9'],
-    [107, 106, 105, 104, 103, 102, 101, 100, 'RSV13.8', 'RSV13.9'],
-    [115, 114, 113, 112, 111, 110, 109, 108, 'RSV14.8', 'RSV14.9'],
-    ['RSV15.0', 'RSV15.1', 'RSV15.2', 'RSV15.3', 119, 118, 117, 116, 'RSV15.8', 'RSV15.9']
-]
-
-# helpful dictionary for punching the timestamp in the correct two-of-five holes on the card
-two_of_five = {
-    0: [3,4],
-    1: [0,1],
-    2: [0,2],
-    3: [1,2],
-    4: [0,3],
-    5: [1,3],
-    6: [2,3],
-    7: [0,4],
-    8: [1,4],
-    9: [2,4]
-}
 
 def get_offsets():
     global _offsets
@@ -144,7 +99,6 @@ def _get_bins():
 
 @app.route('/eat_json', methods=['POST'])
 # Accepts a JSON representation of a card (same format as ``cardpack/cardout_sample.json``)
-
 def yumyum():
     card = None
     # first, try to parse the body as JSON
@@ -195,6 +149,11 @@ def events():
             clients.remove(q)
 
     return Response(stream(), mimetype="text/event-stream")
+
+@app.route('/credits', methods=['GET'])
+def credits():
+    """Serve the credits page."""
+    return render_template('credits.html')
 
 @app.route('/blank-card', methods=['GET'])
 def blank_card():

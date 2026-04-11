@@ -22,8 +22,6 @@
 
             let blankCardImage = null;
             let placeholderImage = null;
-            let creditsImage = null;
-            let showingCredits = false;
 
             // lazy loading time
             function ensureBlankCard(callback) {
@@ -32,29 +30,12 @@
                 img.onload = function () { blankCardImage = img; callback(img); };
                 img.src = '/blank-card';
             }
-
-            function ensureCredits(callback) {
-                if (creditsImage) { callback(creditsImage); return; }
-                const img = new Image();
-                img.onload = function () { creditsImage = img; callback(img); };
-                img.src = '/static/back-credits.jpg';
-            }
             
             function ensurePlaceholder(callback) {
                 if (placeholderImage) { callback(placeholderImage); return; }
                 const img = new Image();
                 img.onload = function () { placeholderImage = img; callback(img); };
                 img.src = '/static/placeholder.png';
-            }
-
-            function renderCredits() {
-                ensureCredits(function (img) {
-                    const canvas = document.getElementById('card');
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = img.naturalWidth;
-                    canvas.height = img.naturalHeight;
-                    ctx.drawImage(img, 0, 0);
-                });
             }
 
             function renderPlaceholder() {
@@ -161,12 +142,7 @@
                 const checkbox  = document.getElementById("autoRefresh");
 
                 statusDot.addEventListener("click", function () {
-                    showingCredits = !showingCredits;
-                    if (showingCredits) {
-                        renderCredits();
-                    } else {
-                        loadCard();
-                    }
+                    window.location.href = 'credits';
                 });
 
                 // Restore saved setting (default: true if nothing stored)

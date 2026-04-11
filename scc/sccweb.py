@@ -1,7 +1,6 @@
 #!/usr/bin/python3
-from flask import Flask, request, Response, render_template, send_from_directory, redirect, jsonify
+from flask import Flask, request, Response, render_template, send_from_directory, jsonify
 import queue
-from PIL import Image, ImageDraw
 import configparser
 import os
 import json
@@ -386,6 +385,11 @@ def events():
             clients.remove(q)
 
     return Response(stream(), mimetype="text/event-stream")
+
+@app.route('/credits', methods=['GET'])
+def credits():
+    """Serve the credits page."""
+    return render_template('credits.html')
 
 @app.route('/blank-card', methods=['GET'])
 def blank_card():
