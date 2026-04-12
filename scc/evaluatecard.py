@@ -238,11 +238,11 @@ def register_check(card):
         9: [2, 7],
     }
 
-    if card_has('TER') or card_has('INC'):
+    if card_has('TER', 'INC', 'MIR'):
         reg_kind = 'IR'
-    if card_has('OR'):
+    if card_has('OR', 'MOR'):
         reg_kind = 'OR'
-    if card_lacks(['OR', 'TER', 'INC']):
+    if card_lacks(['OR', 'TER', 'INC', 'MOR', 'MIR']):
         reg_kind = None
         decoded = None
         reg_number = None
@@ -321,6 +321,7 @@ def register_check(card):
 
         # normal digit: must be two-of-five
         if len(punched) != 2:
+            decoded.append("-")
             record_error(
                 f"{letter}-group has {len(punched)} punch(es) {punched}; "
                 f"exactly two required for a digit, register {reg_number}")
@@ -329,6 +330,7 @@ def register_check(card):
         pair = tuple(sorted(punched))
         if pair not in rev:
             # This technically can't even happen??
+            decoded.append("-")
             record_error(f"invalid two-of-five pair {pair} for {letter}")
             continue
         decoded.append(rev[pair])
@@ -1318,6 +1320,7 @@ def evaluate(card, describe: bool = False):
     except RegCheckError as exc:
         meta["register"] = {
             "error": str(exc),
+            "digits": exc.decoded,
             "reg_number": exc.reg_number,
             "registers": exc.registers,
             "reg_kind": exc.reg_kind,

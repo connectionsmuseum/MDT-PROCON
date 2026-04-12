@@ -9,6 +9,78 @@ from datetime import datetime
 app = Flask(__name__)
 clients = []
 _offsets = None
+MAX_EAT_JSON_BYTES = 200_000
+MAX_JSON_DEPTH = 10
+MAX_JSON_CONTAINER_ITEMS = 5_000
+MAX_JSON_STRING_LENGTH = 512
+MAX_CARD_ROWS = 64
+MAX_CARD_COLUMNS = 256
+ALLOWED_EAT_JSON_KEYS = {'card', 'z_card', 'metadata'}
+
+app.config['MAX_CONTENT_LENGTH'] = MAX_EAT_JSON_BYTES
+
+
+def _validate_json_tree(value, depth=0):
+    """Validate generic JSON to limit abusive nesting and oversized values."""
+    if depth > MAX_JSON_DEPTH:
+        return False, 'json too deeply nested'
+
+    if isinstance(value, dict):
+        if len(value) > MAX_JSON_CONTAINER_ITEMS:
+            return False, 'json object too large'
+        for key, item in value.items():
+            if not isinstance(key, str):
+                return False, 'json object keys must be strings'
+            if len(key) > 128:
+                return False, 'json object key too long'
+            ok, reason = _validate_json_tree(item, depth + 1)
+            if not ok:
+                return ok, reason
+        return True, None
+
+    if isinstance(value, list):
+        if len(value) > MAX_JSON_CONTAINER_ITEMS:
+            return False, 'json array too large'
+        for item in value:
+            ok, reason = _validate_json_tree(item, depth + 1)
+            if not ok:
+                return ok, reason
+        return True, None
+
+    if isinstance(value, str):
+        if len(value) > MAX_JSON_STRING_LENGTH:
+            return False, 'json string value too long'
+        return True, None
+
+    if value is None or isinstance(value, (bool, int, float)):
+        return True, None
+
+    return False, 'unsupported json value type'
+
+
+def _validate_card_matrix(card):
+    """Validate expected punch card matrix shape and values."""
+    if not isinstance(card, list) or not card:
+        return False, 'card must be a non-empty array of rows'
+    if len(card) > MAX_CARD_ROWS:
+        return False, 'card has too many rows'
+
+    width = None
+    for row in card:
+        if not isinstance(row, list) or not row:
+            return False, 'each card row must be a non-empty array'
+        if len(row) > MAX_CARD_COLUMNS:
+            return False, 'card row has too many columns'
+        if width is None:
+            width = len(row)
+        elif len(row) != width:
+            return False, 'all card rows must have the same number of columns'
+
+        for bit in row:
+            if not isinstance(bit, bool):
+                return False, 'card values must be booleans'
+
+    return True, None
 
 
 def get_offsets():
@@ -100,32 +172,44 @@ def _get_bins():
 @app.route('/eat_json', methods=['POST'])
 # Accepts a JSON representation of a card (same format as ``cardpack/cardout_sample.json``)
 def yumyum():
-    card = None
-    # first, try to parse the body as JSON
-    if request.is_json:
-        data = request.get_json() # this is the full card with metadata
-        try:
-            card = data["card"] # extracts just the holes
-        except Exception as e:
-            print(f"Error extracting card data: {e}")
-            card = data.get("z_card") # extracts just the holes
-    else:
-        # fallback: try reading raw data and parsing
-        try:
-            card = json.loads(request.get_data(as_text=True))
-        except Exception as e:
-            print(f"Error parsing raw data: {e}")
-            return {"error": "invalid JSON data"}, 400
+    if request.content_length is not None and request.content_length > MAX_EAT_JSON_BYTES:
+        return jsonify({'error': 'payload too large'}), 413
+    if not request.is_json:
+        return jsonify({'error': 'content-type must be application/json'}), 415
 
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({'error': 'request body must be a JSON object'}), 400
+
+    unknown_keys = set(data.keys()) - ALLOWED_EAT_JSON_KEYS
+    if unknown_keys:
+        return jsonify({'error': 'unexpected top-level keys'}), 400
+
+    card = data.get('card')
     if card is None:
-        return {"error": "no card data provided"}, 400
+        card = data.get('z_card')
+    if card is None:
+        return jsonify({'error': 'missing card data (card or z_card)'}), 400
+
+    card_ok, card_reason = _validate_card_matrix(card)
+    if not card_ok:
+        return jsonify({'error': card_reason}), 400
+
+    metadata = data.get('metadata')
+    if metadata is not None and not isinstance(metadata, dict):
+        return jsonify({'error': 'metadata must be an object'}), 400
+
+    json_ok, json_reason = _validate_json_tree(data)
+    if not json_ok:
+        return jsonify({'error': json_reason}), 400
 
     now = datetime.now()
-    punchdate = now.strftime("%y-%m-%d_%H-%M-%S")
+    punchdate = now.strftime('%y-%m-%d_%H-%M-%S-%f')
     os.makedirs("/tmp/cards", exist_ok=True)
     # this stores the entire card with metadata which is used for the bins page
-    with open(f"/tmp/cards/{punchdate}_front.json", "w") as f:
-        json.dump(data, f)
+    out_path = f'/tmp/cards/{punchdate}_front.json'
+    with open(out_path, 'x') as f:
+        json.dump(data, f, separators=(',', ':'))
 
     # scream at clients and tell them there's a new card
     for q in clients:
