@@ -7,11 +7,11 @@ Flask-API==2.0
 idna==3.10
 itsdangerous==2.0.1
 gunicorn
-Jinja2==2.11.1
+Jinja2
 MarkupSafe==2.0.1
 oauthlib==3.2.2
-pillow==11.1.0
+pillow==12.1.1
 requests==2.32.3
 requests-oauthlib==2.0.0
-urllib3==2.3.0
-Werkzeug==0.16.1
+urllib3>=2.6.3
+Werkzeug==2.0.3
