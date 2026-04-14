@@ -1,0 +1,10 @@
+<section class="metadata" id="{{ metadata_panel_id|default('metadata-panel') }}"{% if metadata_hidden|default(False) %} hidden{% endif %}>
+    <h2>Metadata</h2>
+    {% if pretty_json %}
+        <pre id="{{ metadata_json_id|default('metadata-json') }}" class="metadata-json">{{ pretty_json }}</pre>
+        <p class="metadata-empty" hidden>Metadata not found for this card.</p>
+    {% else %}
+        <pre id="{{ metadata_json_id|default('metadata-json') }}" class="metadata-json" hidden></pre>
+        <p class="metadata-empty">Metadata not found for this card.</p>
+    {% endif %}
+</section>

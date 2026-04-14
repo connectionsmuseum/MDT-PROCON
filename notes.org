@@ -271,4 +271,16 @@ print(gpio.read(25))
 thoughts
 
 it would be nice if the punch function provided data to the web frontend, which dynamically generated the card on the fly
-would be nice if I could submit card data as JSON to my test endpoint
+would be nice if I could submit card data as JSON to my test endpoint: DONE
+
+todo 4-11-26
+tooltips: 
+- need a toggle to turn on and off. 
+- too many settings on the main page will make it cluttered.
+- create a new settings page and make sure settings persist, just like they do on this page.
+- add a setting to enable or disable tooltips on hover
+- move setting for auto-update
+-tooltips should not be an option on iPhone. Always false.
+
+change main page:
+- add bin name to the top center where the settings thing was.

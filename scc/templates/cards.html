@@ -7,105 +7,90 @@
         <link rel="apple-touch-icon" href="../static/touch-icon-iphone.png">
         <link rel="apple-touch-icon" sizes="180x180" href="../static/touch-icon-iphone-retina.png">
         <link rel="shortcut icon" href="../static/favicon.ico">
+        <link rel="stylesheet" href="/static/style.css">
+        <link rel="stylesheet" href="/static/card_metadata.css">
 
         <meta id="card-geom"
             data-orig-x="{{ orig_x }}"
             data-orig-y="{{ orig_y }}"
             data-off-x="{{ off_x }}"
             data-off-y="{{ off_y }}">
+        <script src="/static/card_renderer.js"></script>
+        <script src="/static/card_metadata.js"></script>
         <script>
-            // Punch geometry from cardpack/offsets.txt via data attributes.
-            const cardGeom = document.getElementById("card-geom").dataset;
-            const CARD_ORIG_X = parseFloat(cardGeom.origX);
-            const CARD_ORIG_Y = parseFloat(cardGeom.origY);
-            const CARD_OFF_X  = parseFloat(cardGeom.offX);
-            const CARD_OFF_Y  = parseFloat(cardGeom.offY);
-            const HOLE_SIZE   = 15; // px in original image coords
+            let renderer = null;
+            let currentCardData = null;
 
-            let blankCardImage = null;
-            let placeholderImage = null;
-
-            // lazy loading time
-            function ensureBlankCard(callback) {
-                if (blankCardImage) { callback(blankCardImage); return; }
-                const img = new Image();
-                img.onload = function () { blankCardImage = img; callback(img); };
-                img.src = '/blank-card';
-            }
-            
-            function ensurePlaceholder(callback) {
-                if (placeholderImage) { callback(placeholderImage); return; }
-                const img = new Image();
-                img.onload = function () { placeholderImage = img; callback(img); };
-                img.src = '/static/placeholder.png';
-            }
-
-            function renderPlaceholder() {
-                ensurePlaceholder(function (img) {
-                    const canvas = document.getElementById('card');
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = img.naturalWidth;
-                    canvas.height = img.naturalHeight;
-                    ctx.drawImage(img, 0, 0);
-                });
-            }
-
-            // ok lets render a card! this is the main event. 
-            // the cardData.z_card is a 2d array of booleans representing punched holes, 
-            // which we render as black circles on top of the blank card image
-            function renderCard(cardData) {
-                try {       // throw this whole thing in a try block to catch errors
-                    ensureBlankCard(function (img) {
-                        const canvas = document.getElementById('card');
-                        const ctx = canvas.getContext('2d');
-                        canvas.width  = img.naturalWidth;
-                        canvas.height = img.naturalHeight;
-                        ctx.drawImage(img, 0, 0);
-                        if (!cardData || !cardData.z_card) return;
-                        const bits = cardData.z_card;
-                        ctx.fillStyle = 'black';
-                        for (let xidx = 0; xidx < 69; xidx++) {
-                            if (xidx > 30 && xidx < 38) continue; // middle gap
-                            for (let yidx = 0; yidx < 18; yidx++) {
-                                // It's hole punchin' time. KACHUKACHUKA!
-                                if (bits[yidx][xidx]) {
-                                    const cx = CARD_ORIG_X + xidx * CARD_OFF_X;
-                                    const cy = CARD_ORIG_Y + yidx * CARD_OFF_Y;
-                                    ctx.beginPath();
-                                    ctx.arc(cx, cy, HOLE_SIZE, 0, Math.PI * 2);
-                                    ctx.fill();
-                                }
-                            }
-                        }
-                    });
-                } catch (err) {
-                    console.error('Error rendering card:', err);
-                    renderPlaceholder();
+            function updateBinName(cardData) {
+                const binName = document.getElementById('currentBinName');
+                if (!binName) {
+                    return;
                 }
+                const value = cardData && cardData.metadata && cardData.metadata.bin;
+                binName.textContent = value ? value : 'unknown';
+            }
+
+            function isHomeMetadataEnabled() {
+                try {
+                    return localStorage.getItem('displayCardMetadataHome') === 'true';
+                } catch (err) {
+                    return false;
+                }
+            }
+
+            function syncMetadataPanel() {
+                const enabled = isHomeMetadataEnabled();
+
+                window.CardMetadata.setPanelVisibility('home-metadata-panel', enabled);
+                if (!enabled) {
+                    return;
+                }
+
+                window.CardMetadata.renderPanel('home-metadata-panel', currentCardData);
             }
 
             function loadLatestCard() {
                 fetch('/latest-card-data')
                     .then(r => { if (!r.ok) throw new Error('no data'); return r.json(); })
-                    .then(data => renderCard(data))
-                    .catch(() => renderPlaceholder()); // show claire's placeholder if no card data available
+                    .then(data => {
+                        currentCardData = data;
+                        renderer.renderCard(data);
+                        updateBinName(data);
+                        syncMetadataPanel();
+                    })
+                    .catch(() => {
+                        currentCardData = null;
+                        renderer.renderPlaceholder();
+                        updateBinName(null);
+                        syncMetadataPanel();
+                    });
             }
 
-            function loadCard() {
-                // called when a card is selected from the dropdown
+            window.loadCard = function () {
                 const name = document.getElementById("cardSelect").value;
                 if (!name) {
-                    renderPlaceholder();
+                    currentCardData = null;
+                    renderer.renderPlaceholder();
+                    updateBinName(null);
+                    syncMetadataPanel();
                     return;
                 }
                 fetch('/cardmeta/' + name)
                     .then(r => r.json())
-                    .then(data => renderCard(data))
+                    .then(data => {
+                        currentCardData = data;
+                        renderer.renderCard(data);
+                        updateBinName(data);
+                        syncMetadataPanel();
+                    })
                     .catch(err => {
                         console.error('Error loading card:', err);
-                        renderPlaceholder(); // show claire's placeholder if card data cannot be loaded
+                        currentCardData = null;
+                        renderer.renderPlaceholder();
+                        updateBinName(null);
+                        syncMetadataPanel();
                     });
-            }
+            };
 
             function refreshCardDropdown(selectNewest = false) {
                 return fetch('/cardnames')
@@ -141,26 +126,27 @@
             document.addEventListener("DOMContentLoaded", function () {
                 const statusDot = document.getElementById("statusDot");
                 const evtSource = new EventSource("/events");
-                const checkbox  = document.getElementById("autoRefresh");
+                renderer = window.CardRenderer.createRenderer({ holeSize: 15 });
 
                 statusDot.addEventListener("click", function () {
                     window.location.href = 'credits';
                 });
 
-                // Restore saved setting (default: true if nothing stored)
-                const saved = localStorage.getItem("autoRefresh");
-                checkbox.checked = saved === null ? true : (saved === "true");
-
-                checkbox.addEventListener("change", function () {
-                    localStorage.setItem("autoRefresh", checkbox.checked);
-                });
+                function isAutoRefreshEnabled() {
+                    try {
+                        const saved = localStorage.getItem("autoRefresh");
+                        return saved === null ? true : (saved === "true");
+                    } catch (err) {
+                        return true;
+                    }
+                }
 
                 // listener for server-sent events; re-render card on "update" if auto-refresh enabled
                 evtSource.onmessage = function (event) {
                     const canvas = document.getElementById("card");
                     if (event.data === "update") {
                         console.log("UPDATE GET!");
-                        if (checkbox.checked) {
+                        if (isAutoRefreshEnabled()) {
                             refreshCardDropdown(true);
                             // Trigger flash
                             canvas.classList.remove("flash");
@@ -185,6 +171,13 @@
                 };
 
                 // Render the most recent card on initial page load
+                window.addEventListener('storage', function (event) {
+                    if (event.key === 'displayCardMetadataHome') {
+                        syncMetadataPanel();
+                    }
+                });
+
+                syncMetadataPanel();
                 refreshCardDropdown();
                 loadLatestCard();
             });
@@ -195,10 +188,14 @@
             background-color: #2a2a2a;
         }
         html {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-                 Roboto, Helvetica, Arial, sans-serif;
-                 color: white;
-                 font-size: 12px;
+            color: white;
+            font-size: 12px;
+        }
+        body {
+            margin: 8px;
+            padding: 0;
+            background: #2a2a2a;
+            line-height: normal;
         }
         #card {
             width: 100%;
@@ -218,29 +215,36 @@
             animation: fadePulse 0.4s ease;
         }
         .leftcontrols {
-            display: flex;
-            flex-direction: row;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+            align-items: center;
             padding-bottom: 10px;
             gap: 10px;
-        }
-        .leftcontrols label {
-            display: flex;         /* keeps checkbox + text inline */
-            align-items: center;
-            gap: 6px;              /* spacing between box and text */
-            cursor: pointer;
         }
         .card-select-group {
             display: flex;
             align-items: center;
             gap: 8px;
+            flex-wrap: wrap;
+            justify-self: start;
         }
-        .card-select-group a {
-            color: #7ac7ff;
-            text-decoration: none;
+        .bin-display {
+            justify-self: center;
+            text-align: center;
+            white-space: nowrap;
+            color: #ddd;
+            font-size: 1.05em;
+            font-weight: 600;
         }
-        .card-select-group a:hover {
-            text-decoration: underline;
+        .bin-display .label {
+            opacity: 0.75;
+            font-weight: 500;
+            margin-right: 6px;
+        }
+        .rightcontrols {
+            justify-self: end;
+            display: flex;
+            align-items: center;
         }
         .status-dot {
             width: 12px;
@@ -273,6 +277,16 @@
             background-color: #cc0033;
             box-shadow: 0 0 6px #cc0033;
         }
+
+        @media (max-width: 900px) {
+            .leftcontrols {
+                grid-template-columns: 1fr;
+            }
+            .bin-display,
+            .rightcontrols {
+                justify-self: start;
+            }
+        }
         </style>
     </head>
     <body>
@@ -287,16 +301,19 @@
                     <option></option>
                 </select>
                 <a href="/bins">Card Bins</a>
+                <a href="/settings">Settings</a>
             </div>
-            <label>
-                <input type="checkbox" id="autoRefresh" checked>  
-                Auto-refresh on new card
-            </label> 
+            <div class="bin-display">
+                <span class="label">Bin:</span><span id="currentBinName">unknown</span>
+            </div>
             <div class="rightcontrols">
                 <span id="statusDot" class="status-dot disconnected" title="Connection status"></span>
                 <button onClick="window.location.reload();">Reload Page</button>
             </div>
         </div>
         <canvas id="card"></canvas>
+        {% with metadata_panel_id='home-metadata-panel', metadata_json_id='home-metadata-json', metadata_hidden=True %}
+            {% include '_card_metadata_panel.html' %}
+        {% endwith %}
     </body>
 </html>
