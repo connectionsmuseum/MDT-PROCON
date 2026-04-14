@@ -31,6 +31,18 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'This card was dropped because the AMRST encountered a failure while '
         'monitoring an Outgoing Sender'
     ),
+    'LIT': (
+        'Line Insulation Test. This card was dropped as a result of a failed LIT. Not used at musem.'
+    ),
+    'PRT': (
+        'A pretranslator dropped this card. Not used at museum.'
+    ),
+    'MKR': (
+        'A marker dropped this card. The DR punch indicates which maker in particular.'
+    ),
+    'TURN OVER': (
+        'This card wants you to turn it over and read from the back side.'
+    ),
     'DR0': (
         'This call was handled by Completing Marker 0, which is the wirespring '
         'marker SD-26002-01.'
@@ -277,8 +289,7 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     ),
     'OR': (
         'The originating register marker connector notified the marker that this '
-        'is an originating connection. If you see this, it means the call came from a '
-        '5XB line.'
+        'is an originating connection. This call came from a line in this office.'
     ),
     'FAC': (
         'Foreign Area Code. Originating register marker connector informed the '
@@ -379,47 +390,123 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'WC': (
         'Water Closet'
     ),
-    'A-': (
-        'The A-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.'
-    ),
-    'B-': (
-        'The B-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.'
-    ),
-    'C-': (
-        'The C-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.'
-    ),
-    'D-': (
-        'The D-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.'
-    ),
-    'E-': (
-        'The E-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.'
-    ),
-    'F-': (
-        'The F-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.'
-    ),
-    'G-': (
-        'The G-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.'
-    ),
-    'H-': (
-        'The H-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.'
-    ),
-    'J-': (
-        'The J-digit received from the OR or IR. Not used at museum.'
-    ),
-    'K-': (
-        'The K-digit received from the OR or IR. Not used at museum.'
-    ),
-    'L-': (
-        'The L-digit received from the OR or IR. Not used at museum.'
-    ),
-    'M-': (
-        'The M-digit received from the OR or IR. Not used at museum.'
-    ),
+    'A0': 'The A-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'A1': 'The A-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'A2': 'The A-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'A4': 'The A-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'A7': 'The A-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'B0': 'The B-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'B1': 'The B-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'B2': 'The B-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'B4': 'The B-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'B7': 'The B-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'C0': 'The C-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'C1': 'The C-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'C2': 'The C-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'C4': 'The C-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'C7': 'The C-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'D0': 'The D-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'D1': 'The D-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'D2': 'The D-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'D4': 'The D-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'D7': 'The D-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'E0': 'The E-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'E1': 'The E-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'E2': 'The E-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'E4': 'The E-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'E7': 'The E-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'F0': 'The F-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'F1': 'The F-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'F2': 'The F-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'F4': 'The F-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'F7': 'The F-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'G0': 'The G-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'G1': 'The G-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'G2': 'The G-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'G4': 'The G-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'G7': 'The G-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'H0': 'The H-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'H1': 'The H-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'H2': 'The H-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'H4': 'The H-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'H7': 'The H-digit received from the OR or IR. Must be in 2-of-5 code in order to be valid.',
+    'J0': 'The J-digit received from the OR or IR. Not used at museum.',
+    'J1': 'The J-digit received from the OR or IR. Not used at museum.',
+    'J2': 'The J-digit received from the OR or IR. Not used at museum.',
+    'J4': 'The J-digit received from the OR or IR. Not used at museum.',
+    'J7': 'The J-digit received from the OR or IR. Not used at museum.',
+    'K0': 'The K-digit received from the OR or IR. Not used at museum.',
+    'K1': 'The K-digit received from the OR or IR. Not used at museum.',
+    'K2': 'The K-digit received from the OR or IR. Not used at museum.',
+    'K4': 'The K-digit received from the OR or IR. Not used at museum.',
+    'K7': 'The K-digit received from the OR or IR. Not used at museum.',
+    'L0': 'The L-digit received from the OR or IR. Not used at museum.',
+    'L1': 'The L-digit received from the OR or IR. Not used at museum.',
+    'L2': 'The L-digit received from the OR or IR. Not used at museum.',
+    'L4': 'The L-digit received from the OR or IR. Not used at museum.',
+    'L7': 'The L-digit received from the OR or IR. Not used at museum.',
+    'M7': 'The M-digit received from the OR or IR. Not used at museum.',
+    'A\'0': 'The A-digit passed to the outsender, or the A digit registered in the monitor.',
+    'A\'1': 'The A-digit passed to the outsender, or the A digit registered in the monitor.',
+    'A\'2': 'The A-digit passed to the outsender, or the A digit registered in the monitor.',
+    'A\'4': 'The A-digit passed to the outsender, or the A digit registered in the monitor.',
+    'A\'7': 'The A-digit passed to the outsender, or the A digit registered in the monitor.',
+    'B\'0': 'The B-digit passed to the outsender, or the B digit registered in the monitor.',
+    'B\'1': 'The B-digit passed to the outsender, or the B digit registered in the monitor.',
+    'B\'2': 'The B-digit passed to the outsender, or the B digit registered in the monitor.',
+    'B\'4': 'The B-digit passed to the outsender, or the B digit registered in the monitor.',
+    'B\'7': 'The B-digit passed to the outsender, or the B digit registered in the monitor.',
+    'C\'0': 'The C-digit passed to the outsender, or the C digit registered in the monitor.',
+    'C\'1': 'The C-digit passed to the outsender, or the C digit registered in the monitor.',
+    'C\'2': 'The C-digit passed to the outsender, or the C digit registered in the monitor.',
+    'C\'4': 'The C-digit passed to the outsender, or the C digit registered in the monitor.',
+    'C\'7': 'The C-digit passed to the outsender, or the C digit registered in the monitor.',
+    'D\'0': 'The D-digit passed to the outsender, or the D digit registered in the monitor.',
+    'D\'1': 'The D-digit passed to the outsender, or the D digit registered in the monitor.',
+    'D\'2': 'The D-digit passed to the outsender, or the D digit registered in the monitor.',
+    'D\'4': 'The D-digit passed to the outsender, or the D digit registered in the monitor.',
+    'D\'7': 'The D-digit passed to the outsender, or the D digit registered in the monitor.',
+    'E\'0': 'The E-digit passed to the outsender, or the E digit registered in the monitor.',
+    'E\'1': 'The E-digit passed to the outsender, or the E digit registered in the monitor.',
+    'E\'2': 'The E-digit passed to the outsender, or the E digit registered in the monitor.',
+    'E\'4': 'The E-digit passed to the outsender, or the E digit registered in the monitor.',
+    'E\'7': 'The E-digit passed to the outsender, or the E digit registered in the monitor.',
+    'F\'0': 'The F-digit passed to the outsender, or the F digit registered in the monitor.',
+    'F\'1': 'The F-digit passed to the outsender, or the F digit registered in the monitor.',
+    'F\'2': 'The F-digit passed to the outsender, or the F digit registered in the monitor.',
+    'F\'4': 'The F-digit passed to the outsender, or the F digit registered in the monitor.',
+    'F\'7': 'The F-digit passed to the outsender, or the F digit registered in the monitor.',
+    'G\'0': 'The G-digit passed to the outsender, or the G digit registered in the monitor.',
+    'G\'1': 'The G-digit passed to the outsender, or the G digit registered in the monitor.',
+    'G\'2': 'The G-digit passed to the outsender, or the G digit registered in the monitor.',
+    'G\'4': 'The G-digit passed to the outsender, or the G digit registered in the monitor.',
+    'G\'7': 'The G-digit passed to the outsender, or the G digit registered in the monitor.',
+    'H\'0': 'The H-digit passed to the outsender, or the H digit registered in the monitor.',
+    'H\'1': 'The H-digit passed to the outsender, or the H digit registered in the monitor.',
+    'H\'2': 'The H-digit passed to the outsender, or the H digit registered in the monitor.',
+    'H\'4': 'The H-digit passed to the outsender, or the H digit registered in the monitor.',
+    'H\'7': 'The H-digit passed to the outsender, or the H digit registered in the monitor.',
+    'J\'0': 'The J-digit passed to the outsender, or the J digit registered in the monitor. Not used at museum.',
+    'J\'1': 'The J-digit passed to the outsender, or the J digit registered in the monitor. Not used at museum.',
+    'J\'2': 'The J-digit passed to the outsender, or the J digit registered in the monitor. Not used at museum.',
+    'J\'4': 'The J-digit passed to the outsender, or the J digit registered in the monitor. Not used at museum.',
+    'J\'7': 'The J-digit passed to the outsender, or the J digit registered in the monitor. Not used at museum.',
+    'K\'0': 'The K-digit passed to the outsender, or the K digit registered in the monitor. Not used at museum.',
+    'K\'1': 'The K-digit passed to the outsender, or the K digit registered in the monitor. Not used at museum.',
+    'K\'2': 'The K-digit passed to the outsender, or the K digit registered in the monitor. Not used at museum.',
+    'K\'4': 'The K-digit passed to the outsender, or the K digit registered in the monitor. Not used at museum.',
+    'K\'7': 'The K-digit passed to the outsender, or the K digit registered in the monitor. Not used at museum.',
+    'L\'0': 'The L-digit passed to the outsender, or the L digit registered in the monitor. Not used at museum.',
+    'L\'1': 'The L-digit passed to the outsender, or the L digit registered in the monitor. Not used at museum.',
+    'L\'2': 'The L-digit passed to the outsender, or the L digit registered in the monitor. Not used at museum.',
+    'L\'4': 'The L-digit passed to the outsender, or the L digit registered in the monitor. Not used at museum.',
+    'L\'7': 'The L-digit passed to the outsender, or the L digit registered in the monitor. Not used at museum.',
+    'M\'7': 'The M-digit passed to the outsender, or the M digit registered in the monitor. Not used at museum.',
     'GS1': (
-        'Ground Supply 1. The marker has advanced to Ground Supply 2, since it was unable to establish '
-        'a route for the call in GS1. GS2 contains route relays 30-39 and is not used in the museum.). '
-        '(A punch here indicates we have *advanced* past Ground Supply 1 and the operation that dropped '
-        'this card was using GS2)', 
+           'Ground Supply 1. The marker has advanced to Ground Supply 2, since it was unable to establish '
+           'a route for the call in GS1. GS2 contains route relays 30-39 and is not used in the museum.). '
+           '(A punch here indicates we have *advanced* past Ground Supply 1 and the operation that dropped '
+           'this card was using GS2)', 
     ),
     'GS2': (
         'Ground Supply 2. The marker has advanced to Ground Supply 3. GS3 contains route relays 20-29, '
@@ -467,23 +554,26 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'RT4': (
         'Route transfer 4 relay operated in the marker because the \'RT 4\' key was operated in the MTF'
     ),
+    'CN': (
+        'Coin Call. The marker recognized this as a coin call and operated the \'CN\' relay in the trunk used for this call.'
+    ),
     'RP': (
         'The originating register signaled the marker that this is a ring party call.'
     ),
     'FR0': (
-        'Outgoing Sender Connector (OSC) frame zero was used on this call.'
+        'Outgoing Sender Connector (OSC) frame 0 was used on this call.'
     ),
     'FR1': (
-        'Outgoing Sender Connector (OSC) frame one was used on this call.'
+        'Outgoing Sender Connector (OSC) frame 1 was used on this call.'
     ),
     'FR2': (
-        'Outgoing Sender Connector (OSC) frame two was used on this call.'
+        'Outgoing Sender Connector (OSC) frame 2 was used on this call.'
     ),
     'FR3': (
-        'Outgoing Sender Connector (OSC) frame three was used on this call.'
+        'Outgoing Sender Connector (OSC) frame 3 was used on this call.'
     ),
     'FR4': (
-        'Outgoing Sender Connector (OSC) frame four was used on this call.'
+        'Outgoing Sender Connector (OSC) frame 4 was used on this call.'
     ),
     'CN0': 'Connector 0 in the selected OSC was used on this call.',
     'CN1': 'Connector 1 in the selected OSC was used on this call.',
@@ -502,8 +592,8 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'S10': 'Sender 10 in the selected OSC was used on this call.',
     'S11': 'Sender 11 in the selected OSC was used on this call.',
     'S12': 'Sender 12 in the selected OSC was used on this call.',
-    'OSG0': 'Outgoing Sender Group 0 was selected by the marker.',
-    'OSG1': 'Outgoing Sender Group 1 was selected by the marker.',
+    'OSG0': 'Outgoing Sender Group 0 was selected by the marker. This group includes the MF outsenders.',
+    'OSG1': 'Outgoing Sender Group 1 was selected by the marker. This group includes the DP and RP outsenders.',
     'OSG2': 'Outgoing Sender Group 2 was selected by the marker.',
     'OSG3': 'Outgoing Sender Group 3 was selected by the marker.',
     'OSG4': 'Outgoing Sender Group 4 was selected by the marker.',
@@ -535,7 +625,7 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'SC': 'The SC relay in the sender should have operated to indicate this is an AMA service call.',
     'TVT': 'The TVT relay in the sender should have operated to indicate this is an AMA test call.',
     'OBS\'': 'The OBS\' relay in the sender should have operated to indicate this call is on service observation.',
-    'NOB': 'The NOB relay in the sender should have operated to indicate this call is not on service observation.',
+    'NOB\'': 'The NOB\' relay in the sender should have operated to indicate this call is not on service observation.',
     'CP0': 'The Code Pattern indication transmitted from the marker to the sender on a LAMA call.',
     'CP1': 'The Code Pattern indication transmitted from the marker to the sender on a LAMA call.',
     'CP2': 'The Code Pattern indication transmitted from the marker to the sender on a LAMA call.',
@@ -569,13 +659,20 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'CL3': (
         'To a DP sender, to delay dialing until a start signal is received from the distant office. '
         'To RP sender, that the call is to a non-repeating incoming panel ground cutoff office and thus a '
-        'marginal trunk test is required.'
+        'marginal trunk test is required. '
+        'To an MF sender (with 5), that ANI is required on this call (AMA calls only).'
     ),
     'CL4': (
-        'To a DP sender, that battery and ground pulsing is required, as opposed to loop disconnect pulsing.'
+        'To a DP sender, that dial pulsing at 20 PPS is required. '
+        'To an RP sender, that this call is to a high incoming group in a BCO panel or XBR office.'
     ),
     'CL5': (
-        'Subscriber access to CX In te rto ll or CX 2-way trunks.'
+        'To a DP sender, that battery and ground pulsing is required, as opposed to loop disconnect pulsing. '
+        'To an MF sender (with 3), that ANI identification is required on this call (AMA calls only).'
+    ),
+    'CL6': (
+        'To a DP sender, that this is a CX Intertoll or CX 2-way trunk. '
+        'To an RP sender, that the call is to a 3 digit office in a 2-3 digit area.'
     ),
     'FT0': 'Frame Tens 0. The tens digit of the line link frame associated with the calling line.',
     'FT1': 'Frame Tens 1. The tens digit of the line link frame associated with the calling line.',
@@ -661,20 +758,21 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'unable to complete trunk selection. Should be unpunched for a successful call.'
     ),
     'FCK': ( 
-        'The cut-in relay of a selected route operated, thus closing the test leads to the '
-        'trunk link connector frames serving this route.'
+        'Frame Connector Check. The cut-in relay of a selected route operated, thus closing '
+        'the test leads to the trunk link connector frames serving this route.'
     ),
     'FTCK': (
         'Frame Test Check. Trunk link frames have been tested for the presence of an idle trunk '
         'for the selected route, and at least one frame has an idle route available.'
     ),
     'SNK': (
-        'If not perforated, the marker released the selections made before a recycle takes place.'
+        'Selections Normal Check. Releases on a Recycle call when the marker has cleared '
+        'the information used in its previous attempt. If not a recycle, this punch doesn\'t matter.'
     ),
     'CK': 'Marker preference (MP or E) relay on the selected trunk link frame operated.',
     'FML': (
         'Frame Memory Lock relay in the marker operated to insure a different trunk link frame '
-        'is selected on the next call. Ineffective at museum, but important from a sequence-of-events perspective.'
+        'is selected on the next call. Ineffective at museum.'
     ),
     'MAK1': (
         'Marker Connector Cut-In Check. Both halves of the MCA relay operated in the selected '
@@ -696,15 +794,15 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     ),
     'VTK1': (
         'Vertical Group Test Check. When punched, indicates that only one of the VGT0-11 relays is locked operated '
-        'in the marker for vertical group selection. This is a test for the presence of a valid vertical group selection.'
+        'in the marker for vertical group selection. VG- selection is valid.'
     ),
     'HTK1': (
         'Horizontal Group Test Check. When punched, indicates that only one of the HGT0-9 relays is locked operated '
-        'in the marker for horizontal group selection. This is a test for the presence of a valid horizontal group selection.'
+        'in the marker for horizontal group selection. HG- selection is valid.'
     ),
     'FTK1': (
         'Vertical File Test Check. When punched, indicates that only one of the VFT0-4 relays is locked operated for '
-        'vertical file selection. This is a test for the presence of a valid vertical file selection.'
+        'vertical file selection. VF- selection is valid.'
     ),
     'LFK1': (
         'Line Link Frame Check. Indicates that the associated Marker Cut In (MCA) relay has operated in the selected '
@@ -736,17 +834,16 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     ),
     'RK': (
         'RK (right-half frame check) relay in the marker operated from an operated R (right) relay on the '
-        'selected trunk link frame. This causes the marker to test Junctors serving the right half of the trunk '
+        'selected trunk link frame. This causes the marker to test junctors serving the right half of the trunk '
         'link frame.'
     ),
     'LK': (
         'LK (left-half frame check) relay in the marker operated from an operated L (left) relay on the '
-        'selected trunk link frame. This causes the marker to test Junctors serving the left half of the trunk '
+        'selected trunk link frame. This causes the marker to test junctors serving the left half of the trunk '
         'link frame.'
     ),
     'JCK': (
-        'Operation of a JC- (Junctor cut-in) relay in the selected trunk link connector has operated the JCKO '
-        'and JCK1 relays in the marker. If CHO or CH1 operates, JCKO and JCK1 will release.'
+        'Operation of a JC- (Junctor cut-in) relay in the selected trunk link connector.'
     ),
     'TCHK': (
         'Marker TCHO-9 (test channel) relay operated to indicate channel numbers in the selected Junctor '
@@ -790,8 +887,8 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'of the CCT key in the MTC.'
     ),
     'GT2': (
-        'Ground Test 2. Checks the operation of CON1, CON2, SL, and LLCl and '
-        'the nonoperation of LXP1, LXP, and SP relays.'
+        'Ground Test 2. Checks the operation of CON1, CON2, SL, and LLC1 and '
+        'the *non operation* of LXP1, LXP, and SP relays.'
     ),
     'DCT': (
         'Double Connection Test. Double connection did not exist on the selected channel. This is good. '
@@ -826,7 +923,7 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     ),
     'DIS1': (
         'Disconnect 1. The marker has completed all its functions and is ready to request that the marker '
-        'connector make a normal disconnect. Sarah calls this "DIZZY.'
+        'connector make a normal disconnect. Sarah calls this DIZZY.'
     ),
     'OSE': (
         'Outgoing Sender End. Indicates that the outgoing sender selection process has completed.'
@@ -939,8 +1036,1275 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'XS': (
         'Crossed Sender Connector. More than one S- relay operated in the OSC (outsender connector).'
     ),
+    'XSA': (
+        'Crossed Sender Connector Relay. More than one AMA relay in an outgoing sender connector '
+        'has operated.'
+    ),
+    'XN': (
+        'Cross Number control. Mismatch due to more than one called number control relay '
+        '(TBIA, RIA, TNRI, NE, OAN, OBN) being operated in the marker.'
+    ),
+    'XFG': (
+        'Crossed Frame Group. Simultaneous operation of FGO and FG1 relays in the marker.'
+    ),
+    'XPG': (
+        'Crossed Pattern Group. Operation of more than one pattern (PA, PB, PC, PNR) relay in the marker.'
+    ),
+    'XPTN': (
+        'Crossed Pattern relays. Operation of more than one P- relay in the marker.'
+    ),
+    'XT': (
+        'Cross Translation control. Operation of more than one translation control relay in the marker. '
+        '(THC, PHC, OA, OB, X11, 11X, TC5, TC6, TC7)'
+    ),
+    'XCLC': (
+        'Crossed Class Control. Operation of more than one class control relay '
+        '(OR, TAN, TOL, INC, RO) in the marker.'
+    ),
+    'XCKR': (
+        'Cross or Ground on Class Check circuit. False ground on the class check circuit during a dial tone '
+        'connection or during IAO and outgoing trunk connections.'
+    ),
+    'XTC': (
+        'Crossed Traffic Control. False ground on TC lead to LLMC.'
+    ),
+    'XTC1': (
+        'Crossed Traffic Control Auxiliary. False ground on TC1 lead to LLMC.'
+    ),
+    'XTRK': (
+        'Cross First Trial Check lead. False ground on TRK lead to marker connectors '
+        'when marker is functioning on a second trial.'
+    ),
+    'XTRL': (
+        'Cross Trouble Release. False ground on TRL lead to the marker connector.'
+    ),
+    'XBT': (
+        'Cross Busy Tone. False ground on BT lead to the marker connector.'
+    ),
+    'XRL': (
+        'Cross Release. False ground on the RL lead to the originating register marker connector.'
+    ),
+    'XMRL': (
+        'Cross Marker Release. False ground on MRL lead to the marker connector.'
+    ),
+    'XAN': (
+        'Crossed Allotter Number. Not used at the museum.'
+    ),
+    'XCH': (
+        'Crossed Channel Test. False ground on any of the J0-9, LH0-9 leads to a '
+        'trunk link frame or LL0-9 leads to a line link frame.'
+    ),
+    'XVGA': (
+        'Crossed Vertical Group A lead to the line link marker connector (LLMC).'
+    ),
+    'XVGB': (
+        'Crossed Vertical Group B lead to the line link marker connector (LLMC).'
+    ),
+    'FTT0': (
+        'Frame Tens Test 0. Required to aid in closing the ST- lead to the line link connector. '
+        'One FTT- and one FUT- performation indicates the line link frame to be used.'
+    ),
+    'FTT1': (
+        'Frame Tens Test 1. Required to aid in closing the ST- lead to the line link connector. '
+        'One FTT- and one FUT- performation indicates the line link frame to be used.'
+    ),
+    'FTT2': (
+        'Frame Tens Test 2. Required to aid in closing the ST- lead to the line link connector. '
+        'One FTT- and one FUT- performation indicates the line link frame to be used.'
+    ),
+    'FTT3': (
+        'Frame Tens Test 3. Required to aid in closing the ST- lead to the line link connector. '
+        'One FTT- and one FUT- performation indicates the line link frame to be used.'
+    ),
+    'FTT4': (
+        'Frame Tens Test 4. Required to aid in closing the ST- lead to the line link connector. '
+        'One FTT- and one FUT- performation indicates the line link frame to be used.'
+    ),
+    'FTT5': (
+        'Frame Tens Test 5. Required to aid in closing the ST- lead to the line link connector. '
+        'One FTT- and one FUT- performation indicates the line link frame to be used.'
+    ),
+    'FUT0': (
+        'Frame Units Test 0. Required to aid in closing the ST- lead to the line link connector. '
+        'One FTT- and one FUT- performation indicates the line link frame to be used (or the frame '
+        'that was used on SOG calls).'
+    ),
+    'FUT1': (
+        'Frame Units Test 1. Required to aid in closing the ST- lead to the line link connector. '
+        'One FTT- and one FUT- performation indicates the line link frame to be used (or the frame '
+        'that was used on SOG calls).'
+    ),
+    'FUT2': (
+        'Frame Units Test 2. Required to aid in closing the ST- lead to the line link connector. '
+        'One FTT- and one FUT- performation indicates the line link frame to be used (or the frame '
+        'that was used on SOG calls).'
+    ),
+    'FUT3': (
+        'Frame Units Test 3. Required to aid in closing the ST- lead to the line link connector. '
+        'One FTT- and one FUT- performation indicates the line link frame to be used (or the frame '
+        'that was used on SOG calls).'
+    ),
+    'FUT4': (
+        'Frame Units Test 4. Required to aid in closing the ST- lead to the line link connector. '
+        'One FTT- and one FUT- performation indicates the line link frame to be used (or the frame '
+        'that was used on SOG calls).'
+    ),
+    'FUT5': (
+        'Frame Units Test 5. Required to aid in closing the ST- lead to the line link connector. '
+        'One FTT- and one FUT- performation indicates the line link frame to be used (or the frame '
+        'that was used on SOG calls).'
+    ),
+    'FUT6': (
+        'Frame Units Test 6. Required to aid in closing the ST- lead to the line link connector. '
+        'One FTT- and one FUT- performation indicates the line link frame to be used (or the frame '
+        'that was used on SOG calls).'
+    ),
+    'FUT7': (
+        'Frame Units Test 7. Required to aid in closing the ST- lead to the line link connector. '
+        'One FTT- and one FUT- performation indicates the line link frame to be used (or the frame '
+        'that was used on SOG calls).'
+    ),
+    'FUT8': (
+        'Frame Units Test 8. Required to aid in closing the ST- lead to the line link connector. '
+        'One FTT- and one FUT- performation indicates the line link frame to be used (or the frame '
+        'that was used on SOG calls).'
+    ),
+    'FUT9': (
+        'Frame Units Test 9. Required to aid in closing the ST- lead to the line link connector. '
+        'One FTT- and one FUT- performation indicates the line link frame to be used (or the frame '
+        'that was used on SOG calls).'
+    ),
+    'VGT0': (
+        'Vertical Group Test 0. The marker VGT- relay operated from the number group to identify '
+        'the vertical group of the called line. On SOG calls, the VGT- relays indicate the vertical '
+        'group of the calling line.'
+    ),
+    'VGT1': (
+        'Vertical Group Test 1. The marker VGT- relay operated from the number group to identify '
+        'the vertical group of the called line. On SOG calls, the VGT- relays indicate the vertical '
+        'group of the calling line.'
+    ),
+    'VGT2': (
+        'Vertical Group Test 2. The marker VGT- relay operated from the number group to identify '
+        'the vertical group of the called line. On SOG calls, the VGT- relays indicate the vertical '
+        'group of the calling line.'
+    ),
+    'VGT3': (
+        'Vertical Group Test 3. The marker VGT- relay operated from the number group to identify '
+        'the vertical group of the called line. On SOG calls, the VGT- relays indicate the vertical '
+        'group of the calling line.'
+    ),
+    'VGT4': (
+        'Vertical Group Test 4. The marker VGT- relay operated from the number group to identify '
+        'the vertical group of the called line. On SOG calls, the VGT- relays indicate the vertical '
+        'group of the calling line.'
+    ),
+    'VGT5': (
+        'Vertical Group Test 5. The marker VGT- relay operated from the number group to identify '
+        'the vertical group of the called line. On SOG calls, the VGT- relays indicate the vertical '
+        'group of the calling line.'
+    ),
+    'VGT6': (
+        'Vertical Group Test 6. The marker VGT- relay operated from the number group to identify '
+        'the vertical group of the called line. On SOG calls, the VGT- relays indicate the vertical '
+        'group of the calling line.'
+    ),
+    'VGT7': (
+        'Vertical Group Test 7. The marker VGT- relay operated from the number group to identify '
+        'the vertical group of the called line. On SOG calls, the VGT- relays indicate the vertical '
+        'group of the calling line.'
+    ),
+    'VGT8': (
+        'Vertical Group Test 8. The marker VGT- relay operated from the number group to identify '
+        'the vertical group of the called line. On SOG calls, the VGT- relays indicate the vertical '
+        'group of the calling line.'
+    ),
+    'VGT9': (
+        'Vertical Group Test 9. The marker VGT- relay operated from the number group to identify '
+        'the vertical group of the called line. On SOG calls, the VGT- relays indicate the vertical '
+        'group of the calling line.'
+    ),
+    'VGT10': (
+        'Vertical Group Test 10. The marker VGT- relay operated from the number group to identify '
+        'the vertical group of the called line. On SOG calls, the VGT- relays indicate the vertical '
+        'group of the calling line.'
+    ),
+    'VGT11': (
+        'Vertical Group Test 11. The marker VGT- relay operated from the number group to identify '
+        'the vertical group of the called line. On SOG calls, the VGT- relays indicate the vertical '
+        'group of the calling line.'
+    ),
+    'HGT0': (
+        'Horizontal Group Test. The marker HGT- relay operated from the number group to identify '
+        'the horizontal group of the called line. On SOG calls, the HGT- relays indicate the horizontal '
+        'group of the calling line.'
+    ),
+    'HGT1': (
+        'Horizontal Group Test. The marker HGT- relay operated from the number group to identify '
+        'the horizontal group of the called line. On SOG calls, the HGT- relays indicate the horizontal '
+        'group of the calling line.'
+    ),
+    'HGT2': (
+        'Horizontal Group Test. The marker HGT- relay operated from the number group to identify '
+        'the horizontal group of the called line. On SOG calls, the HGT- relays indicate the horizontal '
+        'group of the calling line.'
+    ),
+    'HGT3': (
+        'Horizontal Group Test. The marker HGT- relay operated from the number group to identify '
+        'the horizontal group of the called line. On SOG calls, the HGT- relays indicate the horizontal '
+        'group of the calling line.'
+    ),
+    'HGT4': (
+        'Horizontal Group Test. The marker HGT- relay operated from the number group to identify '
+        'the horizontal group of the called line. On SOG calls, the HGT- relays indicate the horizontal '
+        'group of the calling line.'
+    ),
+    'HGT5': (
+        'Horizontal Group Test. The marker HGT- relay operated from the number group to identify '
+        'the horizontal group of the called line. On SOG calls, the HGT- relays indicate the horizontal '
+        'group of the calling line.'
+    ),
+    'HGT6': (
+        'Horizontal Group Test. The marker HGT- relay operated from the number group to identify '
+        'the horizontal group of the called line. On SOG calls, the HGT- relays indicate the horizontal '
+        'group of the calling line.'
+    ),
+    'HGT7': (
+        'Horizontal Group Test. The marker HGT- relay operated from the number group to identify '
+        'the horizontal group of the called line. On SOG calls, the HGT- relays indicate the horizontal '
+        'group of the calling line.'
+    ),
+    'HGT8': (
+        'Horizontal Group Test. The marker HGT- relay operated from the number group to identify '
+        'the horizontal group of the called line. On SOG calls, the HGT- relays indicate the horizontal '
+        'group of the calling line.'
+    ),
+    'HGT9': (
+        'Horizontal Group Test. The marker HGT- relay operated from the number group to identify '
+        'the horizontal group of the called line. On SOG calls, the HGT- relays indicate the horizontal '
+        'group of the calling line.'
+    ),
+    'VFT0': (
+        'Vertical File Test 0. The marker VFT- relay operated from the number group to identify '
+        'the vertical file of the called line. On SOG calls, the VFT- relays indicate the vertical '
+        'file of the calling line.'
+    ),
+    'VFT1': (
+        'Vertical File Test 1. The marker VFT- relay operated from the number group to identify '
+        'the vertical file of the called line. On SOG calls, the VFT- relays indicate the vertical '
+        'file of the calling line.'
+    ),
+    'VFT2': (
+        'Vertical File Test 2. The marker VFT- relay operated from the number group to identify '
+        'the vertical file of the called line. On SOG calls, the VFT- relays indicate the vertical '
+        'file of the calling line.'
+    ),
+    'VFT3': (
+        'Vertical File Test 3. The marker VFT- relay operated from the number group to identify '
+        'the vertical file of the called line. On SOG calls, the VFT- relays indicate the vertical '
+        'file of the calling line.'
+    ),
+    'VFT4': (
+        'Vertical File Test 4. The marker VFT- relay operated from the number group to identify '
+        'the vertical file of the called line. On SOG calls, the VFT- relays indicate the vertical '
+        'file of the calling line.'
+    ),
+    'RCT1': (
+        'Ringing Control Test 1. The marker RCT- relay operated from the number group to control '
+        'the ringing of the called line.'
+    ),
+    'RCT2': (
+        'Ringing Control Test 2. The marker RCT- relay operated from the number group to control '
+        'the ringing of the called line.'
+    ),
+    'RCT3': (
+        'Ringing Control Test 3. The marker RCT- relay operated from the number group to control '
+        'the ringing of the called line.'
+    ),
+    'RCT4': (
+        'Ringing Control Test 4. The marker RCT- relay operated from the number group to control '
+        'the ringing of the called line.'
+    ),
+    'RCT5': (
+        'Ringing Control Test 5. The marker RCT- relay operated from the number group to control '
+        'the ringing of the called line.'
+    ),
+    'RCT6': (
+        'Ringing Control Test 6. The marker RCT- relay operated from the number group to control '
+        'the ringing of the called line.'
+    ),
+    'RCT7': (
+        'Ringing Control Test 7. The marker RCT- relay operated from the number group to control '
+        'the ringing of the called line.'
+    ),
+    'RCT8': (
+        'Ringing Control Test 8. The marker RCT- relay operated from the number group to control '
+        'the ringing of the called line.'
+    ),
+    'RCT9': (
+        'Ringing Control Test 9. The marker RCT- relay operated from the number group to control '
+        'the ringing of the called line.'
+    ),
+    'RCT10': (
+        'Ringing Control Test 10. The marker RCT- relay operated from the number group to control '
+        'the ringing of the called line.'
+    ),
+    'RCT11': (
+        'Ringing Control Test 11. The marker RCT- relay operated from the number group to control '
+        'the ringing of the called line.'
+    ),
+    'RCT12': (
+        'Ringing Control Test 12. The marker RCT- relay operated from the number group to control '
+        'the ringing of the called line.'
+    ),
+    'RCT13': (
+        'Ringing Control Test 13. The marker RCT- relay operated from the number group to control '
+        'the ringing of the called line.'
+    ),
+    'RCT14': (
+        'Ringing Control Test 14. The marker RCT- relay operated from the number group to control '
+        'the ringing of the called line.'
+    ),
+    'RCT15': (
+        'Ringing Control Test 15. The marker RCT- relay operated from the number group to control '
+        'the ringing of the called line.'
+    ),
+    'CS0': (
+        'Class of Service 0. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS1': (
+        'Class of Service 1. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS2': (
+        'Class of Service 2. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS3': (
+        'Class of Service 3. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS4': (
+        'Class of Service 4. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS5': (
+        'Class of Service 5. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS6': (
+        'Class of Service 6. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS7': (
+        'Class of Service 7. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS8': (
+        'Class of Service 8. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS9': (
+        'Class of Service 9. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS10' :(
+        'Class of Service 10. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS11': (
+        'Class of Service 11. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS12': (
+        'Class of Service 12. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS13': (
+        'Class of Service 13. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS14': (
+        'Class of Service 14. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS15': (
+        'Class of Service 15. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS16': (
+        'Class of Service 16. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS17': (
+        'Class of Service 17. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS18': (
+        'Class of Service 18. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS19': (
+        'Class of Service 19. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS20': (
+        'Class of Service 20. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS21': (
+        'Class of Service 21. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS22': (
+        'Class of Service 22. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS23': (
+        'Class of Service 23. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS24': (
+        'Class of Service 24. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS25': (
+        'Class of Service 25. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS26': (
+        'Class of Service 26. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS27': (
+        'Class of Service 27. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS28': (
+        'Class of Service 28. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'CS29': (
+        'Class of Service 29. Class of service of the calling line on a dial tone connection, '
+        'or class of service of a called coin ground start line on a terminating connection.'
+    ),
+    'TB0': (
+        'Trunk Block 0. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and controls which TB- relay operates in the associated trunk link frame.'
+    ),
+    'TB1': (
+        'Trunk Block 1. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and controls which TB- relay operates in the associated trunk link frame.'
+    ),
+    'TB2': (
+        'Trunk Block 2. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and controls which TB- relay operates in the associated trunk link frame.'
+    ),
+    'TB3': (
+        'Trunk Block 3. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and controls which TB- relay operates in the associated trunk link frame.'
+    ),
+    'TB4': (
+        'Trunk Block 4. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and controls which TB- relay operates in the associated trunk link frame.'
+    ),
+    'TB5': (
+        'Trunk Block 5. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and controls which TB- relay operates in the associated trunk link frame.'
+    ),
+    'TG0': (
+        'Trunk Group 0. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and provides ground to test the trunks in the associated route.'
+    ),
+    'TG1': (
+        'Trunk Group 1. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and provides ground to test the trunks in the associated route.'
+    ),
+    'TG2': (
+        'Trunk Group 2. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and provides ground to test the trunks in the associated route.'
+    ),
+    'TG3': (
+        'Trunk Group 3. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and provides ground to test the trunks in the associated route.'
+    ),
+    'TG4': (
+        'Trunk Group 4. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and provides ground to test the trunks in the associated route.'
+    ),
+    'TG5': (
+        'Trunk Group 5. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and provides ground to test the trunks in the associated route.'
+    ),
+    'TG6': (
+        'Trunk Group 6. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and provides ground to test the trunks in the associated route.'
+    ),
+    'TG7': (
+        'Trunk Group 7. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and provides ground to test the trunks in the associated route.'
+    ),
+    'TG8': (
+        'Trunk Group 8. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and provides ground to test the trunks in the associated route.'
+    ),
+    'TG9': (
+        'Trunk Group 9. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and provides ground to test the trunks in the associated route.'
+    ),
+    'TG10': (
+        'Trunk Group 10. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and provides ground to test the trunks in the associated route.'
+    ),
+    'TG11': (
+        'Trunk Group 11. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and provides ground to test the trunks in the associated route.'
+    ),
+    'TG12': (
+        'Trunk Group 12. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and provides ground to test the trunks in the associated route.'
+    ),
+    'TG13': (
+        'Trunk Group 13. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and provides ground to test the trunks in the associated route.'
+    ),
+    'TG14': (
+        'Trunk Group 14. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and provides ground to test the trunks in the associated route.'
+    ),
+    'TG15': (
+        'Trunk Group 15. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and provides ground to test the trunks in the associated route.'
+    ),
+    'TG16': (
+        'Trunk Group 16. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and provides ground to test the trunks in the associated route.'
+    ),
+    'TG17': (
+        'Trunk Group 17. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and provides ground to test the trunks in the associated route.'
+    ),
+    'TG18': (
+        'Trunk Group 18. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and provides ground to test the trunks in the associated route.'
+    ),
+    'TG19': (
+        'Trunk Group 19. Part of the process of trunk selection. Operated by the chosen route relay '
+        'and provides ground to test the trunks in the associated route.'
+    ),
+    'FS1': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS2': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),    
+    'FS3': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS4': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS5': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS6': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS7': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS8': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS9': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS10': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS11': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS12': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS13': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS14': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS15': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS16': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS17': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS18': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS19': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS20': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS21': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS22': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS23': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS24': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS25': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS26': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS27': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS28': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'FS29': (
+        'Trunk link frame selected for this call. Always 0 in the museum.'
+    ),
+    'TS0': (
+        'The trunk selected for this call. This decision is based on the '
+        'TB-, TG- selections, and the memory of the previous trunk selected '
+        'by this marker. '
+    ),
+    'TS1': (
+        'The trunk selected for this call. This decision is based on the '
+        'TB-, TG- selections, and the memory of the previous trunk selected '
+        'by this marker. '
+    ),
+    'TS2': (
+        'The trunk selected for this call. This decision is based on the '
+        'TB-, TG- selections, and the memory of the previous trunk selected '
+        'by this marker. '
+    ),
+    'TS3': (
+        'The trunk selected for this call. This decision is based on the '
+        'TB-, TG- selections, and the memory of the previous trunk selected '
+        'by this marker. '
+    ),
+    'TS4': (
+        'The trunk selected for this call. This decision is based on the '
+        'TB-, TG- selections, and the memory of the previous trunk selected '
+        'by this marker. '
+    ),
+    'TS5': (
+        'The trunk selected for this call. This decision is based on the '
+        'TB-, TG- selections, and the memory of the previous trunk selected '
+        'by this marker. '
+    ),
+    'TS6': (
+        'The trunk selected for this call. This decision is based on the '
+        'TB-, TG- selections, and the memory of the previous trunk selected '
+        'by this marker. '
+    ),
+    'TS7': (
+        'The trunk selected for this call. This decision is based on the '
+        'TB-, TG- selections, and the memory of the previous trunk selected '
+        'by this marker. '
+    ),
+    'TS8': (
+        'The trunk selected for this call. This decision is based on the '
+        'TB-, TG- selections, and the memory of the previous trunk selected '
+        'by this marker. '
+    ),
+    'TS9': (
+        'The trunk selected for this call. This decision is based on the '
+        'TB-, TG- selections, and the memory of the previous trunk selected '
+        'by this marker. '
+    ),
+    'TS10': (
+        'The trunk selected for this call. This decision is based on the '
+        'TB-, TG- selections, and the memory of the previous trunk selected '
+        'by this marker. '
+    ),
+    'TS11': (
+        'The trunk selected for this call. This decision is based on the '
+        'TB-, TG- selections, and the memory of the previous trunk selected '
+        'by this marker. '
+    ),
+    'TS12': (
+        'The trunk selected for this call. This decision is based on the '
+        'TB-, TG- selections, and the memory of the previous trunk selected '
+        'by this marker. '
+    ),
+    'TS13': (
+        'The trunk selected for this call. This decision is based on the '
+        'TB-, TG- selections, and the memory of the previous trunk selected '
+        'by this marker. '
+    ),
+    'TS14': (
+        'The trunk selected for this call. This decision is based on the '
+        'TB-, TG- selections, and the memory of the previous trunk selected '
+        'by this marker. '
+    ),
+    'TS15': (
+        'The trunk selected for this call. This decision is based on the '
+        'TB-, TG- selections, and the memory of the previous trunk selected '
+        'by this marker. '
+    ),
+    'TS16': (
+        'The trunk selected for this call. This decision is based on the '
+        'TB-, TG- selections, and the memory of the previous trunk selected '
+        'by this marker. '
+    ),
+    'TS17': (
+        'The trunk selected for this call. This decision is based on the '
+        'TB-, TG- selections, and the memory of the previous trunk selected '
+        'by this marker. '
+    ),
+    'TS18': (
+        'The trunk selected for this call. This decision is based on the '
+        'TB-, TG- selections, and the memory of the previous trunk selected '
+        'by this marker. '
+    ),
+    'TS19': (
+        'The trunk selected for this call. This decision is based on the '
+        'TB-, TG- selections, and the memory of the previous trunk selected '
+        'by this marker. '
+    ),
+    'LV0': (
+        'Level 0. Not used in the museum 5XB.'
+    ),
+    'LV1': (
+        'Level 1. Not used in the museum 5XB.'
+    ),
+    'LV2': (
+        'Level 2. The LV- relay operated in the TLF to indicate '
+        'the horizontal level of the trunk switch on which this trunk appears.'
+    ),
+    'LV3': (
+        'Level 3. The LV- relay operated in the TLF to indicate '
+        'the horizontal level of the trunk switch on which this trunk appears.'
+    ),
+    'LV4': (
+        'Level 4. The LV- relay operated in the TLF to indicate '
+        'the horizontal level of the trunk switch on which this trunk appears.'
+    ),
+    'LV5': (
+        'Level 5. The LV- relay operated in the TLF to indicate '
+        'the horizontal level of the trunk switch on which this trunk appears.'
+    ),
+    'LV6': (
+        'Level 6. The LV- relay operated in the TLF to indicate '
+        'the horizontal level of the trunk switch on which this trunk appears.'
+    ),
+    'LV7': (
+        'Level 7. The LV- relay operated in the TLF to indicate '
+        'the horizontal level of the trunk switch on which this trunk appears.'
+    ),
+    'LV8': (
+        'Level 8. The LV- relay operated in the TLF to indicate '
+        'the horizontal level of the trunk switch on which this trunk appears.'
+    ),
+    'LV9': (
+        'Level 9. The LV- relay operated in the TLF to indicate '
+        'the horizontal level of the trunk switch on which this trunk appears.'
+    ),
+    'LC0': (
+        'Link Connector 0. The LC- relay operated in the TLF. '
+        'This also indicates the number of the trunk switch on '
+        'which the trunk is located.'
+    ),
+    'LC1': (
+        'Link Connector 1. The LC- relay operated in the TLF. '
+        'This also indicates the number of the trunk switch on '
+        'which the trunk is located.'
+    ),
+    'LC2': (
+        'Link Connector 2. The LC- relay operated in the TLF. '
+        'This also indicates the number of the trunk switch on '
+        'which the trunk is located.'
+    ),
+    'LC3': (
+        'Link Connector 3. The LC- relay operated in the TLF. '
+        'This also indicates the number of the trunk switch on '
+        'which the trunk is located.'
+    ),
+    'LC4': (
+        'Link Connector 4. The LC- relay operated in the TLF. '
+        'This also indicates the number of the trunk switch on '
+        'which the trunk is located.'
+    ),
+    'LC5': (
+        'Link Connector 5. The LC- relay operated in the TLF. '
+        'This also indicates the number of the trunk switch on '
+        'which the trunk is located.'
+    ),
+    'LC6': (
+        'Link Connector 6. The LC- relay operated in the TLF. '
+        'This also indicates the number of the trunk switch on '
+        'which the trunk is located.'
+    ),
+    'LC7': (
+        'Link Connector 7. The LC- relay operated in the TLF. '
+        'This also indicates the number of the trunk switch on '
+        'which the trunk is located.'
+    ),
+    'LC8': (
+        'Link Connector 8. The LC- relay operated in the TLF. '
+        'This also indicates the number of the trunk switch on '
+        'which the trunk is located.'
+    ),
+    'LC9': (
+        'Link Connector 9. The LC- relay operated in the TLF. '
+        'This also indicates the number of the trunk switch on '
+        'which the trunk is located.'
+    ),
+    'SF': (
+        'Single Frame. The TLF signals the marker that it is not paired.'
+    ),
+    'PF': (
+        'Paired Frame. The TLF signals the marker that it is paired with another TLF.'
+    ),
+    'TTF': (
+        'Tripled Frame. The TLF signals the marker that it is paired with two other TLFs.'
+    ),
+    'RF': (
+        'Regular Frame. Marker functions to operate the RF relay on the TLF.'
+    ),
+    'EF': (
+        'Extension Frame. Marker functions to operate the EF relay on the TLF.'
+    ),
+    'NOC': (
+        'No Class. No trunk class conditions are required for this call.'
+    ),
+    'CLG': (
+        'Class Grounds. The marker CLG relay is operated to operate the required class '
+        'relays in the outgoing trunk.'
+    ),
+    'CLT1': (
+        'Class Timing 1. The marker is timing and awaiting the operation of the class relays '
+        'in the outgoing trunk.'
+    ),
+    'CLT2': (
+        'Class Timing 2. The marker has completed timing for the operation of the class relays and '
+        'is now timing for their locking in feature.'
+    ),
+    'CLK': (
+        'Class Check. The marker has successfully verified the lock-in of the class relay in the trunk.'
+    ),
+    'OTT': (
+        'Operate Trunk Test. The marker has attempted to operate the TT relay in the trunk for testing purposes. '
+        'Only used on test calls.'
+    ),
+    'TTK': (
+        'The marker has successfully verified the operation of the TT relay in the trunk. Only used on test calls.'
+    ),
+    'ND1': (
+        'No Digits. The marker prepares to send a No Digits signal to the sender.'
+    ),
+    'NDK': (
+        'No Digits Check. The marker verified that the sender received and locked-in the No Digits signal.'
+    ),
+    'JC0': (
+        'Junctor Cut-In 0. The JC0 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.'
+    ),
+    'JC1': (
+        'Junctor Cut-In 1. The JC1 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.'
+    ),
+    'JC2': (
+        'Junctor Cut-In 2. The JC2 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.'
+    ),
+    'JC3': (
+        'Junctor Cut-In 3. The JC3 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.'
+    ),
+    'JC4': (
+        'Junctor Cut-In 4. The JC4 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.'
+    ),
+    'JC5': (
+        'Junctor Cut-In 5. The JC5 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.'
+    ),
+    'JC6': (
+        'Junctor Cut-In 6. The JC6 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.'
+    ),
+    'JC7': (
+        'Junctor Cut-In 7. The JC7 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.'
+    ),
+    'JC8': (
+        'Junctor Cut-In 8. The JC8 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.'
+    ),
+    'JC9': (
+        'Junctor Cut-In 9. The JC9 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.'
+    ),
+    'JG0': (
+        'Junctor Group 0. The JG- relay operated in the marker, indicating the junctor group that will be used on this call.'
+    ),
+    'JG1': (
+        'Junctor Group 1. The JG- relay operated in the marker, indicating the junctor group that will be used on this call.'
+    ),
+    'JG2': (
+        'Junctor Group 2. The JG- relay operated in the marker, indicating the junctor group that will be used on this call.'
+    ),
+    'JG3': (
+        'Junctor Group 3. The JG- relay operated in the marker, indicating the junctor group that will be used on this call.'
+    ),
+    'JG4': (
+        'Junctor Group 4. The JG- relay operated in the marker, indicating the junctor group that will be used on this call.'
+    ),
+    'PNR': (
+        'Pattern Normal. The marker PNR relay operated signifying that the junctor group is a standard group of 10 junctors.'
+    ),
+    'PA': (
+        'Pattern A. The marker PA relay operated signifying that the junctor group contains fewer than 10 junctors.'
+    ),
+    'PB': (
+        'Pattern B. The marker PB relay operated signifying that the junctor group contains fewer than 10 junctors.'
+    ),
+    'PC': (
+        'Pattern C. The marker PC relay operated signifying that the junctor group contains fewer than 10 junctors.'
+    ),
+    'PE': (
+        'Pattern E. The marker PE relay operated signifying that the junctor group contains fewer than 10 junctors.'
+    ),
+    'P0': (
+        'Pattern 0. The P- (pattern) relay operated in the marker to identify the junctor subgroup pattern and '
+        'the junctors which are available within the subgroup. The PA, PB or PC punch together with a '
+        'P0-9 determine the available junctors according to the pattern.'
+    ),
+    'P1': (
+        'Pattern 1. The P- (pattern) relay operated in the marker to identify the junctor subgroup pattern and '
+        'the junctors which are available within the subgroup. The PA, PB or PC punch together with a '
+        'P0-9 determine the available junctors according to the pattern.'
+    ),
+    'P2': (
+        'Pattern 2. The P- (pattern) relay operated in the marker to identify the junctor subgroup pattern and '
+        'the junctors which are available within the subgroup. The PA, PB or PC punch together with a '
+        'P0-9 determine the available junctors according to the pattern.'
+    ),
+    'P3': (
+        'Pattern 3. The P- (pattern) relay operated in the marker to identify the junctor subgroup pattern and '
+        'the junctors which are available within the subgroup. The PA, PB or PC punch together with a '
+        'P0-9 determine the available junctors according to the pattern.'
+    ),
+    'P4': (
+        'Pattern 4. The P- (pattern) relay operated in the marker to identify the junctor subgroup pattern and '
+        'the junctors which are available within the subgroup. The PA, PB or PC punch together with a '
+        'P0-9 determine the available junctors according to the pattern.'
+    ),
+    'P5': (
+        'Pattern 5. The P- (pattern) relay operated in the marker to identify the junctor subgroup pattern and '
+        'the junctors which are available within the subgroup. The PA, PB or PC punch together with a '
+        'P0-9 determine the available junctors according to the pattern.'
+    ),
+    'P6': (
+        'Pattern 6. The P- (pattern) relay operated in the marker to identify the junctor subgroup pattern and '
+        'the junctors which are available within the subgroup. The PA, PB or PC punch together with a '
+        'P0-9 determine the available junctors according to the pattern.'
+    ),
+    'P7': (
+        'Pattern 7. The P- (pattern) relay operated in the marker to identify the junctor subgroup pattern and '
+        'the junctors which are available within the subgroup. The PA, PB or PC punch together with a '
+        'P0-9 determine the available junctors according to the pattern.'
+    ),
+    'P8': (
+        'Pattern 8. The P- (pattern) relay operated in the marker to identify the junctor subgroup pattern and '
+        'the junctors which are available within the subgroup. The PA, PB or PC punch together with a '
+        'P0-9 determine the available junctors according to the pattern.'
+    ),
+    'P9': (
+        'Pattern 9. The P- (pattern) relay operated in the marker to identify the junctor subgroup pattern and '
+        'the junctors which are available within the subgroup. The PA, PB or PC punch together with a '
+        'P0-9 determine the available junctors according to the pattern.'
+    ),
+    'LL0': (
+        'The line link used on a dial tone connection. This information, which was stored in the register while '
+        'the call was being set up, is passed back to the marker after dialing, to indicate that this part of '
+        'the channel is to be considered idle when making channel test for the subsequent stage of this connection.'
+    ),
+    'LL1': (
+        'The line link used on a dial tone connection. This information, which was stored in the register while '
+        'the call was being set up, is passed back to the marker after dialing, to indicate that this part of '
+        'the channel is to be considered idle when making channel test for the subsequent stage of this connection.'
+    ),
+    'LL2': (
+        'The line link used on a dial tone connection. This information, which was stored in the register while '
+        'the call was being set up, is passed back to the marker after dialing, to indicate that this part of '
+        'the channel is to be considered idle when making channel test for the subsequent stage of this connection.'
+    ),
+    'LL4': (
+        'The line link used on a dial tone connection. This information, which was stored in the register while '
+        'the call was being set up, is passed back to the marker after dialing, to indicate that this part of '
+        'the channel is to be considered idle when making channel test for the subsequent stage of this connection.'
+    ),
+    'LL7': (
+        'The line link used on a dial tone connection. This information, which was stored in the register while '
+        'the call was being set up, is passed back to the marker after dialing, to indicate that this part of '
+        'the channel is to be considered idle when making channel test for the subsequent stage of this connection.'
+    ),
+    'CH0': (
+        'Selected channel. The channel number corresponds to the number of the select magnet operated on the LLF line switch, '
+        'the junctor switch number on both the LLF and TLF, and vertical unit on the TLF trunk switch.'
+    ),
+    'CH1': (
+        'Selected channel. The channel number corresponds to the number of the select magnet operated on the LLF line switch, '
+        'the junctor switch number on both the LLF and TLF, and vertical unit on the TLF trunk switch.'
+    ),
+    'CH2': (
+        'Selected channel. The channel number corresponds to the number of the select magnet operated on the LLF line switch, '
+        'the junctor switch number on both the LLF and TLF, and vertical unit on the TLF trunk switch.'
+    ),
+    'CH3': (
+        'Selected channel. The channel number corresponds to the number of the select magnet operated on the LLF line switch, '
+        'the junctor switch number on both the LLF and TLF, and vertical unit on the TLF trunk switch.'
+    ),
+    'CH4': (
+        'Selected channel. The channel number corresponds to the number of the select magnet operated on the LLF line switch, '
+        'the junctor switch number on both the LLF and TLF, and vertical unit on the TLF trunk switch.'
+    ),
+    'CH5': (
+        'Selected channel. The channel number corresponds to the number of the select magnet operated on the LLF line switch, '
+        'the junctor switch number on both the LLF and TLF, and vertical unit on the TLF trunk switch.'
+    ),
+    'CH6': (
+        'Selected channel. The channel number corresponds to the number of the select magnet operated on the LLF line switch, '
+        'the junctor switch number on both the LLF and TLF, and vertical unit on the TLF trunk switch.'
+    ),
+    'CH7': (
+        'Selected channel. The channel number corresponds to the number of the select magnet operated on the LLF line switch, '
+        'the junctor switch number on both the LLF and TLF, and vertical unit on the TLF trunk switch.'
+    ),
+    'CH8': (
+        'Selected channel. The channel number corresponds to the number of the select magnet operated on the LLF line switch, '
+        'the junctor switch number on both the LLF and TLF, and vertical unit on the TLF trunk switch.'
+    ),
+    'CH9': (
+        'Selected channel. The channel number corresponds to the number of the select magnet operated on the LLF line switch, '
+        'the junctor switch number on both the LLF and TLF, and vertical unit on the TLF trunk switch.'
+    ),
+    'RS0': (
+        'Ringing Selection 0. The select magnet that operated on the associated RSS to set ringing code for this call. 0 or 1 '
+        'must be operated.'
+    ),
+    'RS1': (
+        'Ringing Selection 1. The select magnet that operated on the associated RSS to set ringing code for this call. 0 or 1 '
+        'must be operated.'
+    ),
+    'RS2': (
+        'Ringing Selection 2. The select magnet that operated on the associated RSS to set ringing code for this call. One of 2-9 '
+        'must be operated.'
+    ),
+    'RS3': (
+        'Ringing Selection 3. The select magnet that operated on the associated RSS to set ringing code for this call. One of 2-9 '
+        'must be operated.'
+    ),
+    'RS4': (
+        'Ringing Selection 4. The select magnet that operated on the associated RSS to set ringing code for this call. One of 2-9 '
+        'must be operated.'
+    ),
+    'RS5': (
+        'Ringing Selection 5. The select magnet that operated on the associated RSS to set ringing code for this call. One of 2-9 '
+        'must be operated.'
+    ),
+    'RS6': (
+        'Ringing Selection 6. The select magnet that operated on the associated RSS to set ringing code for this call. One of 2-9 '
+        'must be operated.'
+    ),
+    'RS7': (
+        'Ringing Selection 7. The select magnet that operated on the associated RSS to set ringing code for this call. One of 2-9 '
+        'must be operated.'
+    ),
+    'RS8': (
+        'Ringing Selection 8. The select magnet that operated on the associated RSS to set ringing code for this call. One of 2-9 '
+        'must be operated.'
+    ),
+    'RS9': (
+        'Ringing Selection 9. The select magnet that operated on the associated RSS to set ringing code for this call. One of 2-9 '
+        'must be operated.'
+    ),
+    'STP1': (
+        'Junctor Step 1. The marker has made its first test of the junctor subgroup. This is normal.'
+    ),
+    'STP2': (
+        'Junctor Step 2. The marker made another test of the junctor subgroup, as all were busy on the first attempt.'
+    ),
+    'NGCT0': 'Number group connector tens digit 0.',
+    'NGCT1': 'Number group connector tens digit 1,',
+    'NGCT2': 'Number group connector tens digit 2.',
+    'NGCT3': 'Number group connector tens digit 3.',
+    'NGCU0': 'Number group connector units digit 0.',
+    'NGCU1': 'Number group connector units digit 1.',
+    'NGCU2': 'Number group connector units digit 2.',
+    'NGCU3': 'Number group connector units digit 3.',
+    'NGCU4': 'Number group connector units digit 4.',
+    'NGCU5': 'Number group connector units digit 5.',
+    'NGCU6': 'Number group connector units digit 6.',
+    'NGCU7': 'Number group connector units digit 7.',
+    'NGCU8': 'Number group connector units digit 8.',
+    'NGCU9': 'Number group connector units digit 9.',
+    'HN0': 'The marker applied battery to the HB0 relay in the number group.',
+    'HN1': 'The marker applied battery to the HB1 relay in the number group.',
+    'HN2': 'The marker applied battery to the HB2 relay in the number group.',
+    'HN3': 'The marker applied battery to the HB3 relay in the number group.',
+    'HN4': 'The marker applied battery to the HB4 relay in the number group.',
+    'HN5': 'The marker applied battery to the HB5 relay in the number group.',
+    'HN6': 'The marker applied battery to the HB6 relay in the number group.',
+    'HN7': 'The marker applied battery to the HB7 relay in the number group.',
+    'HN8': 'The marker applied battery to the HB8 relay in the number group.',
+    'HN9': 'The marker applied battery to the HB9 relay in the number group.',
+    'T0': 'The marker applied battery to the TB0 relay in the number group.',
+    'T1': 'The marker applied battery to the TB1 relay in the number group.',
+    'T2': 'The marker applied battery to the TB2 relay in the number group.',
+    'T3': 'The marker applied battery to the TB3 relay in the number group.',
+    'T4': 'The marker applied battery to the TB4 relay in the number group.',
+    'T5': 'The marker applied battery to the TB5 relay in the number group.',
+    'T6': 'The marker applied battery to the TB6 relay in the number group.',
+    'T7': 'The marker applied battery to the TB7 relay in the number group.',
+    'T8': 'The marker applied battery to the TB8 relay in the number group.',
+    'T9': 'The marker applied battery to the TB9 relay in the number group.',
+    'U0': 'The marker applied battery to the U0 relay in the number group.',
+    'U1': 'The marker applied battery to the U1 relay in the number group.',
+    'U2': 'The marker applied battery to the U2 relay in the number group.',
+    'U3': 'The marker applied battery to the U3 relay in the number group.',
+    'U4': 'The marker applied battery to the U4 relay in the number group.',
+    'U5': 'The marker applied battery to the U5 relay in the number group.',
+    'U6': 'The marker applied battery to the U6 relay in the number group.',
+    'U7': 'The marker applied battery to the U7 relay in the number group.',
+    'U8': 'The marker applied battery to the U8 relay in the number group.',
+    'U9': 'The marker applied battery to the U9 relay in the number group.',
+    'SNG': 'The marker is attempting to Seize the Number Group.',
+    'NGK': 'Number Group Check. The marker has seized the number group and operated its MCA relay.',
+    'NGK1': 'Number Group Check Auxiliary. Battery has been supplied to the F, L, and G leads to the NG.',
+    'UK': 'Units Check. The U- (units) relay in the number group operated.',
+    'HTUK': 'Satisfactory operation of the Hundreds, Tens, and Units relays in the number group.',
+    'TNK': 'Trunk Number Check. That on a toll/tandem or coin junctor call, that a trunk number is involved.',
+    'PTK': (
+        'Physical Theoretical Check. The connection has satisfactorily completed the physical and theoretical office check.'
+    ),
+    'PBX1': (
+        'Private Branch Exchange. The call is to a PBX subscriber or to other lines having PBX hunting.'
+    ),
+    'SLCK': (
+        'The SC (sleeve connector) relay in the number group had operated and locked, in series with the SLCK '
+        '(sleeve connector check) relay in the marker.'
+    ),
+    'CKO': (
+        'Check Operation. The marker has begun a recycle of called line identification on a PBX, RI, TBI, or BN class.'
+    ),
+    'CKR': (
+        'Check Release. The marker has completed the recycle of called line identification on a PBX, RI, TBI, or BN class.'
+    ),
+    'A': (
+        'The marker performed a number group advance from one tens block relay to the next, in the event '
+        'that no idle line is found in the first tens block or to prepare the marker to set up busy-back if all '
+        'PBX lines are busy.'
+    ),
+    'AK': 'Advance Check. The marker completed advance from one tens block to another.',
+    'SAE': 'There is at least one idle PBX line available within the tens block.',
+    'EG': 'End Group. NG reports that the end of the tens block has been reached without finding an idle line.',
+    'RNG': 'Release Number Group. The called line information has been recorded and the marker will release the NG.',
+    'NR': (
+        'Number Release. Marker RNG (release number group), TBI (trouble Intercept), RI (regular intercept), BN (blank number), '
+        'or PUL (plugged-up line) relay operated to release the number group.'
+    ),
+    'PTN': (
+        'Physical Theoretical Number. The HB- (hundreds block) relay operated in a number '
+        'group serving a nondiscriminating office.'
+    ),
+    'PN': (
+        'Physical Number. The HB- (hundreds block) relay operated in a number group serving a physical office.'
+    ),
+    'TN': (
+        'Theoretical Number. The HB- (hundreds block) relay operated in a number group serving a theoretical office.'
+    ),
+    'EN': (
+        'Extra-theoretical Number. The HB- (hundreds block) relay operated in a number group serving an extra-theoretical office.'
+    ),
+    'PBN': (
+        'Permanently Busy Number. The marker PBN relay operated to record that the called number is a permanently busy line.'
+    ),
+    'FNA': (
+        'Free Number Group A. The operated FN- (free number) relay In the number group is cross-connected to operate the marker FNA relay '
+        'when 4-wire ringing selection switches are installed.'
+    ),
+    'FNB': (
+        'The operated FN- (free number) relay In the number group is cross-connected to operate the marker FNB relay '
+        'when 6-wire or a combination of 4- and 6-wire ringing selection switches are installed.'
+    ),
+    'LIN': 'Local Intercept. The marker is preparing to route this INC, IAO, or RV call to intercept with local (non-toll) treatment.',
+    'TIN': 'Toll Intercept. The marker is preparing to route this incoming call call to a toll intercept position or recording.',
+    'BN': 'The marker recognized that this call is to an unassigned number with no cross connections in the number group.',
+    'RI': 'Regulat Intercept. The marker is preparing to route this call to a regular intercept trunk.',
+    'TBI': 'Trouble Intercept. The marker is preparing to route this call to a trouble intercept trunk.',
+    'TBH': (
+        'The marker functioned to operate its TBH (trouble intercept, hold magnet, operate ringing switch) '
+        'relay to reset the trunk ringing switch for ringing into a trouble intercept trunk.'
+    ),
+    'OV': 'Overflow. The marker will set the incoming trunk to return overflow (reorder) signal.',
+    'BY': 'Busy. The marker will set the incoming trunk to return busy signal.',
+    'OFH': 'Overflow Hold Magnet. The marker operated its OFH relay to reset the RSS for BY or OV condition.',
+    'PUL': 'Plugged-Up Line. The marker has recognized that the called line on plugup for route to operator or intercept.',
+    'LCH': 'Local Charge. The marker operated its LCH relay to set local charge supervision on this call.',
+    'TCH': 'Toll Charge. The marker operated its TCH relay to set toll charge supervision on this call.',
+    'RSK': 'Ringing Switch Select Magnet Check. A ringing switch select magnet has operated.',
+    'LI': 'Indicates to the marker that the called line is idle and there is an idle channel available for connection to it.',
+    'TCK1': (
+        'Talking Charge Check. The marker\'s TCH relay has operated to indicate that the talking charge (TC) lead '
+        'has continuity.',
+    ),
+    'SRK': (
+        'Start Ringing Check. The marker has checked the continuity of the RC lead to the trunk and operated the RC '
+        'relay, in turn causing the operation of the RSS hold magnet.'
+    ),
+    'RCK2': (
+        'Ringing Crosspoint Check. Indicates the marker has checked the continuity of the RSS crosspoints.'
+    ),
+    'RCK3': (
+        'Ringing Crosspoint Check 3. Indicates the marker has satisfactorily checked the charge and ringing conditions in the trunk.'
+    ),
+    'EX': (
+        'Extra. This punch is user-configurable and can be assigned by maintenance forces to observe a condition that is otherwise not '
+        'represented on the trouble card. See EXB and EXG cross connections in the marker SD.'
+    ),
+    'DT0': 'Day Tens 0. The tens digit of the day of the month.',
+    'DT1': 'Day Tens 1. The tens digit of the day of the month.',
+    'DT2': 'Day Tens 2. The tens digit of the day of the month.',
+    'DT4': 'Day Tens 4. The tens digit of the day of the month.',
+    'DT7': 'Day Tens 7. The tens digit of the day of the month.',
+    'DU0': 'Day Units 0. The units digit of the day of the month.',
+    'DU1': 'Day Units 1. The units digit of the day of the month.',
+    'DU2': 'Day Units 2. The units digit of the day of the month.',
+    'DU4': 'Day Units 4. The units digit of the day of the month.',
+    'DU7': 'Day Units 7. The units digit of the day of the month.',
+    'HT0': "Hour Tens 0. The tens digit of the hour in 24 hour time.",
+    'HT1': "Hour Tens 1. The tens digit of the hour in 24 hour time.",
+    'HT2': "Hour Tens 2. The tens digit of the hour in 24 hour time.",
+    'HT4': "Hour Tens 4. The tens digit of the hour in 24 hour time.",
+    'HT7': "Hour Tens 7. The tens digit of the hour in 24 hour time.",
+    'HU0': "Hour Units 0. The units digit of the hour in 24 hour time.",
+    'HU1': "Hour Units 1. The units digit of the hour in 24 hour time.",
+    'HU2': "Hour Units 2. The units digit of the hour in 24 hour time.",
+    'HU4': "Hour Units 4. The units digit of the hour in 24 hour time.",
+    'HU7': "Hour Units 7. The units digit of the hour in 24 hour time.",
+    'MT0': "Minute Tens 0. The tens digit of the minute of the hour.",
+    'MT1': "Minute Tens 1. The tens digit of the minute of the hour.",
+    'MT2': "Minute Tens 2. The tens digit of the minute of the hour.",
+    'MT4': "Minute Tens 4. The tens digit of the minute of the hour.",
+    'MT7': "Minute Tens 7. The tens digit of the minute of the hour.",
+    'MU0': "Minute Units 0. The units digit of the minute of the hour.",
+    'MU1': "Minute Units 1. The units digit of the minute of the hour.",
+    'MU2': "Minute Units 2. The units digit of the minute of the hour.",
+    'MU4': "Minute Units 4. The units digit of the minute of the hour.",
+    'MU7': "Minute Units 7. The units digit of the minute of the hour.",
 
-}
+}   
 
 def describe(name: str) -> str:
     """

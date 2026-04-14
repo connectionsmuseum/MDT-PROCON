@@ -6,116 +6,34 @@
         <meta name="apple-mobile-web-app-capable" content="yes">
         <link rel="apple-touch-icon" href="/static/touch-icon-iphone.png">
         <link rel="apple-touch-icon" sizes="180x180" href="/static/touch-icon-iphone-retina.png">
+        <link rel="stylesheet" href="/static/style.css">
+        <link rel="stylesheet" href="/static/card_metadata.css">
         <meta id="card-geom"
             data-orig-x="{{ orig_x }}"
             data-orig-y="{{ orig_y }}"
             data-off-x="{{ off_x }}"
             data-off-y="{{ off_y }}"
             data-card='{{ card_data_json }}'>
+        <script src="/static/card_renderer.js"></script>
+        <script src="/static/card_metadata.js"></script>
         <script>
             const cardGeom = document.getElementById("card-geom").dataset;
-            const CARD_ORIG_X = parseFloat(cardGeom.origX);
-            const CARD_ORIG_Y = parseFloat(cardGeom.origY);
-            const CARD_OFF_X  = parseFloat(cardGeom.offX);
-            const CARD_OFF_Y  = parseFloat(cardGeom.offY);
-            const HOLE_SIZE   = 15;
-
-            const CARD_DATA   = JSON.parse(cardGeom.card || 'null');
-
-            let blankCardImage = null;
-            let placeholderImage = null;
-
-            function ensureBlankCard(callback) {
-                if (blankCardImage) { callback(blankCardImage); return; }
-                const img = new Image();
-                img.onload = function () { blankCardImage = img; callback(img); };
-                img.src = '/blank-card';
-            }
-
-            function ensurePlaceholder(callback) {
-                if (placeholderImage) { callback(placeholderImage); return; }
-                const img = new Image();
-                img.onload = function () { placeholderImage = img; callback(img); };
-                img.src = '/static/placeholder.png';
-            }
-
-            function renderPlaceholder() {
-                ensurePlaceholder(function (img) {
-                    const canvas = document.getElementById('card');
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = img.naturalWidth;
-                    canvas.height = img.naturalHeight;
-                    ctx.drawImage(img, 0, 0);
-                });
-            }
-
-            function renderCard(cardData) {
-                try {
-                    ensureBlankCard(function (img) {
-                        const canvas = document.getElementById('card');
-                        const ctx = canvas.getContext('2d');
-                        canvas.width  = img.naturalWidth;
-                        canvas.height = img.naturalHeight;
-                        ctx.drawImage(img, 0, 0);
-                        if (!cardData || !cardData.z_card) return;
-                        const bits = cardData.z_card;
-                        ctx.fillStyle = 'black';
-                        for (let xidx = 0; xidx < 69; xidx++) {
-                            if (xidx > 30 && xidx < 38) continue; // middle gap
-                            for (let yidx = 0; yidx < 18; yidx++) {
-                                // It's hole punchin' time. KACHUKACHUKA!
-                                if (bits[yidx][xidx]) {
-                                    const cx = CARD_ORIG_X + xidx * CARD_OFF_X;
-                                    const cy = CARD_ORIG_Y + yidx * CARD_OFF_Y;
-                                    ctx.beginPath();
-                                    ctx.arc(cx, cy, HOLE_SIZE, 0, Math.PI * 2);
-                                    ctx.fill();
-                                }
-                            }
-                        }
-                    });
-                } catch (err) {
-                    console.error('Error rendering card:', err);
-                    renderPlaceholder();
-                }
-            }
-
-            // Source - https://stackoverflow.com/a/7220510
-            // Posted by user123444555621, modified by community. See post 'Timeline' for change history
-            // Retrieved 2026-03-20, License - CC BY-SA 3.0
-            function syntaxHighlight(json) {
-                json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
-                    var cls = 'number';
-                    if (/^"/.test(match)) {
-                        if (/:$/.test(match)) {
-                            cls = 'key';
-                        } else {
-                            cls = 'string';
-                        }
-                    } else if (/true|false/.test(match)) {
-                        cls = 'boolean';
-                    } else if (/null/.test(match)) {
-                        cls = 'null';
-                    }
-                    return '<span class="' + cls + '">' + match + '</span>';
-                });
-            }
+            const CARD_DATA = JSON.parse(cardGeom.card || 'null');
 
             document.addEventListener("DOMContentLoaded", function () {
-                renderCard(CARD_DATA);
-                var jsonBlock = document.getElementById('metadata-json');
-                if (jsonBlock) {
-                    jsonBlock.innerHTML = syntaxHighlight(jsonBlock.textContent);
-                }
+                var renderer = window.CardRenderer.createRenderer({ holeSize: 15 });
+                renderer.renderCard(CARD_DATA);
+                window.CardMetadata.highlightPreformattedJson('metadata-json');
             });
         </script>
         <style>
         html {
             background-color: #2a2a2a;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
-                    Roboto, Helvetica, Arial, sans-serif;
             color: white;
+        }
+        body {
+            padding: 0;
+            background: #2a2a2a;
         }
         .nav {
             padding: 10px;
@@ -123,12 +41,7 @@
             align-items: center;
         }
         .nav a {
-            color: #7ac7ff;
             white-space: nowrap;
-            text-decoration: none;
-        }
-        .nav a:hover {
-            text-decoration: underline;
         }
         .nav h1.card-title {
             flex: 1;
@@ -142,42 +55,12 @@
             height: auto;
             display: block;
         }
-        .metadata {
-            padding: 12px 10px 16px;
-        }
-        .metadata h2 {
-            margin: 0 0 8px;
-            font-size: 1.05rem;
-            color: #ccc;
-        }
-        .metadata pre {
-            margin: 0;
-            padding: 14px;
-            border: 1px solid #444;
-            border-radius: 6px;
-            background: #111;
-            color: #d9f0ff;
-            overflow: auto;
-            line-height: 1.35;
-        }
-        .metadata .string { color: #98c379; }
-        .metadata .number { color: #d19a66; }
-        .metadata .boolean { color: #61afef; }
-        .metadata .null { color: #c678dd; }
-        .metadata .key { color: #e06c75; }
         .card-nav {
             margin-left: auto;
             display: flex;
             gap: 12px;
             font-size: 1.4em;
             font-weight: bold;
-        }
-        .card-nav a {
-            color: #7ac7ff;
-            text-decoration: none;
-        }
-        .card-nav a:hover {
-            text-decoration: underline;
         }
         .card-nav .nav-disabled {
             color: #555;
@@ -194,13 +77,6 @@
             </div>
         </div>
         <canvas id="card"></canvas>
-        <section class="metadata">
-            <h2>Metadata</h2>
-            {% if pretty_json %}
-                <pre id="metadata-json">{{ pretty_json }}</pre>
-            {% else %}
-                <p>Metadata not found for this card.</p>
-            {% endif %}
-        </section>
+        {% include '_card_metadata_panel.html' %}
     </body>
 </html>

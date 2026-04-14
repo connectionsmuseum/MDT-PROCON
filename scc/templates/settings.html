@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Settings</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="apple-touch-icon" href="../static/touch-icon-iphone.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="../static/touch-icon-iphone-retina.png">
+        <link rel="stylesheet" href="/static/style.css">
+        <style>
+            body {
+                padding: 18px;
+                line-height: 1.5;
+            }
+            .container {
+                max-width: 920px;
+            }
+            h1 {
+                margin: 0 0 16px;
+            }
+            .settings-list {
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+                padding: 14px;
+                border: 1px solid #444;
+                border-radius: 6px;
+                background: #222;
+            }
+            .setting-row label {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                cursor: pointer;
+                font-size: 1rem;
+            }
+            .setting-description {
+                margin: 4px 0 0 28px;
+                color: #bbb;
+                font-size: 0.92rem;
+            }
+        </style>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var settings = [
+                    {
+                        checkbox: document.getElementById('autoRefresh'),
+                        storageKey: 'autoRefresh',
+                        defaultValue: true,
+                        errorLabel: 'auto refresh'
+                    },
+                    {
+                        checkbox: document.getElementById('punchNameTooltips'),
+                        storageKey: 'punchNameTooltips',
+                        defaultValue: false,
+                        errorLabel: 'punch name tooltip'
+                    },
+                    {
+                        checkbox: document.getElementById('displayCardMetadataHome'),
+                        storageKey: 'displayCardMetadataHome',
+                        defaultValue: false,
+                        errorLabel: 'home page metadata display'
+                    }
+                ];
+
+                settings.forEach(function (setting) {
+                    try {
+                        var savedValue = localStorage.getItem(setting.storageKey);
+                        setting.checkbox.checked = savedValue === null ? setting.defaultValue : (savedValue === 'true');
+                    } catch (err) {
+                        setting.checkbox.checked = setting.defaultValue;
+                    }
+
+                    setting.checkbox.addEventListener('change', function () {
+                        try {
+                            localStorage.setItem(setting.storageKey, setting.checkbox.checked);
+                        } catch (err) {
+                            console.error('Unable to persist ' + setting.errorLabel + ' setting:', err);
+                        }
+                    });
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <div class="top-nav">
+            <a href="/">Back to Trouble Recorder</a>
+        </div>
+
+        <div class="container">
+            <h1>Settings</h1>
+            <div class="settings-list">
+                <div class="setting-row">
+                    <label>
+                        <input type="checkbox" id="autoRefresh">
+                        <span>Auto refresh on new card</span>
+                    </label>
+                    <p class="setting-description">Automatically show the newest card when it arrives.</p>
+                </div>
+                <div class="setting-row">
+                    <label>
+                        <input type="checkbox" id="punchNameTooltips">
+                        <span>Punch description tooltips</span>
+                    </label>
+                    <p class="setting-description">Show tooltips with punch descriptions on mouseover. Not recommended for smartphones.</p>
+                </div>
+                <div class="setting-row">
+                    <label>
+                        <input type="checkbox" id="displayCardMetadataHome">
+                        <span>Display card metadata on home page</span>
+                    </label>
+                    <p class="setting-description">Show the same metadata panel used on the single-card page below the card on the home page.</p>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

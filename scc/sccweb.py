@@ -6,11 +6,13 @@ import os
 import json
 import cardmap as cm
 import evaluatecard as ec
+import punch_descriptions
 from datetime import datetime
 
 app = Flask(__name__)
 clients = []
 _offsets = None
+_punch_tooltip_grid = None
 
 # The virtual card is scanned in 120 points (two rows) at a time, in the same
 # way as the actual card is punched when it is transported through the trouble
@@ -113,6 +115,25 @@ def get_offsets():
                 int(config['Front']['t_start_y'])
             )
     return _offsets
+
+
+def _get_punch_tooltip_grid():
+    """Return cached punch tooltip metadata for each card coordinate."""
+    global _punch_tooltip_grid
+    if _punch_tooltip_grid is None:
+        rows = []
+        for row in range(18):
+            row_items = []
+            for col in range(69):
+                name = cm.punchName(row, col)
+                description = None if name == '-' else punch_descriptions.PUNCH_DESCRIPTIONS.get(name)
+                row_items.append({
+                    'name': name,
+                    'description': description,
+                })
+            rows.append(row_items)
+        _punch_tooltip_grid = rows
+    return _punch_tooltip_grid
 
 def punch_date(bits):
     '''
@@ -391,10 +412,20 @@ def credits():
     """Serve the credits page."""
     return render_template('credits.html')
 
+@app.route('/settings', methods=['GET'])
+def settings():
+    """Serve the settings page."""
+    return render_template('settings.html')
+
 @app.route('/blank-card', methods=['GET'])
 def blank_card():
     """Serve the blank (unpunched) card template image."""
     return send_from_directory('cardpack', 'front_9a8sudf.jpg')
+
+@app.route('/punch-tooltip-data', methods=['GET'])
+def punch_tooltip_data():
+    """Return static punch-name and description data for hover tooltips."""
+    return jsonify(_get_punch_tooltip_grid())
 
 @app.route('/latest-card-data', methods=['GET'])
 def latest_card_data():

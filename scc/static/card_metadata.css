@@ -1,0 +1,31 @@
+.metadata {
+    padding: 12px 10px 16px;
+}
+
+.metadata h2 {
+    margin: 0 0 8px;
+    font-size: 1.05rem;
+    color: #ccc;
+}
+
+.metadata pre {
+    margin: 0;
+    padding: 14px;
+    border: 1px solid #444;
+    border-radius: 6px;
+    background: #111;
+    color: #d9f0ff;
+    overflow: auto;
+    line-height: 1.35;
+}
+
+.metadata .metadata-empty {
+    margin: 0;
+    color: #ccc;
+}
+
+.metadata .string { color: #98c379; }
+.metadata .number { color: #d19a66; }
+.metadata .boolean { color: #61afef; }
+.metadata .null { color: #c678dd; }
+.metadata .key { color: #e06c75; }

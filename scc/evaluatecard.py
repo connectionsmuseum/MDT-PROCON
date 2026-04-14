@@ -641,6 +641,10 @@ def os_reedcheck(card, outsender=None, register_digits=None, register_error=None
                     punched = [pos for pos in [0, 1, 2, 3] if card_has(f"{k}{pos}")]
                     packs_calling_line[k] = punched.copy()
                     if punched != [0, 3]:
+                        if card_has('DR1'):
+                            # annoying. for some reason marker 1 doesn't punch this correctly on some calls. 
+                            # just pass by this punch if we're using DR1 XXX SA
+                            continue
                         record_error(f"FT' digit must be 0 and 3 (holes at 0 and 3), but found {punched}")
                     decoded[k] = sum(punched)
                     continue
@@ -658,6 +662,10 @@ def os_reedcheck(card, outsender=None, register_digits=None, register_error=None
                 punched = [pos for pos in [0, 1, 2, 4, 7] if card_has(f"{k}{pos}")]
                 packs_calling_line[k] = punched.copy()
                 if len(punched) != 2:
+                    if k == "FU'" and card_has('DR1'):
+                        # annoying. for some reason marker 1 doesn't punch this correctly on some calls. 
+                        # just pass by this punch if we're using DR1 XXX SA
+                        continue
                     record_error(f"{k} field has {len(punched)} punch(es) {punched}; exactly two required for a digit")
                     continue
                 decoded[k] = rev[tuple(sorted(punched))]
@@ -998,12 +1006,12 @@ def cm_check(card):
                         trigger=["HTUK", "WT"], bin="NG_FAILURE")
 
     if card_has_all("FLG", "SNG") and card_lacks("RNG"):
-        raise_cm_error("SNG_NO_RNG", "FLG with SNG requires RNG",
+        raise_cm_error("SNG_NO_RNG", "Number group has been seized but not release. Possible translation failure.",
                        required=["RNG"], trigger=["FLG", "SNG"], bin="NG_FAILURE")
 
     # --- TER calls ---
     if card_has("TER", "TOG") and card_lacks("FLG"):
-        raise_cm_error("NO_FLG", "TER or TOG requires FLG", required=["FLG"], trigger=["TER", "TOG"], bin="NO_FLG")
+        raise_cm_error("NO_FLG", "FLG punch missing. This shouldn't ever happen.", required=["FLG"], trigger=["TER", "TOG"], bin="NO_FLG")
 
     if card_has("TER") and not card_has_all("TF4", "TF7"):
         raise_cm_error("INC_NO_TF", "TLF indication not recorded in IR or CM", required=["TF4", "TF7"], trigger=["TER"], bin="INC_NO_TF")
@@ -1013,7 +1021,7 @@ def cm_check(card):
                        required=["RS9"], trigger=["TER", "BY", "OV", "OFH"], bin="NO_RS9")
 
     if card_has(rct_punches) and card_lacks("RSK"):
-        raise_cm_error("NO_RSK", "RCT1-9 requires RSK",
+        raise_cm_error("NO_RSK", "No ringing switch select magnet has operated. Check RS- punches",
                        required=["RSK"], trigger=rct_punches, bin="NO_RSK")
 
     if card_has_all("TER", "BY") and card_lacks("RS1"):
@@ -1024,10 +1032,6 @@ def cm_check(card):
         raise_cm_error("OV_NO_RS0", "horizontal 0 in the Ringing Selection Switch failed to operate",
                        required=["RS0"], trigger=["TER", "OV"], bin="OV_NO_RS0")
 
-    if card_has_all("TER", "RS9") and card_lacks("RSK"):
-        raise_cm_error("NO_RSK", "TER with RS9 requires RSK",
-                       required=["RSK"], trigger=["TER", "RS9"], bin="RSS_CHECK")
-
     if card_has_all("TER", "SRK") and card_lacks("RCK2"):
         raise_cm_error("NO_RCK2", "No RCK2. Looks like the ringing selection switch crosspoints didn't close...",
                        required=["RCK2"], trigger=["TER", "SRK"], bin="RSS_CHECK")
@@ -1037,12 +1041,12 @@ def cm_check(card):
                        required=["RCK3"], trigger=["TER", "RCK2"], bin="RSS_CHECK")
 
     if card_has_all("TER", "RSK") and card_lacks("SRK"):
-        raise_cm_error("NO_SRK", "TER with RSK requires SRK",
+        raise_cm_error("NO_SRK", "Possible continuity issue on the RC lead to the trunk.",
                        required=["SRK"], trigger=["TER", "RSK"], bin="RSS_CHECK")
 
     # --- Crosspoint checks ---
     if card_lacks('HMS1') and card_has("TK"):
-        raise_cm_error("TK_NO_HMS1", "card has TK, but no HMS1. marker was unable to operate hold magnets.",
+        raise_cm_error("TK_NO_HMS1", "card has TK, but no HMS1. Marker was unable to operate hold magnets.",
                         required=["HMS1"], trigger=["TK"], bin="XPT_CHECK")
 
     if card_lacks("HMS1") and card_has("SL"):
@@ -1054,16 +1058,17 @@ def cm_check(card):
                        required=["HMS1"], trigger=["JXP1", "LXP1"], bin="XPT_CHECK")
 
     if card_has("HMS1") and card_lacks("SL"):
-        raise_cm_error("NO_SL", "HMS1 is punched without SL", required=["SL"], trigger=["HMS1"], bin="XPT_CHECK")
+        raise_cm_error("NO_SL", "Trunk link crosspoints not closed.", required=["SL"], trigger=["HMS1"], bin="XPT_CHECK")
 
     if card_has("JXP1") and card_lacks("LXP1"):
-        raise_cm_error("NO_LXP1", "JXP1 is punched without LXP1", required=["LXP1"], trigger=["JXP1"], bin="XPT_CHECK")
+        raise_cm_error("NO_LXP1", "Line link crosspoints not closed.", required=["LXP1"], trigger=["JXP1"], bin="XPT_CHECK")
 
     if card_has("SL") and card_lacks("JXP1"):
-        raise_cm_error("NO_JXP1", "SL is punched without JXP1", required=["JXP1"], trigger=["SL"], bin="XPT_CHECK")
+        raise_cm_error("NO_JXP1", "Junctor crosspoints not closed.", required=["JXP1"], trigger=["SL"], bin="XPT_CHECK")
 
     if card_has_all("SL", "JXP1", "LXP1") and card_lacks("GT2"):
-        raise_cm_error("NO_GT2", "SL/JXP1/LXP1 combination requires GT2",
+        raise_cm_error("NO_GT2", "GT2 indicates the operation of GT1. GT1 requires SL, JXP1, CON1, GLH, but not LXP1. "
+                        "SFD-10-01-C531",
                        required=["GT2"], trigger=["SL", "JXP1", "LXP1"], bin="XPT_CHECK")
 
     if card_has(ch_punches) and card_lacks("HMS1"):
@@ -1109,23 +1114,23 @@ def cm_check(card):
                            context=["LK", "RK"], requirement="exactly_one", bin="LK_RK_CONFLICT")
 
     if card_lacks("TER") and card_has("MAK1") and found_count(ts_punches) != 1:
-        raise_cm_error("NO_TS", "MAK1 requires one and only one TS0-19",
+        raise_cm_error("NO_TS", "Missing TS punch. Should have that at this point in the call.",
                        trigger=["MAK1"], context=ts_punches, requirement="exactly_one", bin="INV_TS")
 
     if card_has(ts_punches) and found_count(lv_punches) != 1:
-        raise_cm_error("NO_LV", "TS0-19 requires one and only one LV2-9",
+        raise_cm_error("NO_LV", "No LV- relay operated in the TLF. Should have one of LV2-9",
                        trigger=ts_punches, context=lv_punches, requirement="exactly_one", bin="INV_LV")
 
     if card_has(lv_punches) and found_count(lc_punches) != 1:
-        raise_cm_error("NO_LC", "LV2-9 requires one and only one LC0-9",
+        raise_cm_error("NO_LC", "No LC- relay operated in the TLF. Should have one of LC0-9",
                        trigger=lv_punches, context=lc_punches, requirement="exactly_one", bin="INV_LC")
 
     if card_has(lc_punches) and card_lacks("LCK"):
-        raise_cm_error("NO_LCK", "LC0-9 requires LCK", required=["LCK"], trigger=lc_punches, bin="NO_LCK")
+        raise_cm_error("NO_LCK", "LCK not punched. LC- operate check failed.", required=["LCK"], trigger=lc_punches, bin="NO_LCK")
 
      # --- LLF Checks ---
     if card_lacks("LB") and card_has_all('VTK1', 'HTK1', 'FTK1') and card_lacks("LFK"):
-         raise_cm_error("NO_LFK", "line location has been registered from the NG, but no LLF seizure took place",
+         raise_cm_error("NO_LFK", "Line location has been registered from the NG, but no LLF seizure took place",
                         required=["LFK"], trigger=["VTK1", "HTK1", "FTK1"], bin="NO_LLF_SEIZURE")
 
     # --- IRL LR Checks ---
@@ -1297,8 +1302,10 @@ def evaluate(card, describe: bool = False):
         if bin_name and meta.get("bin") == "unbinned":
             meta["bin"] = bin_name
 
-    if meta["type"][0] in ("MTPT", "TKT"):
-        set_bin_if_unbinned("TEST_CARD_MKR_TRK")
+    if meta["type"][0] == "MTPT":
+        set_bin_if_unbinned("TEST_CARD_MKR")
+    if meta["type"][0] == "TKT":
+        set_bin_if_unbinned("TEST_CARD_TKT")
     if meta["type"][0] == "SRT":
         set_bin_if_unbinned("TEST_CARD_SRT")
     if meta["type"][0] == "MLV":
