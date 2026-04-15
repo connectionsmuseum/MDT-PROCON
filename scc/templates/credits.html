@@ -52,13 +52,16 @@
 
             <h2>How does this work?</h2>
             <p>
+                This website displays real time trouble record data from the Connections Museum's No. 5 Crossbar switching system.
                 The <a href="https://en.wikipedia.org/wiki/Number_Five_Crossbar_Switching_System">No. 5 Crossbar (5XB)</a>
-                switching system originally used custom punched cards to output "Trouble Records"
-                for technicians to use when diagnosing faults and repairing the system. These cards were punched by a
+                originally used custom punched cards to output "Trouble Records" for technicians to use when diagnosing faults 
+                and repairing the system. These cards were punched by a
                 <a href="https://telecomarchive.s3.us-east-2.amazonaws.com/docs/bsp-archive/034/034-305-101_I1.pdf">
                 KS-13834 Perforator</a>. In the early 1980s, near the end of the machine's life,
                 <a href="https://telecomarchive.s3.us-east-2.amazonaws.com/docs/bsp-archive/190/190-105-101_I1.pdf">computer-aided</a>
-                administration was added to the 5XB by way of the Maintenance Data Transmitter (MDT).
+                administration was added to the 5XB by way of the 
+                <a href="https://telecomarchive.s3.us-east-2.amazonaws.com/docs/bsp-archive/190/190-106-101_I1.pdf">Maintenance 
+                    Data Transmitter (MDT)</a>.
                 The MDT basically pretended to be a perforator, but instead of punching cards, it temporarily
                 stored the card data and sent it to a central location known as a "Switching Control Center" (SCC)
                 for analysis.
@@ -78,8 +81,8 @@
             <p>
                 The new MDT is built using an ESP32 microcontroller, which runs the code seen
                 <a href="https://github.com/connectionsmuseum/MDT-PROCON-V2">here</a>. It reads the cards as they come in
-                from the switch and sends the data to this application which (like the original SCC) processes the data,
-                punches a virtual card, and analyzes the card data to bin the cards.
+                from the switch and sends the data to the application you are currently using, which (like the original SCC) processes the data,
+                punches a virtual card, and analyzes the card data to bin (sort) the cards.
             </p>
             <p>
                 Endpoints are provided to pull the most recent card data as JSON, as well as to permalink to an arbitrary card by its ID.
