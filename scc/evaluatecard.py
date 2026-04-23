@@ -850,7 +850,7 @@ def ng_getmeta(card):
 
 def cm_check(card):
     """Evaluates a whole bunch of things to ensure that the completing marker's operation is sane.
-    Source: BSP 218-404-50_ and various 5XB troubleshooting books
+    Source: BSP 218-404-50_ and various 5XB troubleshooting books.
 
     Checks below are listed in the same order as the function body.
 
@@ -864,19 +864,17 @@ def cm_check(card):
     * If FLG and SNG then must have RNG: raise SNG_NO_RNG
 
     # TER calls
-    * If TER or TOG then must have FLG: raise NO_FLG
     * If TER then must have TF4 and TF7: raise INC_NO_TF
-    * If TER and (BY or OV or OFH) then must have RS9: raise NO_RS9
+    * If TER and any of BY, OV, OFH are present then must have RS9: raise NO_RS9
     * If RCT1-9 then must have RSK: raise NO_RSK
     * If TER and BY then must have RS1: raise BY_NO_RS1
     * If TER and OV then must have RS0: raise OV_NO_RS0
-    * If TER and RS9 then must have RSK: raise NO_RSK
-    * If TER and SRK then must have RCK2: raise NO_RCK2
-    * If TER and RCK2 then must have RCK3: raise NO_RCK3
-    * If TER and RSK then must have SRK: raise NO_SRK
+    * If FLG and SRK then must have RCK2: raise NO_RCK2
+    * If FLG and RCK2 then must have RCK3: raise NO_RCK3
+    * If FLG and RSK then must have SRK: raise NO_SRK
 
     # Crosspoint checks
-    * if card has TK then card must have HMS1: raise TK_NO_HMS1
+    * If TK then must have HMS1: raise TK_NO_HMS1
     * If no HMS1 then must not have SL: raise FALSE_SL
     * If no HTR and no HMS1 then must not have JXP1 or LXP1: raise FALSE_JXP1_LXP1
     * If HMS1 then must have SL: raise NO_SL
@@ -885,22 +883,22 @@ def cm_check(card):
     * If SL and JXP1 and LXP1 then must have GT2: raise NO_GT2
     * If CH0-9 then must have HMS1: raise NO_HMS1
     * If JC0-9 then must have JCK: raise NO_JCK
-    * If (not TER) and (P0-9 or PNR or PA or PB or PC or PE) then must have TCHK: raise NO_TCHK
+    * If not TER and any of P0-9, PNR, PA, PB, PC, PE are present then must have TCHK: raise NO_TCHK
 
     # Double Connection Tests
-    * If GT2 or AVK1 or RCK3 or CLK then must have DCT1: raise NO_DCT1
+    * If any of GT2, AVK1, RCK3, CLK are present then must have DCT1: raise NO_DCT1
     * If RCK3 and not DCT1 then must have DCT: raise TER_NO_DCT
     * If DCT1 then must have DIS1 and must not have DCT: raise DCT1_NO_DIS1
     * If DCT1 then must have LK1: raise NO_LK1
-    * If (SCB and DCT1 and LK1) or DCT2 or LK1 then must have DIS1: raise NO_DIS1
+    * If SCB and DCT1 and LK1 are all present, or if either DCT2 or LK1 is present, then must have DIS1: raise NO_DIS1
 
     # TLF checks
-    * If LV2-9 then must have FAK or FBK: raise NO_FAK_FBK
-    * If FUT0-9 or JG0-4 and both LK and RK operate: raise LK_RK_CONFLICT
+    * If any of LV2-9 are present then must have FAK or FBK: raise NO_FAK_FBK
+    * If any of FUT0-9 or JG0-4 are present then LK and RK may not both be present: raise LK_RK_CONFLICT
     * If (not TER) and MAK1 then must have one and only one TS0-19: raise NO_TS
-    * If TS0-19 then must have one and only one LV2-9: raise NO_LV
-    * If LV2-9 then must have one and only one LC0-9: raise NO_LC
-    * If LC0-9 then must have LCK: raise NO_LCK
+    * If any TS0-19 are present then there must be exactly one LV2-9: raise NO_LV
+    * If any LV2-9 are present then there must be exactly one LC0-9: raise NO_LC
+    * If any LC0-9 are present then must have LCK: raise NO_LCK
 
     # LLF Checks
     * If not LB, and all of (VTK1, HTK1, FTK1) then must have LFK: raise NO_LFK
@@ -912,10 +910,10 @@ def cm_check(card):
     * If LR then must have LV2-9: raise LR_NO_TRUNK
 
     # Outgoing calls with sender
-    * If OSG0-4 then must have SOG: raise NO_SOG
+    * If any of OSG0-4 are present then must have SOG: raise NO_SOG
     * If SOG then must have OSK: raise NO_OSK
     * If OSK then must have SLK2: raise NO_SLK2
-    * If OS0-4 then must have RSC: raise NO_RSC
+    * If any of OS0-4 are present then must have RSC: raise NO_RSC
     * If TI and RSC and SLK2 then must have AVK1: raise NO_AVK1
     * If LT1 then must have AMA: raise NO_AMA
     * If TGT: raise TG_FAIL
@@ -927,21 +925,27 @@ def cm_check(card):
     * If FLG then must have TCHK: raise NO_TCHK
     * If FLG then must have LK or RK: raise NO_LK_RK
     * If FLG then must have RK3: raise NO_RK3
-    * If FLG and JCK and LCK and HGK and TCHK and RK3 and (LK or RK) then must have TK: raise NO_TK
-    * If SCB and FAK and LFK and LCK and JCK and HGK and RK3 then must have TK: raise NO_TK
-    * If FLG and HGK and JCK and TCHK and LCK and (FAK or FBK) then must have TK: raise NO_TK
+    * If FLG and JCK and LCK and HGK and TCHK and RK3 are all present, and either LK or RK is present, then must have TK: raise NO_TK
+    * If SCB then must have FAK: raise NO_FAK
+    * If SCB then must have LCK: raise NO_LCK
+    * If SCB then must have JCK: raise NO_JCK
+    * If SCB then must have DTK: raise NO_DTK
+    * If SCB then must have HGK: raise NO_HGK
+    * If SCB then must have RK3: raise NO_RK3
+    * If SCB and FAK and LFK and LCK and JCK and HGK and RK3 are all present then must have TK: raise NO_TK
+    * If FLG and HGK and JCK and TCHK and LCK are all present, and either FAK or FBK is present, then must have TK: raise NO_TK
     * If TK then must have HMS1: raise NO_HMS1
     * If HMS1 then must have DCT1: raise NO_DCT1
     * If TK then must have CK: raise NO_CK
-    * If TI and one of (SOG, ITR, TOG, NSO) then must have one and only one TG0-19: raise NO_TG
-    * If TI and one of (SOG, ITR, TOG, NSO) then must have one and only one TB0-5: raise NO_TB
-    * If TI and one of (SOG, ITR, TOG, NSO) and TB0-4 then must have one and only one TS0-19: raise NO_TS
+    * If TI and any of SOG, ITR, TOG, NSO are present then there must be exactly one TG0-19: raise NO_TG
+    * If TI and any of SOG, ITR, TOG, NSO are present then there must be exactly one TB0-5: raise NO_TB
+    * If TI and any of SOG, ITR, TOG, NSO are present, and any TB0-5 is present, then there must be exactly one TS0-19: raise NO_TS
     * If TI and one of (SOG, ITR, TOG, NSO) and TB0-5 then must have one and only one FS0-29: raise NO_FS
     * If FS0 then must have FTCK: raise NO_FTCK
     * If LK1 then must have SCB: raise NO_SCB
     * If FLG and LB then must have BY or OV: raise NO_BY_OV
     * If TM and CKG and TSE: raise TSE_NO_TRUNK
-    * If TM and CKG then must have TK: raise NO_TK
+    * If TM and CKG then must have TK: raise FALLTHROUGH
     """
 
     cm.set_current_card(card)
@@ -1010,9 +1014,6 @@ def cm_check(card):
                        required=["RNG"], trigger=["FLG", "SNG"], bin="NG_FAILURE")
 
     # --- TER calls ---
-    if card_has("TER", "TOG") and card_lacks("FLG"):
-        raise_cm_error("NO_FLG", "FLG punch missing. This shouldn't ever happen.", required=["FLG"], trigger=["TER", "TOG"], bin="NO_FLG")
-
     if card_has("TER") and not card_has_all("TF4", "TF7"):
         raise_cm_error("INC_NO_TF", "TLF indication not recorded in IR or CM", required=["TF4", "TF7"], trigger=["TER"], bin="INC_NO_TF")
 
@@ -1032,17 +1033,17 @@ def cm_check(card):
         raise_cm_error("OV_NO_RS0", "horizontal 0 in the Ringing Selection Switch failed to operate",
                        required=["RS0"], trigger=["TER", "OV"], bin="OV_NO_RS0")
 
-    if card_has_all("TER", "SRK") and card_lacks("RCK2"):
+    if card_has_all("FLG", "SRK") and card_lacks("RCK2"):
         raise_cm_error("NO_RCK2", "No RCK2. Looks like the ringing selection switch crosspoints didn't close...",
-                       required=["RCK2"], trigger=["TER", "SRK"], bin="RSS_CHECK")
+                       required=["RCK2"], trigger=["FLG", "SRK"], bin="RSS_CHECK")
 
-    if card_has_all("TER", "RCK2") and card_lacks("RCK3"):
+    if card_has_all("FLG", "RCK2") and card_lacks("RCK3"):
         raise_cm_error("NO_RCK3", "TER with RCK2 requires RCK3",
-                       required=["RCK3"], trigger=["TER", "RCK2"], bin="RSS_CHECK")
+                       required=["RCK3"], trigger=["FLG", "RCK2"], bin="RSS_CHECK")
 
-    if card_has_all("TER", "RSK") and card_lacks("SRK"):
+    if card_has_all("FLG", "RSK") and card_lacks("SRK"):
         raise_cm_error("NO_SRK", "Possible continuity issue on the RC lead to the trunk.",
-                       required=["SRK"], trigger=["TER", "RSK"], bin="RSS_CHECK")
+                       required=["SRK"], trigger=["FLG", "RSK"], bin="RSS_CHECK")
 
     # --- Crosspoint checks ---
     if card_lacks('HMS1') and card_has("TK"):

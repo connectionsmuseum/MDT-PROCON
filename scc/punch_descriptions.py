@@ -45,13 +45,14 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     ),
     'DR0': (
         'This call was handled by Completing Marker 0, which is the wirespring '
-        'marker SD-26002-01.'
+        'marker, SD-26002-01.'
     ),
     'DR1': (
         'This call was handled by Completing Marker 1, which is the U&Y relay '
         'marker, SD-25550-01.'
     ),
     'DR8': 'This call was handled by the Dial Tone Marker, SD-26001-01',
+    'DRT0': 'Display Registered Tens 0. The tens digit of the DR punches.',
     '1TR': (
         'This card was the result of the markers first attempt to handle the call. '
         'If there was also a failure on a second attempt, there may be a card immediately '
@@ -148,7 +149,7 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         '(pretty much all of them.)'
     ),
     'SON': (
-        'Sender Outgoing. An outgoing call that does require a sender. This includes '
+        'Sender Outgoing. An outgoing call that requires a sender. This includes '
         'calls to the 1XB, Panel, SxS, DMS-100, etc.'
     ),
     'DRT1': (
@@ -179,15 +180,66 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'specific nature of the card.'
     ),
     'CN-': 'Connector Number of the following frames: LLMC, ORMC, IRMC.',
-    'HT-': (
+
+    # Note: the following group of punches isn't really prime ('), but I had to 
+    # address them this way to avoid a name collision with HT- hour tens punches.
+    'HT\'0': (
         'Hundreds Trunk. Used on tandem calls to identify the hundreds digit of '
         'the line link appearance of the tandem trunk in the number group.'
     ),
-    'TT-': (
+    'HT\'1': (
+        'Hundreds Trunk. Used on tandem calls to identify the hundreds digit of '
+        'the line link appearance of the tandem trunk in the number group.'
+    ),
+    'HT\'2': (
+        'Hundreds Trunk. Used on tandem calls to identify the hundreds digit of '
+        'the line link appearance of the tandem trunk in the number group.'
+    ),
+    'HT\'4': (
+        'Hundreds Trunk. Used on tandem calls to identify the hundreds digit of '
+        'the line link appearance of the tandem trunk in the number group.'
+    ),
+    'HT\'7': (
+        'Hundreds Trunk. Used on tandem calls to identify the hundreds digit of '
+        'the line link appearance of the tandem trunk in the number group.'
+    ),
+    'TT0': (
         'Tens Trunk. Used on tandem calls to identify the tens digit of the line link '
         'appearance of the tandem trunk in the number group.'
     ),
-    'UT-': (
+    'TT1' : (
+        'Tens Trunk. Used on tandem calls to identify the tens digit of the line link '
+        'appearance of the tandem trunk in the number group.'
+    ),
+    'TT2': (
+        'Tens Trunk. Used on tandem calls to identify the tens digit of the line link '
+        'appearance of the tandem trunk in the number group.'
+    ),  
+    'TT4': (
+        'Tens Trunk. Used on tandem calls to identify the tens digit of the line link '
+        'appearance of the tandem trunk in the number group.'
+    ),
+    'TT7': (
+        'Tens Trunk. Used on tandem calls to identify the tens digit of the line link '
+        'appearance of the tandem trunk in the number group.'
+    ),
+    'UT0': (
+        'Units Trunk. Used on tandem calls to identify the units digit of the line link '
+        'appearance of the tandem trunk in the number group.'
+    ),
+    'UT1': (
+        'Units Trunk. Used on tandem calls to identify the units digit of the line link '
+        'appearance of the tandem trunk in the number group.'
+    ),
+    'UT2': (
+        'Units Trunk. Used on tandem calls to identify the units digit of the line link '
+        'appearance of the tandem trunk in the number group.'
+    ),
+    'UT4': (
+        'Units Trunk. Used on tandem calls to identify the units digit of the line link '
+        'appearance of the tandem trunk in the number group.'
+    ),
+    'UT7': (
         'Units Trunk. Used on tandem calls to identify the units digit of the line link '
         'appearance of the tandem trunk in the number group.'
     ),
@@ -1681,104 +1733,64 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'Trunk link frame selected for this call. Always 0 in the museum.'
     ),
     'TS0': (
-        'The trunk selected for this call. This decision is based on the '
-        'TB-, TG- selections, and the memory of the previous trunk selected '
-        'by this marker. '
+        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
     ),
     'TS1': (
-        'The trunk selected for this call. This decision is based on the '
-        'TB-, TG- selections, and the memory of the previous trunk selected '
-        'by this marker. '
+        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
     ),
     'TS2': (
-        'The trunk selected for this call. This decision is based on the '
-        'TB-, TG- selections, and the memory of the previous trunk selected '
-        'by this marker. '
+        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
     ),
     'TS3': (
-        'The trunk selected for this call. This decision is based on the '
-        'TB-, TG- selections, and the memory of the previous trunk selected '
-        'by this marker. '
+        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
     ),
     'TS4': (
-        'The trunk selected for this call. This decision is based on the '
-        'TB-, TG- selections, and the memory of the previous trunk selected '
-        'by this marker. '
+        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
     ),
     'TS5': (
-        'The trunk selected for this call. This decision is based on the '
-        'TB-, TG- selections, and the memory of the previous trunk selected '
-        'by this marker. '
+        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
     ),
     'TS6': (
-        'The trunk selected for this call. This decision is based on the '
-        'TB-, TG- selections, and the memory of the previous trunk selected '
-        'by this marker. '
+        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
     ),
     'TS7': (
-        'The trunk selected for this call. This decision is based on the '
-        'TB-, TG- selections, and the memory of the previous trunk selected '
-        'by this marker. '
+        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
     ),
     'TS8': (
-        'The trunk selected for this call. This decision is based on the '
-        'TB-, TG- selections, and the memory of the previous trunk selected '
-        'by this marker. '
+        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
     ),
     'TS9': (
-        'The trunk selected for this call. This decision is based on the '
-        'TB-, TG- selections, and the memory of the previous trunk selected '
-        'by this marker. '
+        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
     ),
     'TS10': (
-        'The trunk selected for this call. This decision is based on the '
-        'TB-, TG- selections, and the memory of the previous trunk selected '
-        'by this marker. '
+        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
     ),
     'TS11': (
-        'The trunk selected for this call. This decision is based on the '
-        'TB-, TG- selections, and the memory of the previous trunk selected '
-        'by this marker. '
+        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
     ),
     'TS12': (
-        'The trunk selected for this call. This decision is based on the '
-        'TB-, TG- selections, and the memory of the previous trunk selected '
-        'by this marker. '
+        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
     ),
     'TS13': (
-        'The trunk selected for this call. This decision is based on the '
-        'TB-, TG- selections, and the memory of the previous trunk selected '
-        'by this marker. '
+        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
     ),
     'TS14': (
-        'The trunk selected for this call. This decision is based on the '
-        'TB-, TG- selections, and the memory of the previous trunk selected '
-        'by this marker. '
+        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
     ),
     'TS15': (
-        'The trunk selected for this call. This decision is based on the '
-        'TB-, TG- selections, and the memory of the previous trunk selected '
-        'by this marker. '
+        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
     ),
     'TS16': (
-        'The trunk selected for this call. This decision is based on the '
-        'TB-, TG- selections, and the memory of the previous trunk selected '
-        'by this marker. '
+        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
     ),
     'TS17': (
-        'The trunk selected for this call. This decision is based on the '
-        'TB-, TG- selections, and the memory of the previous trunk selected '
-        'by this marker. '
+        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
     ),
     'TS18': (
-        'The trunk selected for this call. This decision is based on the '
-        'TB-, TG- selections, and the memory of the previous trunk selected '
-        'by this marker. '
+        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
     ),
     'TS19': (
-        'The trunk selected for this call. This decision is based on the '
-        'TB-, TG- selections, and the memory of the previous trunk selected '
-        'by this marker. '
+        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
     ),
     'LV0': (
         'Level 0. Not used in the museum 5XB.'
