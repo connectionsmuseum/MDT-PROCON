@@ -21,9 +21,35 @@
             const CARD_DATA = JSON.parse(cardGeom.card || 'null');
 
             document.addEventListener("DOMContentLoaded", function () {
-                var renderer = window.CardRenderer.createRenderer({ holeSize: 15 });
+                const renderer = window.CardRenderer.createRenderer({ holeSize: 15 });
                 renderer.renderCard(CARD_DATA);
                 window.CardMetadata.highlightPreformattedJson('metadata-json');
+                const prevCardLink = document.querySelector('.card-nav a[rel="prev"]');
+                const nextCardLink = document.querySelector('.card-nav a[rel="next"]');
+                const navLinksByKey = {
+                    ArrowLeft: prevCardLink,
+                    ArrowRight: nextCardLink,
+                };
+
+                document.addEventListener("keydown", function (event) {
+                    const target = event.target;
+                    const isTypingTarget = target && (
+                        target.tagName === "INPUT" ||
+                        target.tagName === "TEXTAREA" ||
+                        target.tagName === "SELECT" ||
+                        target.isContentEditable
+                    );
+
+                    if (isTypingTarget || event.altKey || event.ctrlKey || event.metaKey) {
+                        return;
+                    }
+
+                    const navLink = navLinksByKey[event.key];
+                    if (navLink && navLink.href) {
+                        event.preventDefault();
+                        window.location.href = navLink.href;
+                    }
+                });
             });
         </script>
         <style>
@@ -70,10 +96,9 @@
     <body>
         <div class="nav">
             <a href="/bins">Back to binned cards</a>
-            <!-- <h1 class="card-title">{{ card_name }}</h1> -->
             <div class="card-nav">
-                {% if prev_card %}<a href="/card/{{ prev_card }}">&larr;</a>{% else %}<span class="nav-disabled">&larr;</span>{% endif %}
-                {% if next_card %}<a href="/card/{{ next_card }}">&rarr;</a>{% else %}<span class="nav-disabled">&rarr;</span>{% endif %}
+                {% if prev_card %}<a rel="prev" href="/card/{{ prev_card }}">&larr;</a>{% else %}<span class="nav-disabled">&larr;</span>{% endif %}
+                {% if next_card %}<a rel="next" href="/card/{{ next_card }}">&rarr;</a>{% else %}<span class="nav-disabled">&rarr;</span>{% endif %}
             </div>
         </div>
         <canvas id="card"></canvas>

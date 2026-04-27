@@ -77,46 +77,79 @@ def timer_getmeta(card, describe: bool = False):
     else:
         return timer
 
-def ch_tk_getmeta(card, describe: bool = False):
+def channel_getmeta(card, describe: bool = False):
     '''
     Evaluates the following punches and returns a dictionary as follows
 
         "channel": int or None,  # 0-9 if CH0-9 detected, otherwise None
         "pattern": str or None,  # pattern name if P0-9 detected, otherwise None
         "pattern_type": str or None,  # one of PNR, PA, PB, PC if detected, otherwise None
-        # Trunk group choice (new part of the dict)
-        "TB": str or None,  # trunk block if TB0-5 detected, otherwise None
-        "TG": str or None, # trunk group if TG0-19 detected, otherwise None
-        # Selected frame/trunk/link/level (new part of the dict)
-        "FS": str or None, # frame select if FS0-29 detected, otherwise None
-        "TS": str or None, # trunk select if TS0-19 detected, otherwise None
-        "LC": str or None, # link connector if LC0-9 detected, otherwise None
-        "LV": str or None, # level if LV2-9 detected, otherwise None
-
     '''
-    print(">>> evaluating channel/tk punches...")
+    print(">>> evaluating channel punches...")
     result = {
         "channel": None,
         "pattern": None,
         "pattern_type": None,
-        "TB": None,
-        "TG": None,
-        "FS": None,
-        "TS": None,
-        "LC": None,
-        "LV": None,
     }
     cm.set_current_card(card)
 
     result["channel"] = next((i for i in range(10) if card_has(f'CH{i}')), None)
     result["pattern"] = next((f'P{i}' for i in range(10) if card_has(f'P{i}')), None)
     result["pattern_type"] = next((n for n in ('PNR', 'PA', 'PB', 'PC') if card_has(n)), None)
+
+    return result
+
+def trunk_getmeta(card, describe: bool = False):
+    '''
+    Evaluates the following punches. Returns their value, or None if false.
+    "TB": str or None, # trunk block if TB0-5 detected, otherwise None
+    "TG": str or None, # trunk group if TG0-19 detected, otherwise None
+    "FS": str or None, # frame select if FS0-29 detected, otherwise None
+    "TS": str or None, # trunk select if TS0-19 detected, otherwise None
+    "LC": str or None, # link connector if LC0-9 detected, otherwise None
+    "LV": str or None, # level if LV2-9 detected, otherwise None
+    "Destination": str or None, # Destination, if known (TB and TG must be present and match known combinations)
+    '''
+
+    # Maps (TB, TG) punch combinations to their destination name.
+    # Change this when outgoing trunks are added or removed from the 5XB
+    # Source of truth: https://docs.google.com/spreadsheets/d/13Q1h56AV-zMH6SA7PoLRUr5uSqlMfRCYlKvmopmGEMc/edit?usp=sharing
+    _TRUNK_DESTINATIONS = {
+        ("TB0", "TG1"):  "Combination Tone",
+        ("TB1", "TG7"):  "Kercheep",
+        ("TB1", "TG1"):  "1XB",
+        ("TB1", "TG2"):  "Step",
+        ("TB1", "TG3"):  "3ESS",
+        ("TB1", "TG4"):  "Panel",
+        ("TB1", "TG6"):  "DMS-10",
+        ("TB1", "TG9"):  "Audichron",
+        ("TB3", "TG8"):  "Coin Junctors",
+        ("TB4", "TG0"):  "232 IAO",
+        ("TB4", "TG1"):  "Permanent Signal",
+        ("TB5", "TG4"):  "Common Overflow",
+        ("TB5", "TG5"):  "5A Announcment",
+        ("TB5", "TG6"):  "232 Coin IAO",
+    }
+
+    print(">>> evaluating trunk/trunk group punches...")
+    result = {
+    "TB": None,
+    "TG": None,
+    "FS": None,
+    "TS": None,
+    "LC": None,
+    "LV": None,
+    "Destination": None,
+    }
+    cm.set_current_card(card)
+
     result["TB"] = next((f'TB{i}' for i in range(6) if card_has(f'TB{i}')), None)
     result["TG"] = next((f'TG{i}' for i in range(20) if card_has(f'TG{i}')), None)
     result["FS"] = next((f'FS{i}' for i in range(30) if card_has(f'FS{i}')), None)
     result["TS"] = next((f'TS{i}' for i in range(20) if card_has(f'TS{i}')), None)
     result["LC"] = next((f'LC{i}' for i in range(10) if card_has(f'LC{i}')), None)
     result["LV"] = next((f'LV{i}' for i in range(2, 10) if card_has(f'LV{i}')), None)
+    result["Destination"] = _TRUNK_DESTINATIONS.get((result["TB"], result["TG"]), None)
 
     return result
 
@@ -354,8 +387,8 @@ def orlm_check(card):
     Each *digit* in the line location occupies one reed pack and is
     encoded using the two‑out‑of‑five scheme: exactly two of the positions
     ``0, 1, 2, 4, 7`` must be punched.  The exception to this is the ``FT``
-    frame tens digit that is 0,1,2,3, and the ``VF`` digit which is
-    0, 1, 2, 3, 4. The following additional constraints are present.
+    frame tens digit that is ``0, 1, 2, 3``, and the ``VF`` digit which is
+    ``0, 1, 2, 3, 4``. The following additional constraints are present.
 
     * reed packs must all be full. Nothing may be omitted.
     * the ``CT`` digit must be 0 (hole at position 0).
@@ -745,7 +778,7 @@ def os_reedcheck(card, outsender=None, register_digits=None, register_error=None
         outsender["reeds_outpulse"] = sender_prime_decoded
         return outsender
 
-def ng_getmeta(card):
+def ng_check(card):
     '''
     Verify punches related to the number group.
     * If RNG detected, get data from NG currently stored in Completing Marker (CM) in fields ``FTT0-5``, ``FUT0-9``,
@@ -1026,11 +1059,11 @@ def cm_check(card):
                        required=["RSK"], trigger=rct_punches, bin="NO_RSK")
 
     if card_has_all("TER", "BY") and card_lacks("RS1"):
-        raise_cm_error("BY_NO_RS1", "horizontal 1 in the Ringing Selection Switch failed to operate",
+        raise_cm_error("BY_NO_RS1", "Horizontal 1 in the Ringing Selection Switch failed to operate",
                        required=["RS1"], trigger=["TER", "BY"], bin="BY_NO_RS1")
 
     if card_has_all("TER", "OV") and card_lacks("RS0"):
-        raise_cm_error("OV_NO_RS0", "horizontal 0 in the Ringing Selection Switch failed to operate",
+        raise_cm_error("OV_NO_RS0", "Horizontal 0 in the Ringing Selection Switch failed to operate",
                        required=["RS0"], trigger=["TER", "OV"], bin="OV_NO_RS0")
 
     if card_has_all("FLG", "SRK") and card_lacks("RCK2"):
@@ -1047,7 +1080,7 @@ def cm_check(card):
 
     # --- Crosspoint checks ---
     if card_lacks('HMS1') and card_has("TK"):
-        raise_cm_error("TK_NO_HMS1", "card has TK, but no HMS1. Marker was unable to operate hold magnets.",
+        raise_cm_error("TK_NO_HMS1", "Card has TK, but no HMS1. Marker was unable to operate hold magnets.",
                         required=["HMS1"], trigger=["TK"], bin="XPT_CHECK")
 
     if card_lacks("HMS1") and card_has("SL"):
@@ -1286,7 +1319,8 @@ def evaluate(card, describe: bool = False):
         "type": type_of_card(card, describe),                       # does not bin, binned below
         "coin": coin_getmeta(card, describe),
         "marker": marker_no(card, describe),
-        "channel": ch_tk_getmeta(card, describe),
+        "channel": channel_getmeta(card, describe),
+        "trunk": trunk_getmeta(card, describe),
         "trial": trial_getmeta(card, describe),
         "orlm": {},
         "timer": timer_getmeta(card, describe),
@@ -1387,7 +1421,7 @@ def evaluate(card, describe: bool = False):
     # Number Group check. Binning for errors here is done in func:`cm_check()`, since we can get
     # better granularity on the failure mode there.
     try:
-        number_group = ng_getmeta(card)
+        number_group = ng_check(card)
         meta["number_group"] = number_group
     except NumberGroupCheckError as exc:
         meta["number_group"] = {
@@ -1396,19 +1430,18 @@ def evaluate(card, describe: bool = False):
         }
 
     # Completing Marker check + binning
-    if card_has("TI"):
-        try:
-            cm_check_result = cm_check(card)
-            meta["cm_check"] = cm_check_result
-        except CMCheckError as exc:
-            meta["cm_check"] = {
-                "error": str(exc),
-                "code": exc.code,
-                "details": exc.details,
-            }
-            set_bin_if_unbinned(exc.bin)
+    try:
+        cm_check_result = cm_check(card)
+        meta["cm_check"] = cm_check_result
+    except CMCheckError as exc:
+        meta["cm_check"] = {
+            "error": str(exc),
+            "code": exc.code,
+            "details": exc.details,
+        }
+        set_bin_if_unbinned(exc.bin)
 
-    meta["punches"] = truthy_punches(card)
+    meta["y_punches"] = truthy_punches(card)
 
 
     for k in meta:

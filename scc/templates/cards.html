@@ -49,46 +49,39 @@
                 window.CardMetadata.renderPanel('home-metadata-panel', currentCardData);
             }
 
+            function setCard(data) {
+                currentCardData = data;
+                renderer.renderCard(data);
+                updateBinName(data);
+                syncMetadataPanel();
+            }
+
+            function clearCard() {
+                currentCardData = null;
+                renderer.renderPlaceholder();
+                updateBinName(null);
+                syncMetadataPanel();
+            }
+
             function loadLatestCard() {
                 fetch('/latest-card-data')
                     .then(r => { if (!r.ok) throw new Error('no data'); return r.json(); })
-                    .then(data => {
-                        currentCardData = data;
-                        renderer.renderCard(data);
-                        updateBinName(data);
-                        syncMetadataPanel();
-                    })
-                    .catch(() => {
-                        currentCardData = null;
-                        renderer.renderPlaceholder();
-                        updateBinName(null);
-                        syncMetadataPanel();
-                    });
+                    .then(setCard)
+                    .catch(clearCard);
             }
 
             window.loadCard = function () {
                 const name = document.getElementById("cardSelect").value;
                 if (!name) {
-                    currentCardData = null;
-                    renderer.renderPlaceholder();
-                    updateBinName(null);
-                    syncMetadataPanel();
+                    clearCard();
                     return;
                 }
                 fetch('/cardmeta/' + name)
                     .then(r => r.json())
-                    .then(data => {
-                        currentCardData = data;
-                        renderer.renderCard(data);
-                        updateBinName(data);
-                        syncMetadataPanel();
-                    })
+                    .then(setCard)
                     .catch(err => {
                         console.error('Error loading card:', err);
-                        currentCardData = null;
-                        renderer.renderPlaceholder();
-                        updateBinName(null);
-                        syncMetadataPanel();
+                        clearCard();
                     });
             };
 
@@ -150,7 +143,7 @@
                             refreshCardDropdown(true);
                             // Trigger flash
                             canvas.classList.remove("flash");
-                            void canvas.offsetWidth; // force reflow (important for some reason)
+                            void canvas.offsetWidth; // force reflow
                             canvas.classList.add("flash");
                             loadLatestCard();
                         } else {

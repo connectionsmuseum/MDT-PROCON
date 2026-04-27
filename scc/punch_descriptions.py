@@ -81,8 +81,7 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     ),
     'TGT': (
         'Trunk Guard Test. The outgoing sender failed to complete its trunk guard (TG) '
-        'test in the allotted time. This may indicate a problem with the outgoing trunk, '
-        'since the TG test requires a wet loop to complete.'
+        'test in the allotted time. This may indicate a problem with the outgoing trunk.'
     ),
     'FCG': (
         'False Cross or Ground. The marker FCG relay operated due to trouble on tip '
@@ -916,16 +915,17 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'Hold Magnet Start 1. Marker initiated the operation of the selected channel hold magnets.'
     ),
     'LXPA': (
-        'Line hold magnet. Indicates operation of the line hold magnet.'
+        'Line Crosspoints. Indicates the operation of the line switch hold magnet, and continuity on the sleeve lead.'
     ),
     'JXPA': (
-        'Junctor sleeve continuity has been checked.'
+        'Indicates operation of the LLF junctor switch hold magnet, and continuity of the sleeve lead.'
     ),
     'SL': (
-        'Sleeve lead (TLF). Indicates the closure of the trunk link frame crosspoints.'
+        'Sleeve lead (TLF). Indicates the operation of the trunk switch hold magnet and continuity on the sleeve lead.'
     ),
     'JXP1': (
-        'Junctor crosspoints closed.'
+        'Junctor Crosspoints. Indicates the operation of the TLF junctor switch hold magnets.'
+
     ),
     'LXP1': (
         'Line Crosspoints 1. When punched, indicates its friend, the LXP relay is released. When unpunched, '
