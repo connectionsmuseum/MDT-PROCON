@@ -153,6 +153,49 @@ def trunk_getmeta(card, describe: bool = False):
 
     return result
 
+def ground_supply_getmeta(card, describe: bool = False):
+    '''
+    Returns a dict with information pertaining to the ground supply that the marker used for routing purposes.
+    In the museum, we use ground supplies 1, 3, 5, and 6. 
+
+    For unknown reasons, sometimes the marker includes the lower numbered ``GS-`` punches, and other times it does not.
+    It is safe to assume that the highest numbered ``GS-`` punch is the one that is indicating the current ground supply,
+    following the rules stated above. Therefore ``GS1``, ``GS3`` is effectively the same as ``GS3``.
+
+    Finally, ground supplies are also known as "Route Advance" and on the MTF are notated by "RA-" keys RA0, RA1, RA2, RA3.
+    I'll include a dict here that establishes the relationship between the ``GS-`` punching on the card and the "RA-" key
+    that could cause that on the test frame.
+    '''
+
+    _RA_TABLE = {
+        None: 0,  # No GS punch means we are on Ground Supply 1 known as RA0
+        1: 1,     # GS1 punched means we are on Ground Supply 3 known as RA1
+        3: 2,     # GS3 punched means we are on Ground Supply 5 known as RA2
+        5: 3,     # GS5 punched means we are on Ground Supply 6 known as RA3
+    }
+
+    _GROUND_SUPPLY_TABLE = {
+        None: 1,
+        1: 3,
+        3: 5,
+        5: 6,
+    }
+
+    print(">>> evaluating ground supply punches...")
+    result = {
+        "GS": None,
+        "Ground Supply": None,
+        "RA": None,
+    }
+    cm.set_current_card(card)
+
+    punched_ground_supplies = [i for i in range(1, 6) if card_has(f'GS{i}')]
+    result["GS"] = max(punched_ground_supplies) if punched_ground_supplies else None
+    result["Ground Supply"] = _GROUND_SUPPLY_TABLE.get(result["GS"], 1)
+    result["RA"] = _RA_TABLE.get(result["GS"], 0)
+
+    return result
+
 def status_flag_getmeta(card, describe: bool = False):
     '''
     Evaluates which status flag is set, if any.
@@ -1321,6 +1364,7 @@ def evaluate(card, describe: bool = False):
         "marker": marker_no(card, describe),
         "channel": channel_getmeta(card, describe),
         "trunk": trunk_getmeta(card, describe),
+        "ground_supply": ground_supply_getmeta(card, describe),
         "trial": trial_getmeta(card, describe),
         "orlm": {},
         "timer": timer_getmeta(card, describe),

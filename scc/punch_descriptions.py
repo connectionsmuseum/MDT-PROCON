@@ -554,41 +554,62 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'L\'7': 'The L-digit passed to the outsender, or the L digit registered in the monitor. Not used at museum.',
     'M\'7': 'The M-digit passed to the outsender, or the M digit registered in the monitor. Not used at museum.',
     'GS1': (
-           'Ground Supply 1. The marker has advanced to Ground Supply 2, since it was unable to establish '
-           'a route for the call in GS1. GS2 contains route relays 30-39 and is not used in the museum.). '
-           '(A punch here indicates we have *advanced* past Ground Supply 1 and the operation that dropped '
-           'this card was using GS2)', 
+           'Ground Supply 1. The marker has advanced to Ground Supply 3, since it was unable to establish '
+           'a route for the call in GS1. GS3 contains route relays 10-19. '
+           'Ground Supply 3 is used for second-choice routes when the marker is unable to establish a connection using '
+           'a first choice route. Routes here include Kercheep, and any primary route that does not have its '
+           'own alternate.'
     ),
     'GS2': (
-        'Ground Supply 2. The marker has advanced to Ground Supply 3. GS3 contains route relays 20-29, '
-        'and is used for second-choice routes when the marker is unable to establish a connection using '
-        'a first choice route. Routes here include Kercheep, and any primary route that does not have its '
-        'own alternate.'
-        '(A punch here indicates we have *advanced* past Ground Supply 2 and the operation that dropped '
-        'this card was using GS3)'
+        'Ground Supply 2. Not used in museum.'
     ),
     'GS3': (
-        'Ground Supply 3. The marker has advanced to Ground Supply 4. GS4 contains route relays 10-19, '
-        'and is used for third-choice routes when the marker is unable to establish a connection using ' 
-        'a second choice route. Not used in the museum. '
-        '(A punch here indicates we have *advanced* past Ground Supply 3 and the operation that dropped '
-        'this card was using GS4)'
-    ),
-    'GS4': (
-        'Ground Supply 4. The marker has advanced to Ground Supply 5. GS5 contains route relays 6-9, '
+        'Ground Supply 3. The marker has advanced to Ground Supply 5. GS5 contains route relays 6-9, '
         'or 0-5 depending on the marker. Routes in this ground supply are generally reserved for intercept, '
         'permanent signal, or an announcement, and do not usually have an alternate. '
-        '(A punch here indicates we have *advanced* past Ground Supply 4 and the operation that dropped '
-        'this card was using GS5)'
+        '(A punch here indicates we have advanced *past* Ground Supply 3 and the operation that dropped '
+        'this card was using GS5).'
+    ),
+    'GS4': (
+        'Ground Supply 4. Not used in museum.'
     ),
     'GS5': (
-        'Ground Supply 5. THe marker has advanced to Ground Supply 6. GS6 contains routes of last resort, '
+        'Ground Supply 5. The marker has advanced to Ground Supply 6. GS6 contains routes of last resort, '
         'and there can be no further advancement past here. '
-        '(A punch here indicates we have *advanced* past Ground Supply 5 and the operation that dropped '
+        '(A punch here indicates we have advanced *past* Ground Supply 5 and the operation that dropped '
         'this card was using GS6)'
     ),
+    'FAA': (
+        'Foreign Area A. Foreign area translator "A" was associated with '
+        'the marker when trouble record was taken.'
+    ),
+    'FAB': (
+        'Foreign Area B. Foreign area translator "B" was associated with '
+        'the marker when trouble record was taken.'
+    ),
+    'GPA': (
+        'Group Preference A. The marker selected the subgroup A trunks or senders in an allotted group.'
+    ),
+    'GPB': (
+        'Group Preference B. The marker selected the subgroup B trunks or senders in an allotted group.'
+    ),
+    'TWT': (
+        'Two-way Trunk Route. A TWT0-2 relay was operated in the marker for 2-way trunk operation.'
+    ),
     'CNS': (
-        'Coin Service. This call is a coin class.'
+        'Coin Service. This is a coin class call.'
+    ),
+    'DR': (
+        'Denied Route. A DR0-2 relay was operated in the marker for a denied service route.'
+    ),
+    'CRR0': (
+        'Coin Reroute. A marker CR0 (coin zone reroute) relay was operated for rerouting a coin class of a call to an operator.'
+    ),
+    'CRR1': (
+        'Coin Reroute. A marker CR1 (coin zone reroute) relay was operated for rerouting a coin class of a call to an operator.'
+    ),
+    'CRR2': (
+        'Coin Reroute. A marker CR2 (coin zone reroute) relay was operated for rerouting a coin class of a call to an operator.'
     ),
     'RT0': (
         'Route transfer 0 relay operated in the marker because the \'RT 0\' key was operated in the MTF'
@@ -606,7 +627,7 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'Route transfer 4 relay operated in the marker because the \'RT 4\' key was operated in the MTF'
     ),
     'CN': (
-        'Coin Call. The marker recognized this as a coin call and operated the \'CN\' relay in the trunk used for this call.'
+        'Coin Call. The marker operated the \'CN\' (coin class) relay in the trunk used for this call.'
     ),
     'RP': (
         'The originating register signaled the marker that this is a ring party call.'
