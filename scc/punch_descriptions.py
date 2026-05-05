@@ -93,7 +93,6 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     ),
     'DCK': (
         'Operated when the IR has detected NO double connection at the IRL. '
-        'It is likely that this is not wired at the museum as of 2026.'
     ),
     'GT5': (
         'Ground Test Failure on a subscriber line. This test is normally canceled at '
@@ -328,6 +327,7 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'Office B. On an incoming trunk connection, this is the office unit to which the '
         'marker should complete the connection.'
     ),
+    'AN': 'The marker is working with an Allotted PBX Number',
     'PHC': (
         'Physical Office. The incoming register directed the marker to complete '
         'the connection to the physical subdivision of telephone numbers in this '
@@ -367,6 +367,9 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'Reorder. Incoming register signaled the marker for a reorder (overflow) '
         'signal.'
     ),
+    'NT': 'No Test. The incoming trunk signaled the marker that the terminating line should *not* be tested for busy before establishing connection.',
+    'NN': 'No Nothing. The incoming trunk signaled the marker that this call is neither no test nor no hunt. It is just normal.',
+    'NH': 'No Hunt. The incoming trunk signaled the marker that there shall be no PBX hunting on this call.',
     'TF0': (
         'Indicates the trunk link frame that an incoming call came in on. Always '
         '0 (4,7) at the museum.'
@@ -626,27 +629,15 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'RT4': (
         'Route transfer 4 relay operated in the marker because the \'RT 4\' key was operated in the MTF'
     ),
-    'CN': (
-        'Coin Call. The marker operated the \'CN\' (coin class) relay in the trunk used for this call.'
-    ),
-    'RP': (
-        'The originating register signaled the marker that this is a ring party call.'
-    ),
-    'FR0': (
-        'Outgoing Sender Connector (OSC) frame 0 was used on this call.'
-    ),
-    'FR1': (
-        'Outgoing Sender Connector (OSC) frame 1 was used on this call.'
-    ),
-    'FR2': (
-        'Outgoing Sender Connector (OSC) frame 2 was used on this call.'
-    ),
-    'FR3': (
-        'Outgoing Sender Connector (OSC) frame 3 was used on this call.'
-    ),
-    'FR4': (
-        'Outgoing Sender Connector (OSC) frame 4 was used on this call.'
-    ),
+    'TC': 'Talk Charge. The marker operated the \'TC\' (talk charge) relay in the trunk used for this call.',
+    'TP': 'Tip Party. The originating register signaled the marker that this is a tip party call.',
+    'CN': 'Coin Call. The marker operated the \'CN\' (coin class) relay in the trunk used for this call.',
+    'RP': 'Ring Party. The originating register signaled the marker that this is a ring party call.',
+    'FR0': 'Outgoing Sender Connector (OSC) frame 0 was used on this call.',
+    'FR1': 'Outgoing Sender Connector (OSC) frame 1 was used on this call.',
+    'FR2': 'Outgoing Sender Connector (OSC) frame 2 was used on this call.',
+    'FR3': 'Outgoing Sender Connector (OSC) frame 3 was used on this call.',
+    'FR4': 'Outgoing Sender Connector (OSC) frame 4 was used on this call.',
     'CN0': 'Connector 0 in the selected OSC was used on this call.',
     'CN1': 'Connector 1 in the selected OSC was used on this call.',
     'CN2': 'Connector 2 in the selected OSC was used on this call.',
@@ -1666,347 +1657,109 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'Trunk Group 19. Part of the process of trunk selection. Operated by the chosen route relay '
         'and provides ground to test the trunks in the associated route.'
     ),
-    'FS1': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS2': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),    
-    'FS3': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS4': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS5': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS6': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS7': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS8': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS9': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS10': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS11': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS12': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS13': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS14': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS15': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS16': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS17': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS18': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS19': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS20': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS21': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS22': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS23': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS24': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS25': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS26': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS27': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS28': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'FS29': (
-        'Trunk link frame selected for this call. Always 0 in the museum.'
-    ),
-    'TS0': (
-        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
-    ),
-    'TS1': (
-        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
-    ),
-    'TS2': (
-        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
-    ),
-    'TS3': (
-        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
-    ),
-    'TS4': (
-        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
-    ),
-    'TS5': (
-        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
-    ),
-    'TS6': (
-        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
-    ),
-    'TS7': (
-        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
-    ),
-    'TS8': (
-        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
-    ),
-    'TS9': (
-        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
-    ),
-    'TS10': (
-        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
-    ),
-    'TS11': (
-        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
-    ),
-    'TS12': (
-        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
-    ),
-    'TS13': (
-        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
-    ),
-    'TS14': (
-        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
-    ),
-    'TS15': (
-        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
-    ),
-    'TS16': (
-        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
-    ),
-    'TS17': (
-        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
-    ),
-    'TS18': (
-        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
-    ),
-    'TS19': (
-        'The trunk selected for this call from the possible twenty in the trunk block (TB).'
-    ),
-    'LV0': (
-        'Level 0. Not used in the museum 5XB.'
-    ),
-    'LV1': (
-        'Level 1. Not used in the museum 5XB.'
-    ),
-    'LV2': (
-        'Level 2. The LV- relay operated in the TLF to indicate '
-        'the horizontal level of the trunk switch on which this trunk appears.'
-    ),
-    'LV3': (
-        'Level 3. The LV- relay operated in the TLF to indicate '
-        'the horizontal level of the trunk switch on which this trunk appears.'
-    ),
-    'LV4': (
-        'Level 4. The LV- relay operated in the TLF to indicate '
-        'the horizontal level of the trunk switch on which this trunk appears.'
-    ),
-    'LV5': (
-        'Level 5. The LV- relay operated in the TLF to indicate '
-        'the horizontal level of the trunk switch on which this trunk appears.'
-    ),
-    'LV6': (
-        'Level 6. The LV- relay operated in the TLF to indicate '
-        'the horizontal level of the trunk switch on which this trunk appears.'
-    ),
-    'LV7': (
-        'Level 7. The LV- relay operated in the TLF to indicate '
-        'the horizontal level of the trunk switch on which this trunk appears.'
-    ),
-    'LV8': (
-        'Level 8. The LV- relay operated in the TLF to indicate '
-        'the horizontal level of the trunk switch on which this trunk appears.'
-    ),
-    'LV9': (
-        'Level 9. The LV- relay operated in the TLF to indicate '
-        'the horizontal level of the trunk switch on which this trunk appears.'
-    ),
-    'LC0': (
-        'Link Connector 0. The LC- relay operated in the TLF. '
-        'This also indicates the number of the trunk switch on '
-        'which the trunk is located.'
-    ),
-    'LC1': (
-        'Link Connector 1. The LC- relay operated in the TLF. '
-        'This also indicates the number of the trunk switch on '
-        'which the trunk is located.'
-    ),
-    'LC2': (
-        'Link Connector 2. The LC- relay operated in the TLF. '
-        'This also indicates the number of the trunk switch on '
-        'which the trunk is located.'
-    ),
-    'LC3': (
-        'Link Connector 3. The LC- relay operated in the TLF. '
-        'This also indicates the number of the trunk switch on '
-        'which the trunk is located.'
-    ),
-    'LC4': (
-        'Link Connector 4. The LC- relay operated in the TLF. '
-        'This also indicates the number of the trunk switch on '
-        'which the trunk is located.'
-    ),
-    'LC5': (
-        'Link Connector 5. The LC- relay operated in the TLF. '
-        'This also indicates the number of the trunk switch on '
-        'which the trunk is located.'
-    ),
-    'LC6': (
-        'Link Connector 6. The LC- relay operated in the TLF. '
-        'This also indicates the number of the trunk switch on '
-        'which the trunk is located.'
-    ),
-    'LC7': (
-        'Link Connector 7. The LC- relay operated in the TLF. '
-        'This also indicates the number of the trunk switch on '
-        'which the trunk is located.'
-    ),
-    'LC8': (
-        'Link Connector 8. The LC- relay operated in the TLF. '
-        'This also indicates the number of the trunk switch on '
-        'which the trunk is located.'
-    ),
-    'LC9': (
-        'Link Connector 9. The LC- relay operated in the TLF. '
-        'This also indicates the number of the trunk switch on '
-        'which the trunk is located.'
-    ),
-    'SF': (
-        'Single Frame. The TLF signals the marker that it is not paired.'
-    ),
-    'PF': (
-        'Paired Frame. The TLF signals the marker that it is paired with another TLF.'
-    ),
-    'TTF': (
-        'Tripled Frame. The TLF signals the marker that it is paired with two other TLFs.'
-    ),
-    'RF': (
-        'Regular Frame. Marker functions to operate the RF relay on the TLF.'
-    ),
-    'EF': (
-        'Extension Frame. Marker functions to operate the EF relay on the TLF.'
-    ),
-    'NOC': (
-        'No Class. No trunk class conditions are required for this call.'
-    ),
-    'CLG': (
-        'Class Grounds. The marker CLG relay is operated to operate the required class '
-        'relays in the outgoing trunk.'
-    ),
-    'CLT1': (
-        'Class Timing 1. The marker is timing and awaiting the operation of the class relays '
-        'in the outgoing trunk.'
-    ),
-    'CLT2': (
-        'Class Timing 2. The marker has completed timing for the operation of the class relays and '
-        'is now timing for their locking in feature.'
-    ),
-    'CLK': (
-        'Class Check. The marker has successfully verified the lock-in of the class relay in the trunk.'
-    ),
-    'OTT': (
-        'Operate Trunk Test. The marker has attempted to operate the TT relay in the trunk for testing purposes. '
-        'Only used on test calls.'
-    ),
-    'TTK': (
-        'The marker has successfully verified the operation of the TT relay in the trunk. Only used on test calls.'
-    ),
-    'ND1': (
-        'No Digits. The marker prepares to send a No Digits signal to the sender.'
-    ),
-    'NDK': (
-        'No Digits Check. The marker verified that the sender received and locked-in the No Digits signal.'
-    ),
-    'JC0': (
-        'Junctor Cut-In 0. The JC0 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.'
-    ),
-    'JC1': (
-        'Junctor Cut-In 1. The JC1 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.'
-    ),
-    'JC2': (
-        'Junctor Cut-In 2. The JC2 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.'
-    ),
-    'JC3': (
-        'Junctor Cut-In 3. The JC3 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.'
-    ),
-    'JC4': (
-        'Junctor Cut-In 4. The JC4 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.'
-    ),
-    'JC5': (
-        'Junctor Cut-In 5. The JC5 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.'
-    ),
-    'JC6': (
-        'Junctor Cut-In 6. The JC6 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.'
-    ),
-    'JC7': (
-        'Junctor Cut-In 7. The JC7 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.'
-    ),
-    'JC8': (
-        'Junctor Cut-In 8. The JC8 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.'
-    ),
-    'JC9': (
-        'Junctor Cut-In 9. The JC9 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.'
-    ),
-    'JG0': (
-        'Junctor Group 0. The JG- relay operated in the marker, indicating the junctor group that will be used on this call.'
-    ),
-    'JG1': (
-        'Junctor Group 1. The JG- relay operated in the marker, indicating the junctor group that will be used on this call.'
-    ),
-    'JG2': (
-        'Junctor Group 2. The JG- relay operated in the marker, indicating the junctor group that will be used on this call.'
-    ),
-    'JG3': (
-        'Junctor Group 3. The JG- relay operated in the marker, indicating the junctor group that will be used on this call.'
-    ),
-    'JG4': (
-        'Junctor Group 4. The JG- relay operated in the marker, indicating the junctor group that will be used on this call.'
-    ),
-    'PNR': (
-        'Pattern Normal. The marker PNR relay operated signifying that the junctor group is a standard group of 10 junctors.'
-    ),
-    'PA': (
-        'Pattern A. The marker PA relay operated signifying that the junctor group contains fewer than 10 junctors.'
-    ),
-    'PB': (
-        'Pattern B. The marker PB relay operated signifying that the junctor group contains fewer than 10 junctors.'
-    ),
-    'PC': (
-        'Pattern C. The marker PC relay operated signifying that the junctor group contains fewer than 10 junctors.'
-    ),
-    'PE': (
-        'Pattern E. The marker PE relay operated signifying that the junctor group contains fewer than 10 junctors.'
-    ),
+    'FS1': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS2': 'Trunk link frame selected for this call. Always 0 in the museum.',    
+    'FS3': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS4': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS5': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS6': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS7': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS8': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS9': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS10': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS11': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS12': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS13': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS14': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS15': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS16': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS17': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS18': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS19': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS20': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS21': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS22': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS23': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS24': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS25': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS26': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS27': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS28': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'FS29': 'Trunk link frame selected for this call. Always 0 in the museum.',
+    'TS0': 'The trunk selected for this call from the possible twenty in the trunk block (TB).',
+    'TS1': 'The trunk selected for this call from the possible twenty in the trunk block (TB).',
+    'TS2': 'The trunk selected for this call from the possible twenty in the trunk block (TB).',
+    'TS3': 'The trunk selected for this call from the possible twenty in the trunk block (TB).',
+    'TS4': 'The trunk selected for this call from the possible twenty in the trunk block (TB).',
+    'TS5': 'The trunk selected for this call from the possible twenty in the trunk block (TB).',
+    'TS6': 'The trunk selected for this call from the possible twenty in the trunk block (TB).',
+    'TS7': 'The trunk selected for this call from the possible twenty in the trunk block (TB).',
+    'TS8': 'The trunk selected for this call from the possible twenty in the trunk block (TB).',
+    'TS9': 'The trunk selected for this call from the possible twenty in the trunk block (TB).',
+    'TS10': 'The trunk selected for this call from the possible twenty in the trunk block (TB).',
+    'TS11': 'The trunk selected for this call from the possible twenty in the trunk block (TB).',
+    'TS12': 'The trunk selected for this call from the possible twenty in the trunk block (TB).',
+    'TS13': 'The trunk selected for this call from the possible twenty in the trunk block (TB).',
+    'TS14': 'The trunk selected for this call from the possible twenty in the trunk block (TB).',
+    'TS15': 'The trunk selected for this call from the possible twenty in the trunk block (TB).',
+    'TS16': 'The trunk selected for this call from the possible twenty in the trunk block (TB).',
+    'TS17': 'The trunk selected for this call from the possible twenty in the trunk block (TB).',
+    'TS18': 'The trunk selected for this call from the possible twenty in the trunk block (TB).',
+    'TS19': 'The trunk selected for this call from the possible twenty in the trunk block (TB).',
+    'LV0': 'Level 0. Not used in the museum 5XB.',
+    'LV1': 'Level 1. Not used in the museum 5XB.',
+    'LV2': 'Level 2. The LV- relay operated in the TLF to indicate the horizontal level of the trunk switch on which this trunk appears.',
+    'LV3': 'Level 3. The LV- relay operated in the TLF to indicate the horizontal level of the trunk switch on which this trunk appears.',
+    'LV4': 'Level 4. The LV- relay operated in the TLF to indicate the horizontal level of the trunk switch on which this trunk appears.',
+    'LV5': 'Level 5. The LV- relay operated in the TLF to indicate the horizontal level of the trunk switch on which this trunk appears.',
+    'LV6': 'Level 6. The LV- relay operated in the TLF to indicate the horizontal level of the trunk switch on which this trunk appears.',
+    'LV7': 'Level 7. The LV- relay operated in the TLF to indicate the horizontal level of the trunk switch on which this trunk appears.',
+    'LV8': 'Level 8. The LV- relay operated in the TLF to indicate the horizontal level of the trunk switch on which this trunk appears.',
+    'LV9': 'Level 9. The LV- relay operated in the TLF to indicate the horizontal level of the trunk switch on which this trunk appears.',
+    'LC0': 'Link Connector 0. The LC- relay operated in the TLF. This also indicates the number of the trunk switch on which the trunk is located.',
+    'LC1': 'Link Connector 1. The LC- relay operated in the TLF. This also indicates the number of the trunk switch on which the trunk is located.',
+    'LC2': 'Link Connector 2. The LC- relay operated in the TLF. This also indicates the number of the trunk switch on which the trunk is located.',
+    'LC3': 'Link Connector 3. The LC- relay operated in the TLF. This also indicates the number of the trunk switch on which the trunk is located.',
+    'LC4': 'Link Connector 4. The LC- relay operated in the TLF. This also indicates the number of the trunk switch on which the trunk is located.',
+    'LC5': 'Link Connector 5. The LC- relay operated in the TLF. This also indicates the number of the trunk switch on which the trunk is located.',
+    'LC6': 'Link Connector 6. The LC- relay operated in the TLF. This also indicates the number of the trunk switch on which the trunk is located.',
+    'LC7': 'Link Connector 7. The LC- relay operated in the TLF. This also indicates the number of the trunk switch on which the trunk is located.',
+    'LC8': 'Link Connector 8. The LC- relay operated in the TLF. This also indicates the number of the trunk switch on which the trunk is located.',
+    'LC9': 'Link Connector 9. The LC- relay operated in the TLF. This also indicates the number of the trunk switch on which the trunk is located.',
+    'SF': 'Single Frame. The TLF signals the marker that it is not paired.',
+    'PF': 'Paired Frame. The TLF signals the marker that it is paired with another TLF.',
+    'TTF': 'Tripled Frame. The TLF signals the marker that it is paired with two other TLFs.',
+    'RF': 'Regular Frame. Marker functions to operate the RF relay on the TLF.',
+    'EF': 'Extension Frame. Marker functions to operate the EF relay on the TLF.',
+    'NOC': 'No Class. No trunk class conditions are required for this call.',
+    'CLG': 'Class Grounds. The marker CLG relay is operated to operate the required class relays in the outgoing trunk.',
+    'CLT1': 'Class Timing 1. The marker is timing and awaiting the operation of the class relays in the outgoing trunk.',
+    'CLT2': 'Class Timing 2. The marker has completed timing for the operation of the class relays and is now timing for their locking in feature.',
+    'CLK': 'Class Check. The marker has successfully verified the lock-in of the class relay in the trunk.',
+    'OTT': 'Operate Trunk Test. The marker has attempted to operate the TT relay in the trunk for testing purposes. Only used on test calls.',
+    'TTK': 'The marker has successfully verified the operation of the TT relay in the trunk. Only used on test calls.',
+    'ND1': 'No Digits. The marker prepares to send a No Digits signal to the sender.',
+    'NDK': 'No Digits Check. The marker verified that the sender received and locked-in the No Digits signal.',
+    'JC0': 'Junctor Cut-In 0. The JC0 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.',
+    'JC1': 'Junctor Cut-In 1. The JC1 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.',
+    'JC2': 'Junctor Cut-In 2. The JC2 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.',
+    'JC3': 'Junctor Cut-In 3. The JC3 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.',
+    'JC4': 'Junctor Cut-In 4. The JC4 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.',
+    'JC5': 'Junctor Cut-In 5. The JC5 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.',
+    'JC6': 'Junctor Cut-In 6. The JC6 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.',
+    'JC7': 'Junctor Cut-In 7. The JC7 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.',
+    'JC8': 'Junctor Cut-In 8. The JC8 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.',
+    'JC9': 'Junctor Cut-In 9. The JC9 relay has operated in the TLF, closing the J0-9 leads for idle junctor selection.',
+    'JG0': 'Junctor Group 0. The JG- relay operated in the marker, indicating the junctor group that will be used on this call.',
+    'JG1': 'Junctor Group 1. The JG- relay operated in the marker, indicating the junctor group that will be used on this call.',
+    'JG2': 'Junctor Group 2. The JG- relay operated in the marker, indicating the junctor group that will be used on this call.',
+    'JG3': 'Junctor Group 3. The JG- relay operated in the marker, indicating the junctor group that will be used on this call.',
+    'JG4': 'Junctor Group 4. The JG- relay operated in the marker, indicating the junctor group that will be used on this call.',
+    'PNR': 'Pattern Normal. The marker PNR relay operated signifying that the junctor group is a standard group of 10 junctors.',
+    'PA': 'Pattern A. The marker PA relay operated signifying that the junctor group contains fewer than 10 junctors.',
+    'PB': 'Pattern B. The marker PB relay operated signifying that the junctor group contains fewer than 10 junctors.',
+    'PC': 'Pattern C. The marker PC relay operated signifying that the junctor group contains fewer than 10 junctors.',
+    'PE': 'Pattern E. The marker PE relay operated signifying that the junctor group contains fewer than 10 junctors.',
     'P0': (
         'Pattern 0. The P- (pattern) relay operated in the marker to identify the junctor subgroup pattern and '
         'the junctors which are available within the subgroup. The PA, PB or PC punch together with a '

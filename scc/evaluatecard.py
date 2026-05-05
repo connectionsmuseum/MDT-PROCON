@@ -202,7 +202,7 @@ def status_flag_getmeta(card, describe: bool = False):
 
     returns that punch if true
     returns an array containing the punch and its description if describe is true
-    returns multiple punches if multiple punches are true
+    returns an array containing multiple punches if multiple punches are true
 
     '''
     print(">>> evaluating marker status flags...")
