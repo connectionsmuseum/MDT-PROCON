@@ -120,6 +120,7 @@
                 const statusDot = document.getElementById("statusDot");
                 const evtSource = new EventSource("/events");
                 renderer = window.CardRenderer.createRenderer({ holeSize: 15 });
+                let wasDisconnected = false;
 
                 statusDot.addEventListener("click", function () {
                     window.location.href = 'credits';
@@ -154,11 +155,17 @@
 
                 evtSource.onopen = function () {
                     console.log("SSE OPEN");
+                    if (wasDisconnected) {
+                        console.log("Connection resumed after disconnect, reloading page");
+                        window.location.reload();
+                    }
+                    wasDisconnected = false;
                     statusDot.classList.remove("disconnected");
                     statusDot.classList.add("connected");
                 };
                 evtSource.onerror = function () {
                     console.log("SSE ERROR", evtSource.readyState);
+                    wasDisconnected = true;
                     statusDot.classList.remove("connected");
                     statusDot.classList.add("disconnected");
                 };

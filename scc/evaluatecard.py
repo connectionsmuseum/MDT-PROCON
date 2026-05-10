@@ -933,6 +933,12 @@ def cm_check(card):
     # Marker DR- punch check
     * Must have one of DR0, DR1, DR8: raise NO_DR
 
+    # IRL LR Checks
+    * If LR and no DCK: raise LR_INC_XPTS
+    * If LR and DCK and one of INC, TOL, TAN: raise LR_FAILURE_TO_ATTACH
+    * If LR and DCK then must have one of INC, TOL, TAN: raise LR_NOCLASS
+    * If LR then must have LV2-9: raise LR_NO_TRUNK
+    
     # Number group registration checks
     * If SNG then must have NGK: raise NO_NGK
     * If NGK then must have HTUK: raise NO_HTUK
@@ -978,12 +984,6 @@ def cm_check(card):
 
     # LLF Checks
     * If not LB, and all of (VTK1, HTK1, FTK1) then must have LFK: raise NO_LFK
-
-    # IRL LR Checks
-    * If LR and no DCK: raise LR_INC_XPTS
-    * If LR and DCK and one of INC, TOL, TAN: raise LR_FAILURE_TO_ATTACH
-    * If LR and DCK then must have one of INC, TOL, TAN: raise LR_NOCLASS
-    * If LR then must have LV2-9: raise LR_NO_TRUNK
 
     # Outgoing calls with sender
     * If any of OSG0-4 are present then must have SOG: raise NO_SOG
@@ -1073,6 +1073,23 @@ def cm_check(card):
     if card_lacks('DR0', 'DR1', 'DR8'):
         raise_cm_error("NO_DR", "no DR- punch present. who dropped this card?", required=['DR0', 'DR1', 'DR8'], bin="DR_FAILURE")
 
+    # --- IRL LR Checks ---
+    if card_has("LR") and card_lacks("DCK"):
+        raise_cm_error("LR_INC_XPTS", "LR is punched without DCK",
+                       required=["DCK"], trigger=["LR"], bin="IRL_FAILURE")
+
+    if card_has_all("LR", "DCK") and card_has("INC", "TOL", "TAN"):
+        raise_cm_error("LR_FAILURE_TO_ATTACH", "LR and DCK indicates possible double connection in IRL",
+                       required=["INC", "TOL", "TAN"], trigger=["LR", "DCK"], requirement="any", bin="IRL_FAILURE")
+
+    if card_has_all("LR", "DCK") and card_lacks("INC", "TOL", "TAN"):
+        raise_cm_error("LR_NOCLASS", "LR with DCK requires INC, TOL, or TAN",
+                       required=["INC", "TOL", "TAN"], trigger=["LR", "DCK"], requirement="any", bin="IRL_FAILURE")
+
+    if card_has("LR") and card_lacks(lv_punches):
+        raise_cm_error("LR_NO_TRUNK", "LR requires one of LV2-9",
+                       required=lv_punches, trigger=["LR"], requirement="any", bin="IRL_FAILURE")
+                       
     # --- Number group registration checks ---
     if card_has("SNG") and card_lacks("NGK"):
         raise_cm_error("NO_NGK", "marker timed out while attempting to seize number group", required=["NGK"], trigger=["SNG"], bin="NG_FAILURE")
@@ -1209,23 +1226,6 @@ def cm_check(card):
     if card_lacks("LB") and card_has_all('VTK1', 'HTK1', 'FTK1') and card_lacks("LFK"):
          raise_cm_error("NO_LFK", "Line location has been registered from the NG, but no LLF seizure took place",
                         required=["LFK"], trigger=["VTK1", "HTK1", "FTK1"], bin="NO_LLF_SEIZURE")
-
-    # --- IRL LR Checks ---
-    if card_has("LR") and card_lacks("DCK"):
-        raise_cm_error("LR_INC_XPTS", "LR is punched without DCK",
-                       required=["DCK"], trigger=["LR"], bin="IRL_FAILURE")
-
-    if card_has_all("LR", "DCK") and card_has("INC", "TOL", "TAN"):
-        raise_cm_error("LR_FAILURE_TO_ATTACH", "LR and DCK indicates possible double connection in IRL",
-                       required=["INC", "TOL", "TAN"], trigger=["LR", "DCK"], requirement="any", bin="IRL_FAILURE")
-
-    if card_has_all("LR", "DCK") and card_lacks("INC", "TOL", "TAN"):
-        raise_cm_error("LR_NOCLASS", "LR with DCK requires INC, TOL, or TAN",
-                       required=["INC", "TOL", "TAN"], trigger=["LR", "DCK"], requirement="any", bin="IRL_FAILURE")
-
-    if card_has("LR") and card_lacks(lv_punches):
-        raise_cm_error("LR_NO_TRUNK", "LR requires one of LV2-9",
-                       required=lv_punches, trigger=["LR"], requirement="any", bin="IRL_FAILURE")
 
     # --- Outgoing calls with sender ---
     if card_has(osg_punches) and card_lacks("SOG"):
