@@ -29,39 +29,31 @@ CALL_SIM_LINES = (
 # these are used to generate card metadata
 # ---------------------------------------------------------------------------
 
-def type_of_card(card, describe: bool = False):
+def type_of_card(card):
     cm.set_current_card(card)
     print(">>> evaluating card type...")
     if card_has('TI'):
         punch = next((n for n in ('MOR', 'MIR', 'MOS') if card_has(n)), 'TI')
     else:
         punch = next((n for n in ('MTPT', 'TKT','SRT', 'MLV') if card_has(n)), None)
-    if describe and punch is not None:
-        return (punch, describe_punch(punch))
-    return (punch,)
+    return (punch)
 
-def marker_no(card, describe: bool = False):
+def marker_no(card):
     cm.set_current_card(card)
     print(">>> evaluating marker number...")
     number = next((f'DR{i}' for i in range(10) if card_has(f'DR{i}')), None)
     if number is None:
         return None
-    if describe:
-        return (number[2:], describe_punch(number))
     return number[2:]
 
-def trial_getmeta(card, describe: bool = False):
+def trial_getmeta(card):
     cm.set_current_card(card)
     print(">>> evaluating trial punches...")
     names = ['1TR', '2TR']
 
-    trial = next((n for n in names if card_has(n)), None)
-    if describe:
-        return (trial, describe_punch(trial))
-    else:
-        return trial
+    return next((n for n in names if card_has(n)), None)
 
-def timer_getmeta(card, describe: bool = False):
+def timer_getmeta(card):
     '''
     Evaluates which timer expired, if any.
 
@@ -70,14 +62,9 @@ def timer_getmeta(card, describe: bool = False):
     print('>>> evaluating marker timers...')
     names = (['WT', 'SDT', 'LDT', 'TRS'])
 
-    timer = next((n for n in names if card_has(n)), None)
+    return next((n for n in names if card_has(n)), None)
 
-    if describe:
-        return (timer, describe_punch(timer))
-    else:
-        return timer
-
-def channel_getmeta(card, describe: bool = False):
+def channel_getmeta(card):
     '''
     Evaluates the following punches and returns a dictionary as follows
 
@@ -99,7 +86,7 @@ def channel_getmeta(card, describe: bool = False):
 
     return result
 
-def trunk_getmeta(card, describe: bool = False):
+def trunk_getmeta(card):
     '''
     Evaluates the following punches. Returns their value, or None if false.
     "TB": str or None, # trunk block if TB0-5 detected, otherwise None
@@ -153,7 +140,7 @@ def trunk_getmeta(card, describe: bool = False):
 
     return result
 
-def ground_supply_getmeta(card, describe: bool = False):
+def ground_supply_getmeta(card):
     '''
     Returns a dict with information pertaining to the ground supply that the marker used for routing purposes.
     In the museum, we use ground supplies 1, 3, 5, and 6. 
@@ -196,12 +183,11 @@ def ground_supply_getmeta(card, describe: bool = False):
 
     return result
 
-def status_flag_getmeta(card, describe: bool = False):
+def status_flag_getmeta(card):
     '''
     Evaluates which status flag is set, if any.
 
     returns that punch if true
-    returns an array containing the punch and its description if describe is true
     returns an array containing multiple punches if multiple punches are true
 
     '''
@@ -213,13 +199,9 @@ def status_flag_getmeta(card, describe: bool = False):
     if not status_flags:
         return None
 
-    if describe:
-        described_flags = [(n, describe_punch(n)) for n in status_flags]
-        return described_flags[0] if len(described_flags) == 1 else described_flags
-
     return status_flags[0] if len(status_flags) == 1 else status_flags
 
-def x_check(card, describe: bool = False):
+def x_check(card):
     '''
     Time to check for crosses! This should be easy.
     '''
@@ -235,13 +217,9 @@ def x_check(card, describe: bool = False):
     if not crosses:
         return None
 
-    if describe:
-        described_flags = [(n, describe_punch(n)) for n in crosses]
-        return described_flags[0] if len(described_flags) == 1 else described_flags
-
     return crosses[0] if len(crosses) == 1 else crosses
 
-def ps_getmeta(card, describe: bool = False):
+def ps_getmeta(card):
     '''
     Permanent Signal & Partial Dial calls.
     PS or PD punched.
@@ -250,11 +228,9 @@ def ps_getmeta(card, describe: bool = False):
 
     punches = ['PS', 'PD', 'PK']
 
-    perm_sig = next((n for n in punches if card_has(n)), None)
+    return next((n for n in punches if card_has(n)), None)
 
-    return (perm_sig, describe_punch(perm_sig)) if describe and perm_sig else perm_sig
-
-def coin_getmeta(card, describe: bool = False):
+def coin_getmeta(card):
     '''
     Checks punches related to coin service for payphones.
     SCK and SCN
@@ -262,9 +238,7 @@ def coin_getmeta(card, describe: bool = False):
     # check for SCN, SCK, and bounce out to those handlers if needed
     punches = ['SCK', 'SCN']
 
-    see_coin = next((n for n in punches if card_has(n)), None)
-
-    return (see_coin, describe_punch(see_coin)) if describe and see_coin else see_coin
+    return next((n for n in punches if card_has(n)), None)
 
 def register_check(card):
     '''
@@ -1347,30 +1321,32 @@ def cm_check(card):
 
     return {"ok": True}
 
-def evaluate(card, describe: bool = False):
+def evaluate(card):
     """
     Evaluate a card and return a serializable metadata dict.
 
     card: a whole pile of booleans in JSON format, representing the presence or absence of punches on a card.
-    describe: if True, the "type" field in the returned metadata will include a human-readable description of
-    the card data.
 
     Sometimes, evaluation steps may return None or partial data if the card is missing punches required to perform the evaluation.
     In these cases, the metadata will include error information and the card will be binned according to the failure mode.
     """
+    def set_bin_if_unbinned(bin_name):
+        if bin_name and meta.get("bin") == "unbinned":
+            meta["bin"] = bin_name
+
     cm.set_current_card(card)
 
     meta = {
-        "type": type_of_card(card, describe),                       # does not bin, binned below
-        "coin": coin_getmeta(card, describe),
-        "marker": marker_no(card, describe),
-        "channel": channel_getmeta(card, describe),
-        "trunk": trunk_getmeta(card, describe),
-        "ground_supply": ground_supply_getmeta(card, describe),
-        "trial": trial_getmeta(card, describe),
+        "type": type_of_card(card),                                 # does not bin, binned below
+        "coin": coin_getmeta(card),
+        "marker": marker_no(card),
+        "channel": channel_getmeta(card),
+        "trunk": trunk_getmeta(card),
+        "ground_supply": ground_supply_getmeta(card),
+        "trial": trial_getmeta(card),
         "orlm": {},
-        "timer": timer_getmeta(card, describe),
-        "status_flag": status_flag_getmeta(card, describe),
+        "timer": timer_getmeta(card),
+        "status_flag": status_flag_getmeta(card),
         "line_verification": None,                                      # checked and binned below
         "register": {"number": None, "digits": None, "reg_kind": None, "IR_kind": None}, # checked and binned below
         "perm_sig": ps_getmeta(card),
@@ -1378,10 +1354,6 @@ def evaluate(card, describe: bool = False):
         "call_sim_line": False,
         "bin": "unbinned",                                          # default bin, updated as checks are performed
     }
-
-    def set_bin_if_unbinned(bin_name):
-        if bin_name and meta.get("bin") == "unbinned":
-            meta["bin"] = bin_name
 
     if meta["type"][0] == "MTPT":
         set_bin_if_unbinned("TEST_CARD_MKR")
@@ -1395,6 +1367,8 @@ def evaluate(card, describe: bool = False):
             meta["line_verification"] = "Match"
         else:
             meta["line_verification"] = "Fail"
+    if meta["type"][0] in ["MOR", "MIR", "MOS"]:
+        set_bin_if_unbinned("AMRST_MONITOR")
 
     # Cross check supersedes all other bins, so run this up here.
     meta["crosses"] = x_check(card)
