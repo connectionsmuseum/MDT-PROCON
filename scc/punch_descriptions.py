@@ -242,43 +242,43 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'appearance of the tandem trunk in the number group.'
     ),
     'CN-RG0': (
-        'The position of the OR in the ORMC connector group. In the museum, this '
-        'is identical to the OR number.'
+        'The position of the OR/IR in the OR/IRMC connector. If this call is incoming, '
+        'this is an MF IR.'
     ),
     'CN-RG1': (
-        'The position of the OR in the ORMC connector group. In the museum, this '
-        'is identical to the OR number.'
+        'The position of the OR/IR in the OR/IRMC connector. If this call is incoming, '
+        'this is an MF IR.'
     ),
     'CN-RG2': (
-        'The position of the OR in the ORMC connector group. In the museum, this '
-        'is identical to the OR number.'
+        'The position of the OR/IR in the OR/IRMC connector. If this call is incoming, '
+        'this is an MF IR.'
     ),
     'CN-RG3': (
-        'The position of the OR in the ORMC connector group. In the museum, this '
-        'is identical to the OR number.'
+        'The position of the OR/IR in the OR/IRMC connector. If this call is incoming, '
+        'this is a DP IR.'
     ),
     'CN-RG4': (
-        'The position of the OR in the ORMC connector group. In the museum, this '
-        'is identical to the OR number.'
+        'The position of the OR/IR in the OR/IRMC connector. If this call is incoming, '
+        'this is a DP IR.'
     ),
     'CN-RG5': (
-        'The position of the OR in the ORMC connector group. In the museum, this '
-        'is identical to the OR number.'
+        'The position of the OR/IR in the OR/IRMC connector. If this call is incoming, '
+        'this is an RP IR.'
     ),
     'CN-RG6': (
-        'The position of the OR in the ORMC connector group. In the museum, this '
-        'is identical to the OR number.'
+        'The position of the OR/IR in the OR/IRMC connector. If this call is incoming, '
+        'this is an RP IR.'
     ),
     'CN-RG7': (
-        'The position of the OR in the ORMC connector group. In the museum, this '
+        'The position of the OR in the ORMC connector. In the museum, this '
         'is identical to the OR number.'
     ),
     'CN-RG8': (
-        'The position of the OR in the ORMC connector group. In the museum, this '
+        'The position of the OR in the ORMC connector. In the museum, this '
         'is identical to the OR number.'
     ),
     'CN-RG9': (
-        'The position of the OR in the ORMC connector group. In the museum, this '
+        'The position of the OR in the ORMC connector. In the museum, this '
         'is identical to the OR number.'
     ),
     'FG0': 'Trunk Link Frame Group. Always 0 in the museum.',

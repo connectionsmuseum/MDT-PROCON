@@ -562,6 +562,8 @@ def is_call_sim_line(decoded_orlm):
             decoded_orlm.get("HG"),
             decoded_orlm.get("VF"),
         )
+
+        print(f">>> Call sim line is: {key in CALLING_LINE_LOCATION_KEYS}")
         return key in CALLING_LINE_LOCATION_KEYS
 
     return is_known_calling_line(decoded_orlm)
@@ -1427,8 +1429,8 @@ def evaluate(card, describe: bool = False):
             }
             set_bin_if_unbinned("ORLM_ERROR")
 
-    if meta["orlm"].get("decoded") and meta["orlm"]["decoded"].get("calling_line"):
-        call_sim_line = is_call_sim_line(meta["orlm"])
+   # if meta["orlm"].get("decoded") and meta["orlm"]["decoded"].get("calling_line"):
+    meta["call_sim_line"] = is_call_sim_line(meta["orlm"])
 
     # OS check + binning
     if card_has(["SON"]):
