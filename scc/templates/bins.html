@@ -82,26 +82,35 @@
                 <select id="time-filter">
                     <option value="last-hour">Last hour</option>
                     <option value="today">Today</option>
+                    <option value="yesterday">Yesterday</option>
                     <option value="this-week">This week</option>
                     <option value="all" selected>All</option>
+                </select>
+                <label for="sort-mode-filter">Sort cards by:</label>
+                <select id="sort-mode-filter">
+                    <option value="bin" selected>Bin</option>
+                    <option value="time">Time</option>
                 </select>
             </div>
 
             <p id="empty-filter-result" class="empty-filter-result" style="display: none;">No bins found for the selected time range.</p>
 
-            {% for bin_name, cards in bins|dictsort %}
-                <div class="bin">
-                    <h2><span class="bin-name">{{ bin_name }}</span> (<span class="bin-count">{{ cards|length }}</span>)</h2>
-                    <ul class="card-list">
-                        {% for card in cards %}
-                            <li data-card-date="{{ card.date }}">
-                                <a href="/card/{{ card.filename }}">{{ card.date }}</a>
-                                <span class="meta">Dialed number: {{ card.register_digits_display if card.register_digits_display is not none else 'None' }}</span>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            {% endfor %}
+            <div id="bins-view">
+                {% for bin_name, cards in bins|dictsort %}
+                    <div class="bin">
+                        <h2><span class="bin-name">{{ bin_name }}</span> (<span class="bin-count">{{ cards|length }}</span>)</h2>
+                        <ul class="card-list">
+                            {% for card in cards %}
+                                <li data-bin-name="{{ bin_name }}" data-card-date="{{ card.date }}" data-card-href="/card/{{ card.filename }}" data-card-display-date="{{ card.date }}" data-register-digits-display="{{ card.register_digits_display if card.register_digits_display is not none else '' }}">
+                                    <a href="/card/{{ card.filename }}">{{ card.date }}</a>
+                                    <span class="meta">Dialed number: {{ card.register_digits_display if card.register_digits_display is not none else 'None' }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endfor %}
+            </div>
+            <div id="time-view" style="display: none;"></div>
         {% else %}
             <p>No bins found yet; wait for cards to be processed.</p>
         {% endif %}
@@ -109,6 +118,8 @@
         <script>
             (function () {
                 var FILTER_STORAGE_KEY = 'cardBinsTimeFilter';
+                var SORT_STORAGE_KEY = 'cardBinsSortMode';
+                var allCards = [];
 
                 function parseCardDate(value) {
                     if (!value) {
@@ -128,6 +139,28 @@
                     return null;
                 }
 
+                function collectCards() {
+                    var cardItems = document.querySelectorAll('#bins-view .card-list li');
+                    allCards = Array.prototype.map.call(cardItems, function (cardItem) {
+                        var link = cardItem.querySelector('a');
+                        var cardDate = parseCardDate(cardItem.getAttribute('data-card-date'));
+
+                        return {
+                            binName: cardItem.getAttribute('data-bin-name') || 'unknown',
+                            cardDate: cardDate,
+                            displayDate: cardItem.getAttribute('data-card-display-date') || (link ? link.textContent : ''),
+                            href: cardItem.getAttribute('data-card-href') || (link ? link.getAttribute('href') : '#'),
+                            registerDigitsDisplay: cardItem.getAttribute('data-register-digits-display') || ''
+                        };
+                    });
+                }
+
+                function getStartOfDay(now) {
+                    var startOfDay = new Date(now);
+                    startOfDay.setHours(0, 0, 0, 0);
+                    return startOfDay;
+                }
+
                 function getStartOfWeek(now) {
                     var start = new Date(now);
                     var day = start.getDay();
@@ -141,6 +174,12 @@
                     if (filter === 'last-hour') {
                         return new Date(now.getTime() - (60 * 60 * 1000));
                     }
+                    if (filter === 'yesterday') {
+                        var startOfYesterday = new Date(now);
+                        startOfYesterday.setHours(0, 0, 0, 0);
+                        startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+                        return startOfYesterday;
+                    }
                     if (filter === 'today') {
                         var startOfDay = new Date(now);
                         startOfDay.setHours(0, 0, 0, 0);
@@ -152,11 +191,98 @@
                     return null;
                 }
 
-                function applyFilter() {
+                function cardMatchesFilter(card, filter, rangeStart, startOfToday) {
+                    if (filter === 'all') {
+                        return true;
+                    }
+                    if (!card.cardDate || !rangeStart) {
+                        return false;
+                    }
+                    if (filter === 'yesterday') {
+                        return card.cardDate >= rangeStart && card.cardDate < startOfToday;
+                    }
+                    return card.cardDate >= rangeStart;
+                }
+
+                function getFilteredCards() {
                     var filter = document.getElementById('time-filter').value;
                     var now = new Date();
                     var rangeStart = getRangeStart(filter, now);
-                    var bins = document.querySelectorAll('.bin');
+                    var startOfToday = getStartOfDay(now);
+
+                    return allCards.filter(function (card) {
+                        return cardMatchesFilter(card, filter, rangeStart, startOfToday);
+                    });
+                }
+
+                function renderCardItem(card) {
+                    var li = document.createElement('li');
+                    li.setAttribute('data-bin-name', card.binName);
+                    li.setAttribute('data-card-date', card.cardDate ? card.cardDate.toISOString() : '');
+
+                    var link = document.createElement('a');
+                    link.href = card.href;
+                    link.textContent = card.displayDate;
+
+                    var meta = document.createElement('span');
+                    meta.className = 'meta';
+                    meta.textContent = 'Dialed number: ' + (card.registerDigitsDisplay || 'None');
+
+                    li.appendChild(link);
+                    li.appendChild(document.createTextNode(' '));
+                    li.appendChild(meta);
+                    return li;
+                }
+
+                function renderTimeView(cards) {
+                    var timeView = document.getElementById('time-view');
+                    timeView.innerHTML = '';
+
+                    var currentSection = null;
+                    var currentBinName = null;
+                    var currentCount = 0;
+
+                    cards.forEach(function (card) {
+                        if (!currentSection || card.binName !== currentBinName) {
+                            currentBinName = card.binName;
+                            currentCount = 0;
+
+                            currentSection = document.createElement('div');
+                            currentSection.className = 'bin';
+
+                            var heading = document.createElement('h2');
+                            var binNameSpan = document.createElement('span');
+                            binNameSpan.className = 'bin-name';
+                            binNameSpan.textContent = card.binName;
+
+                            var countSpan = document.createElement('span');
+                            countSpan.className = 'bin-count';
+
+                            heading.appendChild(binNameSpan);
+                            heading.appendChild(document.createTextNode(' ('));
+                            heading.appendChild(countSpan);
+                            heading.appendChild(document.createTextNode(')'));
+
+                            var cardList = document.createElement('ul');
+                            cardList.className = 'card-list';
+
+                            currentSection.appendChild(heading);
+                            currentSection.appendChild(cardList);
+                            timeView.appendChild(currentSection);
+                        }
+
+                        currentSection.querySelector('.card-list').appendChild(renderCardItem(card));
+                        currentCount += 1;
+                        currentSection.querySelector('.bin-count').textContent = String(currentCount);
+                    });
+                }
+
+                function applyBinFilter() {
+                    var filter = document.getElementById('time-filter').value;
+                    var now = new Date();
+                    var rangeStart = getRangeStart(filter, now);
+                    var startOfToday = getStartOfDay(now);
+                    var bins = document.querySelectorAll('#bins-view .bin');
                     var visibleBinCount = 0;
 
                     bins.forEach(function (bin) {
@@ -165,13 +291,7 @@
 
                         cards.forEach(function (cardItem) {
                             var cardDate = parseCardDate(cardItem.getAttribute('data-card-date'));
-                            var showCard = false;
-
-                            if (filter === 'all') {
-                                showCard = true;
-                            } else if (cardDate && rangeStart) {
-                                showCard = cardDate >= rangeStart;
-                            }
+                            var showCard = cardMatchesFilter({ cardDate: cardDate }, filter, rangeStart, startOfToday);
 
                             cardItem.style.display = showCard ? '' : 'none';
                             if (showCard) {
@@ -197,25 +317,68 @@
                     }
                 }
 
+                function applyView() {
+                    var sortMode = document.getElementById('sort-mode-filter').value;
+                    var timeView = document.getElementById('time-view');
+                    var binsView = document.getElementById('bins-view');
+
+                    if (sortMode === 'time') {
+                        var filteredCards = getFilteredCards().slice().sort(function (left, right) {
+                            var leftTime = left.cardDate ? left.cardDate.getTime() : 0;
+                            var rightTime = right.cardDate ? right.cardDate.getTime() : 0;
+                            return rightTime - leftTime;
+                        });
+
+                        binsView.style.display = 'none';
+                        timeView.style.display = '';
+                        renderTimeView(filteredCards);
+
+                        var emptyMessage = document.getElementById('empty-filter-result');
+                        if (emptyMessage) {
+                            emptyMessage.style.display = filteredCards.length === 0 ? '' : 'none';
+                        }
+                        return;
+                    }
+
+                    timeView.style.display = 'none';
+                    timeView.innerHTML = '';
+                    binsView.style.display = '';
+                    applyBinFilter();
+                }
+
                 var filterSelect = document.getElementById('time-filter');
-                if (filterSelect) {
+                var sortSelect = document.getElementById('sort-mode-filter');
+                if (filterSelect && sortSelect) {
                     try {
                         var savedFilter = localStorage.getItem(FILTER_STORAGE_KEY);
                         if (savedFilter && filterSelect.querySelector('option[value="' + savedFilter + '"]')) {
                             filterSelect.value = savedFilter;
                         }
+                        var savedSortMode = localStorage.getItem(SORT_STORAGE_KEY);
+                        if (savedSortMode && sortSelect.querySelector('option[value="' + savedSortMode + '"]')) {
+                            sortSelect.value = savedSortMode;
+                        }
                     } catch (err) {
                         // Ignore storage access errors and continue with default filter.
                     }
+                    collectCards();
                     filterSelect.addEventListener('change', function () {
                         try {
                             localStorage.setItem(FILTER_STORAGE_KEY, filterSelect.value);
                         } catch (err) {
                             // Ignore storage write errors and still apply the filter.
                         }
-                        applyFilter();
+                        applyView();
                     });
-                    applyFilter();
+                    sortSelect.addEventListener('change', function () {
+                        try {
+                            localStorage.setItem(SORT_STORAGE_KEY, sortSelect.value);
+                        } catch (err) {
+                            // Ignore storage write errors and still apply the view.
+                        }
+                        applyView();
+                    });
+                    applyView();
                 }
             })();
         </script>
