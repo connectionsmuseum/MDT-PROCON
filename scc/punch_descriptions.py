@@ -173,11 +173,50 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'the outgoing sender to request and transmit AMA billing information. Used '
         'on CAMA calls to kercheep.'
     ),
-    'FR-': (
+    'FR0': (
         'Frame Number. Either the IRMC, ORMC, LLMC, or PTRC, depending on the '
         'specific nature of the card.'
     ),
-    'CN-': 'Connector Number of the following frames: LLMC, ORMC, IRMC.',
+    'FR1': (
+        'Frame Number. Either the IRMC, ORMC, LLMC, or PTRC, depending on the '
+        'specific nature of the card.'
+    ),
+    'FR2': (
+        'Frame Number. Either the IRMC, ORMC, LLMC, or PTRC, depending on the '
+        'specific nature of the card.'
+    ),
+    'FR3': (
+        'Frame Number. Either the IRMC, ORMC, LLMC, or PTRC, depending on the '
+        'specific nature of the card.'
+    ),
+    'FR4': (
+        'Frame Number. Either the IRMC, ORMC, LLMC, or PTRC, depending on the '
+        'specific nature of the card.'
+    ),
+    'FR5': (
+        'Frame Number. Either the IRMC, ORMC, LLMC, or PTRC, depending on the '
+        'specific nature of the card.'
+    ),
+    'FR6': (
+        'Frame Number. Either the IRMC, ORMC, LLMC, or PTRC, depending on the '
+        'specific nature of the card.'
+    ),
+    'FR7': (
+        'Frame Number. Either the IRMC, ORMC, LLMC, or PTRC, depending on the '
+        'specific nature of the card.'
+    ),
+    'FR8': (
+        'Frame Number. Either the IRMC, ORMC, LLMC, or PTRC, depending on the '
+        'specific nature of the card.'
+    ),
+    'FR9': (
+        'Frame Number. Either the IRMC, ORMC, LLMC, or PTRC, depending on the '
+        'specific nature of the card.'
+    ),
+    'CN0': 'Connector Number of the following frames: LLMC, ORMC, IRMC.',
+    'CN1': 'Connector Number of the following frames: LLMC, ORMC, IRMC.',
+    'CN2': 'Connector Number of the following frames: LLMC, ORMC, IRMC.',
+    'CN3': 'Connector Number of the following frames: LLMC, ORMC, IRMC.',
 
     # Note: the following group of punches isn't really prime ('), but I had to 
     # address them this way to avoid a name collision with HT- hour tens punches.
@@ -242,43 +281,36 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'appearance of the tandem trunk in the number group.'
     ),
     'CN-RG0': (
-        'The position of the OR/IR in the OR/IRMC connector. If this call is incoming, '
-        'this is an MF IR.'
+        'The position of the OR/IR in the OR/IRMC. OR 0 or IR MF 0.'
     ),
     'CN-RG1': (
-        'The position of the OR/IR in the OR/IRMC connector. If this call is incoming, '
-        'this is an MF IR.'
+        'The position of the OR/IR in the OR/IRMC. OR 1 or IR MF 1.'
     ),
     'CN-RG2': (
-        'The position of the OR/IR in the OR/IRMC connector. If this call is incoming, '
-        'this is an MF IR.'
+        'The position of the OR/IR in the OR/IRMC. OR 2 or IR MF 2.'
     ),
     'CN-RG3': (
-        'The position of the OR/IR in the OR/IRMC connector. If this call is incoming, '
-        'this is a DP IR.'
+        'The position of the OR/IR in the OR/IRMC. OR 3 or IR DP 0.'
     ),
     'CN-RG4': (
-        'The position of the OR/IR in the OR/IRMC connector. If this call is incoming, '
-        'this is a DP IR.'
+        'The position of the OR/IR in the OR/IRMC. OR 4 or IR DP 1.'
     ),
     'CN-RG5': (
-        'The position of the OR/IR in the OR/IRMC connector. If this call is incoming, '
-        'this is an RP IR.'
+        'The position of the OR/IR in the OR/IRMC. OR 5 or IR RP 0.'
     ),
     'CN-RG6': (
-        'The position of the OR/IR in the OR/IRMC connector. If this call is incoming, '
-        'this is an RP IR.'
+        'The position of the OR/IR in the OR/IRMC. OR 6 or IR RP 1.' 
     ),
     'CN-RG7': (
-        'The position of the OR in the ORMC connector. In the museum, this '
+        'The position of the OR in the ORMC. In the museum, this '
         'is identical to the OR number.'
     ),
     'CN-RG8': (
-        'The position of the OR in the ORMC connector. In the museum, this '
+        'The position of the OR in the ORMC. In the museum, this '
         'is identical to the OR number.'
     ),
     'CN-RG9': (
-        'The position of the OR in the ORMC connector. In the museum, this '
+        'The position of the OR in the ORMC. In the museum, this '
         'is identical to the OR number.'
     ),
     'FG0': 'Trunk Link Frame Group. Always 0 in the museum.',
@@ -359,9 +391,9 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'marker that this call is from a toll trunk.'
     ),
     'LT1': (
-        'Local Translator 1. The OR has instructed the marker to employ its Local '
+        'Local Translator 1. The OR has instructed the marker to employ Local '
         'Translator 1 for this connection. In the museum, this is used for 1+ dialed '
-        'calls to C*NET. This call was sent to Kercheep for handling.'
+        'calls to C*NET through Kercheep.'
     ),
     'RO': (
         'Reorder. Incoming register signaled the marker for a reorder (overflow) '
@@ -590,6 +622,9 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'Foreign Area B. Foreign area translator "B" was associated with '
         'the marker when trouble record was taken.'
     ),
+    'AL': (
+        'The selected group of trunks is allotted.'
+    ),
     'GPA': (
         'Group Preference A. The marker selected the subgroup A trunks or senders in an allotted group.'
     ),
@@ -633,15 +668,17 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'TP': 'Tip Party. The originating register signaled the marker that this is a tip party call.',
     'CN': 'Coin Call. The marker operated the \'CN\' (coin class) relay in the trunk used for this call.',
     'RP': 'Ring Party. The originating register signaled the marker that this is a ring party call.',
-    'FR0': 'Outgoing Sender Connector (OSC) frame 0 was used on this call.',
-    'FR1': 'Outgoing Sender Connector (OSC) frame 1 was used on this call.',
-    'FR2': 'Outgoing Sender Connector (OSC) frame 2 was used on this call.',
-    'FR3': 'Outgoing Sender Connector (OSC) frame 3 was used on this call.',
-    'FR4': 'Outgoing Sender Connector (OSC) frame 4 was used on this call.',
-    'CN0': 'Connector 0 in the selected OSC was used on this call.',
-    'CN1': 'Connector 1 in the selected OSC was used on this call.',
-    'CN2': 'Connector 2 in the selected OSC was used on this call.',
-    'CN3': 'Connector 3 in the selected OSC was used on this call.',
+    # Note: the following punches aren't actually prime (') but I needed to distinguish them from
+    # similarly named punches elsewhere on the card
+    'FR0\'': 'Outgoing Sender Connector (OSC) frame 0 was used on this call.',
+    'FR1\'': 'Outgoing Sender Connector (OSC) frame 1 was used on this call.',
+    'FR2\'': 'Outgoing Sender Connector (OSC) frame 2 was used on this call.',
+    'FR3\'': 'Outgoing Sender Connector (OSC) frame 3 was used on this call.',
+    'FR4\'': 'Outgoing Sender Connector (OSC) frame 4 was used on this call.',
+    'CN0\'': 'Connector 0 in the selected OSC was used on this call.',
+    'CN1\'': 'Connector 1 in the selected OSC was used on this call.',
+    'CN2\'': 'Connector 2 in the selected OSC was used on this call.',
+    'CN3\'': 'Connector 3 in the selected OSC was used on this call.',
     'S0': 'Sender 0 in the selected OSC was used on this call.',
     'S1': 'Sender 1 in the selected OSC was used on this call.',
     'S2': 'Sender 2 in the selected OSC was used on this call.',
@@ -770,31 +807,31 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'CU2': 'Class of Service, Units 2. The units digit of the class of service of the calling line.',
     'CU4': 'Class of Service, Units 4. The units digit of the class of service of the calling line.',
     'CU7': 'Class of Service, Units 7. The units digit of the class of service of the calling line.',
-    'FT0\'': 'Frame Tens 0. The tens digit of the line link frame as registered in the sender.',
-    'FT1\'': 'Frame Tens 1. The tens digit of the line link frame as registered in the sender.',
-    'FT2\'': 'Frame Tens 2. The tens digit of the line link frame as registered in the sender.',
-    'FT3\'': 'Frame Tens 3. The tens digit of the line link frame as registered in the sender.',
-    'FU0\'': 'Frame Units 0. The units digit of the line link frame as registered in the sender.',
-    'FU1\'': 'Frame Units 1. The units digit of the line link frame as registered in the sender.',
-    'FU2\'': 'Frame Units 2. The units digit of the line link frame as registered in the sender.',
-    'FU4\'': 'Frame Units 4. The units digit of the line link frame as registered in the sender.',
-    'FU7\'': 'Frame Units 7. The units digit of the line link frame as registered in the sender.',
-    'VG0\'': 'Vertical Group 0. The vertical group as registered in the sender.',
-    'VG1\'': 'Vertical Group 1. The vertical group as registered in the sender.',
-    'VG2\'': 'Vertical Group 2. The vertical group as registered in the sender.',
-    'VG4\'': 'Vertical Group 4. The vertical group as registered in the sender.',
-    'VG7\'': 'Vertical Group 7. The vertical group as registered in the sender.',
-    'VG10\'': 'Vertical Group 10. The vertical group as registered in the sender.',
-    'HG0\'': 'Horizontal Group 0. The horizontal group as registered in the sender.',
-    'HG1\'': 'Horizontal Group 1. The horizontal group as registered in the sender.',
-    'HG2\'': 'Horizontal Group 2. The horizontal group as registered in the sender.',
-    'HG4\'': 'Horizontal Group 4. The horizontal group as registered in the sender.',
-    'HG7\'': 'Horizontal Group 7. The horizontal group as registered in the sender.',
-    'VF0\'': 'Vertical File 0. The vertical file as registered in the sender.',
-    'VF1\'': 'Vertical File 1. The vertical file as registered in the sender.',
-    'VF2\'': 'Vertical File 2. The vertical file as registered in the sender.',
-    'VF3\'': 'Vertical File 3. The vertical file as registered in the sender.',
-    'VF4\'': 'Vertical File 4. The vertical file as registered in the sender.',
+    'FT\'0': 'Frame Tens 0. The tens digit of the line link frame as registered in the sender.',
+    'FT\'1': 'Frame Tens 1. The tens digit of the line link frame as registered in the sender.',
+    'FT\'2': 'Frame Tens 2. The tens digit of the line link frame as registered in the sender.',
+    'FT\'3': 'Frame Tens 3. The tens digit of the line link frame as registered in the sender.',
+    'FU\'0': 'Frame Units 0. The units digit of the line link frame as registered in the sender.',
+    'FU\'1': 'Frame Units 1. The units digit of the line link frame as registered in the sender.',
+    'FU\'2': 'Frame Units 2. The units digit of the line link frame as registered in the sender.',
+    'FU\'4': 'Frame Units 4. The units digit of the line link frame as registered in the sender.',
+    'FU\'7': 'Frame Units 7. The units digit of the line link frame as registered in the sender.',
+    'VG\'0': 'Vertical Group 0. The vertical group as registered in the sender.',
+    'VG\'1': 'Vertical Group 1. The vertical group as registered in the sender.',
+    'VG\'2': 'Vertical Group 2. The vertical group as registered in the sender.',
+    'VG\'4': 'Vertical Group 4. The vertical group as registered in the sender.',
+    'VG\'7': 'Vertical Group 7. The vertical group as registered in the sender.',
+    'VG\'10': 'Vertical Group 10. The vertical group as registered in the sender.',
+    'HG\'0': 'Horizontal Group 0. The horizontal group as registered in the sender.',
+    'HG\'1': 'Horizontal Group 1. The horizontal group as registered in the sender.',
+    'HG\'2': 'Horizontal Group 2. The horizontal group as registered in the sender.',
+    'HG\'4': 'Horizontal Group 4. The horizontal group as registered in the sender.',
+    'HG\'7': 'Horizontal Group 7. The horizontal group as registered in the sender.',
+    'VF\'0': 'Vertical File 0. The vertical file as registered in the sender.',
+    'VF\'1': 'Vertical File 1. The vertical file as registered in the sender.',
+    'VF\'2': 'Vertical File 2. The vertical file as registered in the sender.',
+    'VF\'3': 'Vertical File 3. The vertical file as registered in the sender.',
+    'VF\'4': 'Vertical File 4. The vertical file as registered in the sender.',
     'TM': 'Timing. The timing lead has been grounded by the marker connector.',
     'CKG': (
         'Checking Ground is closed from marker connector relays to provide '

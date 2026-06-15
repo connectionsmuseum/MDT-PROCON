@@ -116,6 +116,30 @@
                     .catch(error => console.error('Error fetching cardnames:', error));
             }
 
+            function navigateCardByArrow(direction) {
+                const select = document.getElementById('cardSelect');
+                if (!select) {
+                    return;
+                }
+
+                const currentIndex = select.selectedIndex;
+                if (currentIndex < 0) {
+                    return;
+                }
+
+                const step = direction === 'next' ? 1 : -1;
+                let nextIndex = currentIndex + step;
+
+                while (nextIndex >= 0 && nextIndex < select.options.length) {
+                    if (select.options[nextIndex].value) {
+                        select.selectedIndex = nextIndex;
+                        window.loadCard();
+                        return;
+                    }
+                    nextIndex += step;
+                }
+            }
+
             document.addEventListener("DOMContentLoaded", function () {
                 const statusDot = document.getElementById("statusDot");
                 const evtSource = new EventSource("/events");
@@ -174,6 +198,30 @@
                 window.addEventListener('storage', function (event) {
                     if (event.key === 'displayCardMetadataHome') {
                         syncMetadataPanel();
+                    }
+                });
+
+                document.addEventListener("keydown", function (event) {
+                    const target = event.target;
+                    const isTypingTarget = target && (
+                        target.tagName === "INPUT" ||
+                        target.tagName === "TEXTAREA" ||
+                        target.tagName === "SELECT" ||
+                        target.isContentEditable
+                    );
+
+                    if (isTypingTarget || event.altKey || event.ctrlKey || event.metaKey) {
+                        return;
+                    }
+                    // this is navigating dropdown entries sorted new -> old so
+                    // to preserve the movement through time, we have to reverse
+                    // the arrow key logic to match the directionality of the card_view page
+                    if (event.key === 'ArrowRight') {
+                        event.preventDefault();
+                        navigateCardByArrow('previous');
+                    } else if (event.key === 'ArrowLeft') {
+                        event.preventDefault();
+                        navigateCardByArrow('next');
                     }
                 });
 

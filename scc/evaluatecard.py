@@ -33,10 +33,9 @@ def type_of_card(card):
     cm.set_current_card(card)
     print(">>> evaluating card type...")
     if card_has('TI'):
-        punch = next((n for n in ('MOR', 'MIR', 'MOS') if card_has(n)), 'TI')
+        return next((n for n in ('MOR', 'MIR', 'MOS') if card_has(n)), 'TI')
     else:
-        punch = next((n for n in ('MTPT', 'TKT','SRT', 'MLV') if card_has(n)), None)
-    return (punch)
+        return next((n for n in ('MTPT', 'TKT','SRT', 'MLV') if card_has(n)), None)
 
 def marker_no(card):
     cm.set_current_card(card)
@@ -103,18 +102,18 @@ def trunk_getmeta(card):
     # Source of truth: https://docs.google.com/spreadsheets/d/13Q1h56AV-zMH6SA7PoLRUr5uSqlMfRCYlKvmopmGEMc/edit?usp=sharing
     _TRUNK_DESTINATIONS = {
         ("TB0", "TG1"):  "Combination Tone",
-        ("TB1", "TG7"):  "Kercheep",
         ("TB1", "TG1"):  "1XB",
         ("TB1", "TG2"):  "Step",
         ("TB1", "TG3"):  "3ESS",
         ("TB1", "TG4"):  "Panel",
         ("TB1", "TG6"):  "DMS-10",
+        ("TB1", "TG7"):  "Kercheep",
         ("TB1", "TG9"):  "Audichron",
         ("TB3", "TG8"):  "Coin Junctors",
         ("TB4", "TG0"):  "232 IAO",
         ("TB4", "TG1"):  "Permanent Signal",
         ("TB5", "TG4"):  "Common Overflow",
-        ("TB5", "TG5"):  "5A Announcment",
+        ("TB5", "TG5"):  "5A Announcement",
         ("TB5", "TG6"):  "232 Coin IAO",
     }
 
@@ -561,6 +560,8 @@ def os_getmeta(card, outsender=None):
     errors = []
     if outsender is None:
         outsender = {}
+
+    print(">>> evaluating sender number...")
 
     if card_has(["OSG0", "OSG1", "OSG2", "OSG3", "OSG4"]):
         # determine group
@@ -1355,19 +1356,19 @@ def evaluate(card):
         "bin": "unbinned",                                          # default bin, updated as checks are performed
     }
 
-    if meta["type"][0] == "MTPT":
+    if card_has("MTPT"):
         set_bin_if_unbinned("TEST_CARD_MKR")
-    if meta["type"][0] == "TKT":
+    if card_has("TKT"):
         set_bin_if_unbinned("TEST_CARD_TKT")
-    if meta["type"][0] == "SRT":
+    if card_has("SRT"):
         set_bin_if_unbinned("TEST_CARD_SRT")
-    if meta["type"][0] == "MLV":
+    if card_has("MLV"):
         set_bin_if_unbinned("TEST_CARD_MLV")
         if card_has("LVM"):
             meta["line_verification"] = "Match"
         else:
             meta["line_verification"] = "Fail"
-    if meta["type"][0] in ["MOR", "MIR", "MOS"]:
+    if card_has(["MOR", "MIR", "MOS"]):
         set_bin_if_unbinned("AMRST_MONITOR")
 
     # Cross check supersedes all other bins, so run this up here.
@@ -1463,7 +1464,6 @@ def evaluate(card):
 
     meta["y_punches"] = truthy_punches(card)
 
-
     for k in meta:
         print(meta[k])
 
@@ -1551,7 +1551,6 @@ def describe_punch(name):
 def truthy_punches(card):
     """Return a list of punch names that are present (True) on the card."""
     punches = [name for name in cm.card_map.values() if card_has(name)]
-    #punches.sort()
     return punches
 
 
