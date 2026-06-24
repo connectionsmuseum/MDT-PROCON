@@ -1,3 +1,11 @@
+# The following environment variables should be set in an override.conf
+# using sudo systemctl edit scc.service. Then systemctl daemon-reload.
+# Environment="PATH=$VIRTUAL_ENV/bin:$PATH"
+# Environment="VIRTUAL_ENV=/opt/MDT-PROCON/scc/"
+# Environment="CARD_DB_PATH=/var/lib/scc/cards.db"
+# Environment="PUBLIC_EAT_CARD_URL=[SET_YOUR_URL_HERE/whatever]"
+# Environment="PUBLIC_EAT_CARD_TIMEOUT_SECONDS=3.0"
+
 [Unit]
 Description=SCC service for the 5XB MDT
 Documentation=https://www.github.com/connectionsmuseum/MDT-PROCON
@@ -5,11 +13,15 @@ Documentation=https://www.github.com/connectionsmuseum/MDT-PROCON
 [Service]
 User=scc
 WorkingDirectory=/opt/MDT-PROCON/scc/
+<<<<<<< HEAD
 VIRTUAL_ENV=/opt/MDT-PROCON/scc/
 CARD_DB_PATH=/var/lib/scc/cards.db
 PUBLIC_EAT_CARD_URL=[SET_YOUR_URL_HERE]
 PUBLIC_EAT_CARD_TIMEOUT_SECONDS=3.0
 Environment=PATH=$VIRTUAL_ENV/bin:$PATH
+=======
+
+>>>>>>> ed815f3 (rethinking public upload)
 ExecStart=/opt/MDT-PROCON/scc/bin/python sccweb.py
 Restart=on-failure
 

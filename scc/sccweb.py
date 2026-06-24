@@ -18,17 +18,6 @@ _punch_tooltip_grid = None
 PUBLIC_EAT_CARD_URL = os.environ.get("PUBLIC_EAT_CARD_URL", "").strip()
 PUBLIC_EAT_CARD_TIMEOUT_SECONDS = float(os.environ.get("PUBLIC_EAT_CARD_TIMEOUT_SECONDS", "3.0"))
 
-try:
-    _active_db_path = card_storage.initialize_storage()
-    print(f"Card storage ready: {_active_db_path}")
-    if card_storage.is_using_fallback_path():
-        print("WARNING: using fallback card DB path /tmp/cards/cards.db; set CARD_DB_PATH for persistent storage")
-    if PUBLIC_EAT_CARD_URL:
-        print(f"Card forwarding enabled: {PUBLIC_EAT_CARD_URL}")
-except Exception as e:
-    print(f"ERROR: unable to initialize card storage: {e}")
-    raise
-
 
 def _forward_card_to_public(payload):
     """Forward card payload to public ingest endpoint when configured."""
@@ -189,7 +178,7 @@ def punch_date(bits):
         'minute_tens': int(now.strftime("%M")) // 10,
         'minute_units': int(now.strftime("%M")) % 10
     }
-    print(f"Punching time {punchdate} into card with values: {time_dict}")
+    print(f">>> Punching time {punchdate} into card with values: {time_dict}")
 
     for key, value in time_dict.items():
         holes = two_of_five[value]
@@ -205,79 +194,6 @@ def save_card_metadata(punchdate, card, metadata):
     payload = {"z_card": card, "metadata": metadata}
     card_storage.save_card_payload(punchdate, payload)
     _forward_card_to_public(payload)
-
-def _punch_card(bits):
-    '''
-    creates a card image complete with holes punched in the right places,
-    and saves it to disk with a timestamped filename
-    ** NOT CALLED
-    '''
-    orig_x, orig_y, off_x, off_y, t_start_x, t_start_y = get_offsets()
-    f_im = Image.open('cardpack/front.jpg')
-
-    holesize = 15
-    now = datetime.now()
-    punchdate = now.strftime("%y-%m-%d_%H-%M-%S")
-
-    time_dict = {
-        'day_tens': int(now.strftime("%d")) // 10,
-        'day_units': int(now.strftime("%d")) % 10,
-        'hour_tens': int(now.strftime("%H")) // 10,
-        'hour_units': int(now.strftime("%H")) % 10,
-        'minute_tens': int(now.strftime("%M")) // 10,
-        'minute_units': int(now.strftime("%M")) % 10
-    }
-
-    for key, value in time_dict.items():
-        holes = two_of_five[value]
-        for hole in holes:
-            # print(f"Punching hole for {key} in position {hole}")
-            bits[t_start_y][t_start_x + hole] = True
-        t_start_x += 5
-
-    #Render the JPG
-    f_draw = ImageDraw.Draw(f_im)
-    for xidx in range(69):
-        for yidx in range(18):
-            if xidx>30 and xidx<38: continue
-            #Don't tell Professor Mead, these numbers are magic
-            f_xcen=orig_x+(xidx*off_x)
-            f_ycen=orig_y+(yidx*off_y)
-
-            #It's hole-punchin' time! KACHUKACHUKACHUKA
-            if bits[yidx][xidx]:
-                f_draw.ellipse([(f_xcen - holesize, f_ycen - holesize),
-                                (f_xcen + holesize, f_ycen + holesize)],
-                                'black', 'black')
-
-    # save the cards to be used via the web frontend
-    f_im.save("/tmp/front.jpg", optimize=True)
-
-    # and save the cards to a directory so I can look at them later
-    jpg_path = f"/tmp/cards/{punchdate}_front.jpg"
-    f_im.save(jpg_path, optimize=True)
-
-    return punchdate
-
-def _ascii_card(card):
-    '''
-    mostly not used in production. provides a text representation of the card in the terminal
-    ** NOT CALLED
-    '''
-    text = ''
-    text += ('+'+('—'*69)+'+\n')
-    for y in range(18):
-        text += ('|')
-        for x in range(69): #nice
-            if x==31 or x==37:
-                text += ('|')
-            elif x>31 and x<37:
-                text += (' ')
-            else:
-                text += ('#' if card[y][x] else '·')
-        text += ('|\n')
-    text += ('+'+('—'*69)+'+\n')
-    return text
 
 def _list_saved_card_json_entries(limit=30):
     """Return newest saved card JSON entries with human-readable timestamps."""
@@ -311,7 +227,6 @@ def _format_card_timestamp(filename):
     except Exception:
         # Fallback to original filename if parsing fails
         return filename
-
 
 def _card_url_name(name):
     """Return extensionless card identifier for user-facing URLs."""
@@ -349,6 +264,29 @@ def _get_bins():
 def _load_card_metadata(name):
     """Load saved card JSON (card + metadata) by JSON name, or base."""
     return card_storage.load_card_payload(name)
+
+def _forward_card_to_public(payload):
+    """Forward card payload to public ingest endpoint when configured."""
+    if not PUBLIC_EAT_CARD_URL:
+        print(f"Card forwarding skipped because PUBLIC_EAT_CARD_URL is not configured.")
+        return
+    try:
+        response = requests.post(
+            PUBLIC_EAT_CARD_URL,
+            json=payload,
+            timeout=PUBLIC_EAT_CARD_TIMEOUT_SECONDS,
+        )
+        if response.status_code >= 400:
+            print(
+                f"WARNING: card forward failed with HTTP {response.status_code} "
+                f"to {PUBLIC_EAT_CARD_URL}"
+            )
+        if response.status_code == 200:
+            print(
+                f"Card successfully forwarded to {PUBLIC_EAT_CARD_URL}"
+            )
+    except Exception as e:
+        print(f"WARNING: card forward error to {PUBLIC_EAT_CARD_URL}: {e}")
 
 @app.route('/trouble-card', methods=['POST'])
 # MDT posts cards here
@@ -407,7 +345,6 @@ def test():
         return {"error": "no card data provided"}, 400
 
     punchdate = punch_date(card)
-
     metadata = ec.evaluate(card)
     save_card_metadata(punchdate, card, metadata)
 
@@ -524,6 +461,18 @@ def single_card(name):
                            prev_card=prev_card, next_card=next_card,
                            orig_x=orig_x, orig_y=orig_y,
                            off_x=off_x, off_y=off_y)
+
+
+try:
+    _active_db_path = card_storage.initialize_storage()
+    print(f"Card storage ready: {_active_db_path}")
+    if card_storage.is_using_fallback_path():
+        print("WARNING: using fallback card DB path /tmp/cards/cards.db; set CARD_DB_PATH for persistent storage")
+    if PUBLIC_EAT_CARD_URL:
+        print(f"Card forwarding enabled: {PUBLIC_EAT_CARD_URL}")
+except Exception as e:
+    print(f"ERROR: unable to initialize card storage: {e}")
+    raise
 
 if __name__ == '__main__':
     app.run(host = '0.0.0.0', port = 5220)
