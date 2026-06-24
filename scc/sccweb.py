@@ -7,12 +7,22 @@ import json
 import cardmap as cm
 import evaluatecard as ec
 import punch_descriptions
+import card_storage
 from datetime import datetime
 
 app = Flask(__name__)
 clients = []
 _offsets = None
 _punch_tooltip_grid = None
+
+try:
+    _active_db_path = card_storage.initialize_storage()
+    print(f"Card storage ready: {_active_db_path}")
+    if card_storage.is_using_fallback_path():
+        print("WARNING: using fallback card DB path /tmp/cards/cards.db; set CARD_DB_PATH for persistent storage")
+except Exception as e:
+    print(f"ERROR: unable to initialize card storage: {e}")
+    raise
 
 # The virtual card is scanned in 120 points (two rows) at a time, in the same
 # way as the actual card is punched when it is transported through the trouble
@@ -168,9 +178,10 @@ def punch_date(bits):
 
 def save_card_metadata(punchdate, card, metadata):
     """Save the card and its metadata for later inspection."""
-    name = f"/tmp/cards/{punchdate}_front.json"
-    with open(name, "w") as f:
-        json.dump({"z_card": card, "metadata": metadata}, f, indent=2)
+    card_storage.save_card_payload(
+        punchdate,
+        {"z_card": card, "metadata": metadata},
+    )
 
 def _punch_card(bits):
     '''
@@ -247,10 +258,9 @@ def _ascii_card(card):
 
 def _list_saved_card_json_entries(limit=30):
     """Return newest saved card JSON entries with human-readable timestamps."""
-    saved_json = [f for f in os.listdir('/tmp/cards/') if f.lower().endswith('_front.json')]
-    saved_json.sort(key=lambda x: os.path.getmtime('/tmp/cards/' + x), reverse=True)
+    saved_json = card_storage.list_card_json_names(limit=limit)
     entries = []
-    for name in saved_json[:limit]:
+    for name in saved_json:
         entries.append({
             "name": name,
             "date": _format_card_timestamp(name)
@@ -282,15 +292,7 @@ def _format_card_timestamp(filename):
 def _get_bins():
     """Return a mapping of bin -> list of card data with filenames and formatted dates."""
     bins = {}
-    for fn in os.listdir('/tmp/cards/'):
-        if not fn.endswith('_front.json'):
-            continue
-        path = os.path.join('/tmp/cards', fn)
-        try:
-            with open(path) as f:
-                data = json.load(f)
-        except Exception:
-            continue
+    for fn, data in card_storage.list_cards_with_payload():
         bin_name = data.get('metadata', {}).get('bin', 'unknown')
         card_name = fn[:-5] + '.json'
         formatted_date = _format_card_timestamp(card_name)
@@ -315,15 +317,7 @@ def _get_bins():
 
 def _load_card_metadata(name):
     """Load saved card JSON (card + metadata) by JSON name, or base."""
-    if name.lower().endswith('.json'):
-        base = os.path.splitext(name)[0]
-    else:
-        base = name
-    meta_path = os.path.join('/tmp/cards', f"{base}.json")
-    if not os.path.exists(meta_path):
-        return None
-    with open(meta_path) as f:
-        return json.load(f)
+    return card_storage.load_card_payload(name)
 
 @app.route('/trouble-card', methods=['POST'])
 # MDT posts cards here
@@ -478,7 +472,7 @@ def single_card(name):
     # Determine prev/next card by time (filename sort order)
     base = os.path.splitext(name)[0]
     json_name = f"{base}.json" if not base.endswith('_front') else f"{base}.json"
-    all_cards = sorted(f for f in os.listdir('/tmp/cards/') if f.endswith('_front.json'))
+    all_cards = sorted(card_storage.list_card_json_names())
     prev_card = next_card = None
     if json_name in all_cards:
         idx = all_cards.index(json_name)
