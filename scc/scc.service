@@ -7,6 +7,8 @@ User=scc
 WorkingDirectory=/opt/MDT-PROCON/scc/
 VIRTUAL_ENV=/opt/MDT-PROCON/scc/
 CARD_DB_PATH=/var/lib/scc/cards.db
+PUBLIC_EAT_CARD_URL=[SET_YOUR_URL_HERE]
+PUBLIC_EAT_CARD_TIMEOUT_SECONDS=3.0
 Environment=PATH=$VIRTUAL_ENV/bin:$PATH
 ExecStart=/opt/MDT-PROCON/scc/bin/python sccweb.py
 Restart=on-failure

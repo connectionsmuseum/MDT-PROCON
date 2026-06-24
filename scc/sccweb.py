@@ -4,6 +4,7 @@ import queue
 import configparser
 import os
 import json
+import requests
 import cardmap as cm
 import evaluatecard as ec
 import punch_descriptions
@@ -14,15 +15,38 @@ app = Flask(__name__)
 clients = []
 _offsets = None
 _punch_tooltip_grid = None
+PUBLIC_EAT_CARD_URL = os.environ.get("PUBLIC_EAT_CARD_URL", "").strip()
+PUBLIC_EAT_CARD_TIMEOUT_SECONDS = float(os.environ.get("PUBLIC_EAT_CARD_TIMEOUT_SECONDS", "3.0"))
 
 try:
     _active_db_path = card_storage.initialize_storage()
     print(f"Card storage ready: {_active_db_path}")
     if card_storage.is_using_fallback_path():
         print("WARNING: using fallback card DB path /tmp/cards/cards.db; set CARD_DB_PATH for persistent storage")
+    if PUBLIC_EAT_CARD_URL:
+        print(f"Card forwarding enabled: {PUBLIC_EAT_CARD_URL}")
 except Exception as e:
     print(f"ERROR: unable to initialize card storage: {e}")
     raise
+
+
+def _forward_card_to_public(payload):
+    """Forward card payload to public ingest endpoint when configured."""
+    if not PUBLIC_EAT_CARD_URL:
+        return
+    try:
+        response = requests.post(
+            PUBLIC_EAT_CARD_URL,
+            json=payload,
+            timeout=PUBLIC_EAT_CARD_TIMEOUT_SECONDS,
+        )
+        if response.status_code >= 400:
+            print(
+                f"WARNING: card forward failed with HTTP {response.status_code} "
+                f"to {PUBLIC_EAT_CARD_URL}"
+            )
+    except Exception as e:
+        print(f"WARNING: card forward error to {PUBLIC_EAT_CARD_URL}: {e}")
 
 # The virtual card is scanned in 120 points (two rows) at a time, in the same
 # way as the actual card is punched when it is transported through the trouble
@@ -178,10 +202,9 @@ def punch_date(bits):
 
 def save_card_metadata(punchdate, card, metadata):
     """Save the card and its metadata for later inspection."""
-    card_storage.save_card_payload(
-        punchdate,
-        {"z_card": card, "metadata": metadata},
-    )
+    payload = {"z_card": card, "metadata": metadata}
+    card_storage.save_card_payload(punchdate, payload)
+    _forward_card_to_public(payload)
 
 def _punch_card(bits):
     '''
