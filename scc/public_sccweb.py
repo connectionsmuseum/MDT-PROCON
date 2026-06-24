@@ -164,12 +164,20 @@ def _format_card_timestamp(filename):
         # Fallback to original filename if parsing fails
         return filename
 
+
+def _card_url_name(name):
+    """Return extensionless card identifier for user-facing URLs."""
+    base = os.path.basename(name)
+    if base.lower().endswith('.json'):
+        base = os.path.splitext(base)[0]
+    return base
+
 def _get_bins():
     """Return a mapping of bin -> list of card data with filenames and formatted dates."""
     bins = {}
     for fn, data in card_storage.list_cards_with_payload():
         bin_name = data.get('metadata', {}).get('bin', 'unknown')
-        json_name = fn[:-5] + '.json'
+        json_name = _card_url_name(fn)
         formatted_date = _format_card_timestamp(json_name)
         register_digits = data.get('metadata', {}).get('register', {}).get('digits')
         if isinstance(register_digits, list):
@@ -322,12 +330,11 @@ def single_card(name):
     orig_x, orig_y, off_x, off_y, _t_start_x, _t_start_y = get_offsets()
 
     # Determine prev/next card by time (filename sort order)
-    base = os.path.splitext(name)[0]
-    json_name = f"{base}.json" if not base.endswith('_front') else f"{base}.json"
-    all_cards = sorted(card_storage.list_card_json_names())
+    requested = _card_url_name(name)
+    all_cards = sorted(_card_url_name(n) for n in card_storage.list_card_json_names())
     prev_card = next_card = None
-    if json_name in all_cards:
-        idx = all_cards.index(json_name)
+    if requested in all_cards:
+        idx = all_cards.index(requested)
         prev_card = all_cards[idx - 1] if idx > 0 else None
         next_card = all_cards[idx + 1] if idx < len(all_cards) - 1 else None
 
