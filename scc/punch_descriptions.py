@@ -32,13 +32,13 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'monitoring an Outgoing Sender'
     ),
     'LIT': (
-        'Line Insulation Test. This card was dropped as a result of a failed LIT. Not used at musem.'
+        'Line Insulation Test. This card was dropped as a result of a failed LIT. Not used at museum.'
     ),
     'PRT': (
         'A pretranslator dropped this card. Not used at museum.'
     ),
     'MKR': (
-        'A marker dropped this card. The DR punch indicates which maker in particular.'
+        'A marker dropped this card. The DR punch indicates which marker in particular.'
     ),
     'TURN OVER': (
         'This card wants you to turn it over and read from the back side.'

@@ -19,24 +19,6 @@ PUBLIC_EAT_CARD_URL = os.environ.get("PUBLIC_EAT_CARD_URL", "").strip()
 PUBLIC_EAT_CARD_TIMEOUT_SECONDS = float(os.environ.get("PUBLIC_EAT_CARD_TIMEOUT_SECONDS", "3.0"))
 
 
-def _forward_card_to_public(payload):
-    """Forward card payload to public ingest endpoint when configured."""
-    if not PUBLIC_EAT_CARD_URL:
-        return
-    try:
-        response = requests.post(
-            PUBLIC_EAT_CARD_URL,
-            json=payload,
-            timeout=PUBLIC_EAT_CARD_TIMEOUT_SECONDS,
-        )
-        if response.status_code >= 400:
-            print(
-                f"WARNING: card forward failed with HTTP {response.status_code} "
-                f"to {PUBLIC_EAT_CARD_URL}"
-            )
-    except Exception as e:
-        print(f"WARNING: card forward error to {PUBLIC_EAT_CARD_URL}: {e}")
-
 # The virtual card is scanned in 120 points (two rows) at a time, in the same
 # way as the actual card is punched when it is transported through the trouble
 # recorder.
@@ -80,6 +62,142 @@ two_of_five = {
     9: [2,4]
 }
 
+
+def _list_saved_card_json_entries(limit=30):
+    """Return newest saved card JSON entries with human-readable timestamps."""
+    saved_json = card_storage.list_card_json_names(limit=limit)
+    entries = []
+    for name in saved_json:
+        entries.append({
+            "name": name,
+            "date": _format_card_timestamp(name)
+        })
+    return entries
+
+
+def _format_card_timestamp(filename):
+    """Extract and format timestamp from card filename.
+
+    Converts '26-03-22_21-32-16_front.jpg' or '_front.json' to
+    '2026-03-22 21:32:16'
+    """
+    try:
+        # Extract the timestamp
+        timestamp_part = os.path.basename(filename)[:17]  # '26-03-22_21-32-16'
+        date_part, time_part = timestamp_part.split('_')
+        yy, mm, dd = date_part.split('-')
+        hh, minute, ss = time_part.split('-')
+
+        # Convert YY to YYYY
+        yyyy = f"20{yy}"
+
+        # Format as YYYY-MM-DD HH:MM:SS
+        return f"{yyyy}-{mm}-{dd} {hh}:{minute}:{ss}"
+    except Exception:
+        # Fallback to original filename if parsing fails
+        return filename
+
+
+def _card_url_name(name):
+    """Return extensionless card identifier for user-facing URLs."""
+    base = os.path.basename(name)
+    if base.lower().endswith('.json'):
+        base = os.path.splitext(base)[0]
+    return base
+
+
+def _get_bins():
+    """Return a mapping of bin -> list of card data with filenames and formatted dates."""
+    bins = {}
+    for fn, data in card_storage.list_cards_with_payload():
+        bin_name = data.get('metadata', {}).get('bin', 'unknown')
+        card_name = _card_url_name(fn)
+        formatted_date = _format_card_timestamp(card_name)
+        register_digits = data.get('metadata', {}).get('register', {}).get('digits')
+        if isinstance(register_digits, list):
+            register_digits_display = ''.join(str(d) for d in register_digits)
+        elif register_digits is None:
+            register_digits_display = None
+        else:
+            register_digits_display = str(register_digits)
+        bins.setdefault(bin_name, []).append({
+            'filename': card_name,
+            'date': formatted_date,
+            'register_digits': register_digits,
+            'register_digits_display': register_digits_display,
+        })
+    # Sort by filename (timestamp-prefixed), backwards
+    for cards in bins.values():
+        cards.sort(key=lambda x: x['filename'], reverse=True)
+    return bins
+
+
+def _get_offsets():
+    """Magic numbers to align the holes on the card image"""
+    global _offsets
+    if _offsets is None:
+        with open('cardpack/offsets.txt') as offsets:
+            config = configparser.ConfigParser()
+            config.read_string(offsets.read())
+            _offsets = (
+                float(config['Front']['originX']),
+                float(config['Front']['originY']),
+                float(config['Front']['offsetX']),
+                float(config['Front']['offsetY']),
+                int(config['Front']['t_start_x']),
+                int(config['Front']['t_start_y'])
+            )
+    return _offsets
+
+
+def _get_punch_tooltip_grid():
+    """Return cached punch tooltip metadata for each card coordinate."""
+    global _punch_tooltip_grid
+    if _punch_tooltip_grid is None:
+        rows = []
+        for row in range(18):
+            row_items = []
+            for col in range(69):
+                name = cm.punchName(row, col)
+                description = None if name == '-' else punch_descriptions.PUNCH_DESCRIPTIONS.get(name)
+                row_items.append({
+                    'name': name,
+                    'description': description,
+                })
+            rows.append(row_items)
+        _punch_tooltip_grid = rows
+    return _punch_tooltip_grid
+
+
+def _load_card_metadata(name):
+    """Load saved card JSON (card + metadata) by JSON name, or base."""
+    return card_storage.load_card_payload(name)
+
+
+def _forward_card_to_public(payload):
+    """Forward card payload to public ingest endpoint when configured."""
+    if not PUBLIC_EAT_CARD_URL:
+        print(f"Card forwarding skipped because PUBLIC_EAT_CARD_URL is not configured.")
+        return
+    try:
+        response = requests.post(
+            PUBLIC_EAT_CARD_URL,
+            json=payload,
+            timeout=PUBLIC_EAT_CARD_TIMEOUT_SECONDS,
+        )
+        if response.status_code >= 400:
+            print(
+                f"WARNING: card forward failed with HTTP {response.status_code} "
+                f"to {PUBLIC_EAT_CARD_URL}"
+            )
+        if response.status_code == 200:
+            print(
+                f"Card successfully forwarded to {PUBLIC_EAT_CARD_URL}"
+            )
+    except Exception as e:
+        print(f"WARNING: card forward error to {PUBLIC_EAT_CARD_URL}: {e}")
+
+
 def convert_to_card(data):
     """Convert scan data into a 2D card representation."""
 
@@ -122,47 +240,12 @@ def convert_to_card(data):
                         card[row][col] = True
     return card
 
-def get_offsets():
-    """Magic numbers to align the holes on the card image"""
-    global _offsets
-    if _offsets is None:
-        with open('cardpack/offsets.txt') as offsets:
-            config = configparser.ConfigParser()
-            config.read_string(offsets.read())
-            _offsets = (
-                float(config['Front']['originX']),
-                float(config['Front']['originY']),
-                float(config['Front']['offsetX']),
-                float(config['Front']['offsetY']),
-                int(config['Front']['t_start_x']),
-                int(config['Front']['t_start_y'])
-            )
-    return _offsets
-
-
-def _get_punch_tooltip_grid():
-    """Return cached punch tooltip metadata for each card coordinate."""
-    global _punch_tooltip_grid
-    if _punch_tooltip_grid is None:
-        rows = []
-        for row in range(18):
-            row_items = []
-            for col in range(69):
-                name = cm.punchName(row, col)
-                description = None if name == '-' else punch_descriptions.PUNCH_DESCRIPTIONS.get(name)
-                row_items.append({
-                    'name': name,
-                    'description': description,
-                })
-            rows.append(row_items)
-        _punch_tooltip_grid = rows
-    return _punch_tooltip_grid
 
 def punch_date(bits):
     '''
     punches the current time into the card bits in the correct two-of-five holes for each digit
     '''
-    orig_x, orig_y, off_x, off_y, t_start_x, t_start_y = get_offsets()
+    orig_x, orig_y, off_x, off_y, t_start_x, t_start_y = _get_offsets()
 
     holesize = 15
     now = datetime.now()
@@ -189,104 +272,13 @@ def punch_date(bits):
 
     return punchdate
 
+
 def save_card_metadata(punchdate, card, metadata):
     """Save the card and its metadata for later inspection."""
     payload = {"z_card": card, "metadata": metadata}
     card_storage.save_card_payload(punchdate, payload)
     _forward_card_to_public(payload)
 
-def _list_saved_card_json_entries(limit=30):
-    """Return newest saved card JSON entries with human-readable timestamps."""
-    saved_json = card_storage.list_card_json_names(limit=limit)
-    entries = []
-    for name in saved_json:
-        entries.append({
-            "name": name,
-            "date": _format_card_timestamp(name)
-        })
-    return entries
-
-def _format_card_timestamp(filename):
-    """Extract and format timestamp from card filename.
-
-    Converts '26-03-22_21-32-16_front.jpg' or '_front.json' to
-    '2026-03-22 21:32:16'
-    """
-    try:
-        # Extract the timestamp
-        timestamp_part = os.path.basename(filename)[:17]  # '26-03-22_21-32-16'
-        date_part, time_part = timestamp_part.split('_')
-        yy, mm, dd = date_part.split('-')
-        hh, minute, ss = time_part.split('-')
-
-        # Convert YY to YYYY
-        yyyy = f"20{yy}"
-
-        # Format as YYYY-MM-DD HH:MM:SS
-        return f"{yyyy}-{mm}-{dd} {hh}:{minute}:{ss}"
-    except Exception:
-        # Fallback to original filename if parsing fails
-        return filename
-
-def _card_url_name(name):
-    """Return extensionless card identifier for user-facing URLs."""
-    base = os.path.basename(name)
-    if base.lower().endswith('.json'):
-        base = os.path.splitext(base)[0]
-    return base
-
-def _get_bins():
-    """Return a mapping of bin -> list of card data with filenames and formatted dates."""
-    bins = {}
-    for fn, data in card_storage.list_cards_with_payload():
-        bin_name = data.get('metadata', {}).get('bin', 'unknown')
-        card_name = _card_url_name(fn)
-        formatted_date = _format_card_timestamp(card_name)
-        register_digits = data.get('metadata', {}).get('register', {}).get('digits')
-        if isinstance(register_digits, list):
-            register_digits_display = ''.join(str(d) for d in register_digits)
-        elif register_digits is None:
-            register_digits_display = None
-        else:
-            register_digits_display = str(register_digits)
-        bins.setdefault(bin_name, []).append({
-            'filename': card_name,
-            'date': formatted_date,
-            'register_digits': register_digits,
-            'register_digits_display': register_digits_display,
-        })
-
-    # Sort by filename (timestamp-prefixed), backwards
-    for cards in bins.values():
-        cards.sort(key=lambda x: x['filename'], reverse=True)
-    return bins
-
-def _load_card_metadata(name):
-    """Load saved card JSON (card + metadata) by JSON name, or base."""
-    return card_storage.load_card_payload(name)
-
-def _forward_card_to_public(payload):
-    """Forward card payload to public ingest endpoint when configured."""
-    if not PUBLIC_EAT_CARD_URL:
-        print(f"Card forwarding skipped because PUBLIC_EAT_CARD_URL is not configured.")
-        return
-    try:
-        response = requests.post(
-            PUBLIC_EAT_CARD_URL,
-            json=payload,
-            timeout=PUBLIC_EAT_CARD_TIMEOUT_SECONDS,
-        )
-        if response.status_code >= 400:
-            print(
-                f"WARNING: card forward failed with HTTP {response.status_code} "
-                f"to {PUBLIC_EAT_CARD_URL}"
-            )
-        if response.status_code == 200:
-            print(
-                f"Card successfully forwarded to {PUBLIC_EAT_CARD_URL}"
-            )
-    except Exception as e:
-        print(f"WARNING: card forward error to {PUBLIC_EAT_CARD_URL}: {e}")
 
 @app.route('/trouble-card', methods=['POST'])
 # MDT posts cards here
@@ -316,6 +308,7 @@ def receive_trouble_card():
         return {}, 200
 
     return {"error": "payload too large"}, 413
+
 
 @app.route('/test', methods=['POST'])
 # test endpoint for manually triggering an update event to connected
@@ -352,6 +345,7 @@ def test():
         q.put("update")
     return jsonify({"z_card": card, "metadata": metadata}), 200
 
+
 @app.route('/events', methods=['GET'])
 def events():
     """events endpoint for notifying clients of new cards"""
@@ -369,25 +363,30 @@ def events():
 
     return Response(stream(), mimetype="text/event-stream")
 
+
 @app.route('/credits', methods=['GET'])
 def credits():
     """Serve the credits page."""
     return render_template('credits.html')
+
 
 @app.route('/settings', methods=['GET'])
 def settings():
     """Serve the settings page."""
     return render_template('settings.html')
 
+
 @app.route('/blank-card', methods=['GET'])
 def blank_card():
     """Serve the blank (unpunched) card template image."""
     return send_from_directory('cardpack', 'front_9a8sudf.jpg')
 
+
 @app.route('/punch-tooltip-data', methods=['GET'])
 def punch_tooltip_data():
     """Return static punch-name and description data for hover tooltips."""
     return jsonify(_get_punch_tooltip_grid())
+
 
 @app.route('/latest-card-data', methods=['GET'])
 def latest_card_data():
@@ -400,24 +399,28 @@ def latest_card_data():
         return jsonify({"error": "metadata not found"}), 404
     return jsonify(data)
 
+
 @app.route('/', methods=['GET'])
 def display_cards():
     """# main page showing the most recent cards and allowing selection of past cards"""
     saved_cards = _list_saved_card_json_entries()
-    orig_x, orig_y, off_x, off_y, _t_start_x, _t_start_y = get_offsets()
+    orig_x, orig_y, off_x, off_y, _t_start_x, _t_start_y = _get_offsets()
     return render_template("cards.html", card_entries=saved_cards,
                            orig_x=orig_x, orig_y=orig_y, off_x=off_x, off_y=off_y)
+
 
 @app.route('/cardnames', methods=['GET'])
 def get_cardnames():
     """Gets a JSON list of newest saved card metadata entries."""
     return jsonify(_list_saved_card_json_entries())
 
+
 @app.route('/bins', methods=['GET'])
 def view_bins():
     """Render an HTML report of all bins and their contents."""
     bins = _get_bins()
     return render_template('bins.html', bins=bins)
+
 
 @app.route('/cardmeta/<name>', methods=['GET'])
 def card_metadata(name):
@@ -427,6 +430,7 @@ def card_metadata(name):
         return jsonify({"error": "metadata not found"}), 404
     return jsonify(data)
 
+
 @app.route('/card/<name>', methods=['GET'])
 def single_card(name):
     """
@@ -435,7 +439,7 @@ def single_card(name):
     that is saved in the JSON alongside the card bits.
     """
     data = _load_card_metadata(name)
-    orig_x, orig_y, off_x, off_y, _t_start_x, _t_start_y = get_offsets()
+    orig_x, orig_y, off_x, off_y, _t_start_x, _t_start_y = _get_offsets()
 
     # Determine prev/next card by time (filename sort order)
     requested = _card_url_name(name)
@@ -473,6 +477,7 @@ try:
 except Exception as e:
     print(f"ERROR: unable to initialize card storage: {e}")
     raise
+
 
 if __name__ == '__main__':
     app.run(host = '0.0.0.0', port = 5220)
