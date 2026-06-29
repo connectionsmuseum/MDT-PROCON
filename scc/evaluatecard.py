@@ -42,7 +42,7 @@ def marker_no(card):
     print(">>> evaluating marker number...")
     number = next((f'DR{i}' for i in range(10) if card_has(f'DR{i}')), None)
     if number is None:
-        return None
+       raise MarkerNoCheckError("No DR- punch present, unable to determine which marker dropped this card.")
     return number[2:]
 
 def trial_getmeta(card):
@@ -1046,10 +1046,6 @@ def cm_check(card):
             details["requirement"] = requirement
         raise CMCheckError(message, code=code, details=details, bin=bin)
 
-    # --- Marker "DR-" punch check ---
-    if card_lacks('DR0', 'DR1', 'DR8'):
-        raise_cm_error("NO_DR", "no DR- punch present. who dropped this card?", required=['DR0', 'DR1', 'DR8'], bin="DR_FAILURE")
-
     # --- IRL LR Checks ---
     if card_has("LR") and card_lacks("DCK"):
         raise_cm_error("LR_INC_XPTS", "LR is punched without DCK",
@@ -1340,7 +1336,7 @@ def evaluate(card):
     meta = {
         "type": type_of_card(card),                                 # does not bin, binned below
         "coin": coin_getmeta(card),
-        "marker": marker_no(card),
+        "marker": "",
         "channel": channel_getmeta(card),
         "trunk": trunk_getmeta(card),
         "ground_supply": ground_supply_getmeta(card),
@@ -1355,6 +1351,15 @@ def evaluate(card):
         "call_sim_line": False,
         "bin": "unbinned",                                          # default bin, updated as checks are performed
     }
+
+    try:
+        meta["marker"] = marker_no(card)
+    except MarkerNoCheckError as exc:
+        meta["marker"] = {
+            "error": str(exc)
+        }
+
+        set_bin_if_unbinned("DR_FAILURE")
 
     if card_has("MTPT"):
         set_bin_if_unbinned("TEST_CARD_MKR")
@@ -1557,6 +1562,12 @@ def truthy_punches(card):
 # ---------------------------------------------------------------------------
 # custom error classes
 # ---------------------------------------------------------------------------
+class MarkerNoCheckError(ValueError):
+    """Raised when marker_check discovers that no DR- punch is present, and therefore
+    we are unable to determine which marker dropped this card.
+    """
+    def __init__(self, message):
+        super().__init__(message)
 
 class RegCheckError(ValueError):
     """Raised when :func:`register_check` encounters malformed OR/IR data.
