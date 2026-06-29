@@ -173,6 +173,35 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'the outgoing sender to request and transmit AMA billing information. Used '
         'on CAMA calls to kercheep.'
     ),
+    'CM3': (
+        'Call marker after 3 digits. If perforated alone, the OR should call marker after '
+        '3 digits. If perforated along with SD, call marker after 3 digits and return coin.'
+    ),
+    'CMA': (
+        'Call Marker Start Index A. The pretranslator indicates to OR when to call marker.'
+    ),
+    'CMB': (
+        'Call Marker Start Index B. The pretranslator indicates to OR when to call marker.'
+    ),
+    'CMC': (
+        'Call Marker Start Index C. The pretranslator indicates to OR when to call marker.'
+    ),
+    'SD': (
+        'Stations Delay. Pretranslator indicates wait for stations digit with CMA, CMB, CMC, '
+        'or call marker with coin return with CMA.'
+    ),
+    'PCK': (
+        'Pretranslator Connector Check. When punched, PRTC was attached to OR.'
+    ),
+    'PRL': (
+        'Pretranslator signaled OR to release PRTC.'
+    ),
+    'RLK': (
+        'Release Check. Release relay in OR operated. Also used for Trouble Release.'
+    ),
+    'PTR': (
+        'Pretranslator Connector Second Trial. The first trial failed so we are trying again.'
+    ),
     'FR0': (
         'Frame Number. Either the IRMC, ORMC, LLMC, or PTRC, depending on the '
         'specific nature of the card.'
