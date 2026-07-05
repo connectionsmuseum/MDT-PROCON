@@ -907,9 +907,6 @@ def cm_check(card):
 
     Checks below are listed in the same order as the function body.
 
-    # Marker DR- punch check
-    * Must have one of DR0, DR1, DR8: raise NO_DR
-
     # IRL LR Checks
     * If LR and no DCK: raise LR_INC_XPTS
     * If LR and DCK and one of INC, TOL, TAN: raise LR_FAILURE_TO_ATTACH
@@ -933,23 +930,29 @@ def cm_check(card):
     * If FLG and RSK then must have SRK: raise NO_SRK
 
     # Crosspoint checks
-    * If TK then must have HMS1: raise TK_NO_HMS1
-    * If no HMS1 then must not have SL: raise FALSE_SL
-    * If no HTR and no HMS1 then must not have JXP1 or LXP1: raise FALSE_JXP1_LXP1
-    * If HMS1 then must have SL: raise NO_SL
-    * If JXP1 then must have LXP1: raise NO_LXP1. Ignore if DR1.
-    * If SL then must have JXP1: raise NO_JXP1. Ignore if DR1 or if HTR punched (test canceled).
-    * If SL and JXP1 and LXP1 then must have GT2: raise NO_GT2. Ignore if DR1.
-    * If CH0-9 then must have HMS1: raise NO_HMS1
-    * If JC0-9 then must have JCK: raise NO_JCK
+    * If SL and no HMS1: raise FALSE_SL
+    * If JXP1 and LXP1, and neither HTR nor HMS1: raise FALSE_JXP1_LXP1
+    * If HMS1 and no SL: raise NO_SL
+    * If HMS1 and SL and LXP1 and DR1, and no HTR: raise LXP1
+    * If JXPA and DR0, and neither JXP1 nor HTR: raise NO_JXP1
+    * If JXP1 and DR0, and neither GLH nor HTR: raise NO_GLH
+    * If GLH and DR0, and neither LXPA nor HTR: raise NO_LXPA
+    * If LXPA and DR0, and neither LXP1 nor HTR: raise NO_LXP1
+    * If HTR and HMS1 and DR0, and no LXPA: raise NO_LXPA
+    * If HTR and HMS1 and DR0, and no JXPA: raise NO_JXPA
+    * If SL and JXP1 and LXP1 and DR0, and neither GT2 nor HTR: raise NO_GT2
+    * If any of CH0-9 are present then must have HMS1: raise NO_HMS1
+    * If any of JC0-9 are present then must have JCK: raise NO_JCK
     * If not TER and any of P0-9, PNR, PA, PB, PC, PE are present then must have TCHK: raise NO_TCHK
 
     # Double Connection Tests
-    * If any of GT2, AVK1, RCK3, CLK are present then must have DCT1: raise NO_DCT1
-    * If RCK3 and not DCT1 then must have DCT: raise TER_NO_DCT
-    * If DCT1 then must have DIS1 and must not have DCT: raise DCT1_NO_DIS1
-    * If DCT1 then must have LK1: raise NO_LK1
-    * If SCB and DCT1 and LK1 are all present, or if either DCT2 or LK1 is present, then must have DIS1: raise NO_DIS1
+    * If CON and DR1, and neither DCT nor DCT1 is present: raise NO_DCT
+    * If LXP1 and DR0, and neither DCT nor DCT1 is present: raise NO_DCT
+    * If DCT is present and DCT1 is absent: raise NO_DCT1
+    * If both DCT and DCT1 are present: raise DCT_and_DCT1
+    * If DCT1 is present and DIS1 is absent: raise DCT1_NO_DIS1
+    * If DCT1 and FLG are present and LK1 is absent: raise NO_LK1
+    * If (SCB and DCT1 and LK1) are all present, or if either DCT2 or LK1 is present, and DIS1 is absent: raise NO_DIS1
 
     # TLF checks
     * If any of LV2-9 are present then must have FAK or FBK: raise NO_FAK_FBK
@@ -972,21 +975,16 @@ def cm_check(card):
     * If TGT: raise TG_FAIL
 
     # Barebones checks if all others fall thru
-    * If FLG then must have JCK: raise NO_JCK
-    * If FLG then must have LCK: raise NO_LCK
-    * If FLG then must have HGK: raise NO_HGK
+    * If FLG or SCB then must have JCK: raise NO_JCK
+    * If FLG or SCB then must have LCK: raise NO_LCK
+    * If FLG or SCB then must have HGK: raise NO_HGK
     * If FLG then must have TCHK: raise NO_TCHK
     * If FLG then must have LK or RK: raise NO_LK_RK
-    * If FLG then must have RK3: raise NO_RK3
-    * If FLG and JCK and LCK and HGK and TCHK and RK3 are all present, and either LK or RK is present, then must have TK: raise NO_TK
-    * If SCB then must have FAK: raise NO_FAK
-    * If SCB then must have LCK: raise NO_LCK
-    * If SCB then must have JCK: raise NO_JCK
-    * If SCB then must have DTK: raise NO_DTK
-    * If SCB then must have HGK: raise NO_HGK
-    * If SCB then must have RK3: raise NO_RK3
+    * If FLG or SCB then must have RK3: raise NO_RK3
     * If SCB and FAK and LFK and LCK and JCK and HGK and RK3 are all present then must have TK: raise NO_TK
     * If FLG and HGK and JCK and TCHK and LCK are all present, and either FAK or FBK is present, then must have TK: raise NO_TK
+    * If SCB then must have FAK: raise NO_FAK
+    * If SCB then must have DTK: raise NO_DTK
     * If TK then must have HMS1: raise NO_HMS1
     * If HMS1 then must have DCT1: raise NO_DCT1
     * If TK then must have CK: raise NO_CK
@@ -1112,57 +1110,93 @@ def cm_check(card):
                        required=["SRK"], trigger=["FLG", "RSK"], bin="RSS_CHECK")
 
     # --- Crosspoint checks ---
-    if card_lacks('HMS1') and card_has("TK"):
-        raise_cm_error("TK_NO_HMS1", "Card has TK, but no HMS1. Marker was unable to operate hold magnets.",
-                        required=["HMS1"], trigger=["TK"], bin="XPT_CHECK")
+    if card_has("SL") and card_lacks("HMS1"):
+        raise_cm_error("FALSE_SL", "SL or SLA may be falsely operated, preventing the operation of HMS1",
+                       required=["HMS1"], trigger=["SL"], bin="NO_HMS1")
 
-    if card_lacks("HMS1") and card_has("SL"):
-        raise_cm_error("FALSE_SL", "SL is punched without HMS1",
-                       required=["HMS1"], trigger=["SL"], bin="XPT_CHECK")
-
-    if card_lacks("HTR", "HMS1") and card_has(["JXP1", "LXP1"]):
-        raise_cm_error("FALSE_JXP1_LXP1", "JXP1/LXP1 punched without HMS1",
-                       required=["HMS1"], trigger=["JXP1", "LXP1"], bin="XPT_CHECK")
+    if card_has_all("JXP1", "LXP1") and card_lacks("HTR", "HMS1"):
+        raise_cm_error("FALSE_JXP1_LXP1", "JXP1/LXP1 should only be operated after HMS1",
+                       required=["HMS1"], trigger=["JXP1", "LXP1"], bin="FALSE_JXP1_LXP1")
 
     if card_has("HMS1") and card_lacks("SL"):
-        raise_cm_error("NO_SL", "Trunk link crosspoints not closed.", required=["SL"], trigger=["HMS1"], bin="XPT_CHECK")
+        raise_cm_error("NO_SL", "Trunk link crosspoints not closed.", required=["SL"], trigger=["HMS1"], bin="NO_SL")
 
-    if card_has("JXP1") and card_lacks("LXP1") and card_lacks("DR1"):
-        raise_cm_error("NO_LXP1", "Line link crosspoints not closed.", required=["LXP1"], trigger=["JXP1"], bin="XPT_CHECK")
+    # DR1 LTR only. OTOH HTR causes GLH up, SL up, LXP1 down in parallel
+    if card_has_all("HMS1", "SL", "LXP1", "DR1") and card_lacks("HTR"):
+        raise_cm_error("LXP1 punched. Possible issue closing LLF crosspoints.",
+                       required=["NO_LXP1"], trigger=["HMS1", "SL", "DR1", "LXP1"], bin="LXP1")
 
-    if card_has("SL") and card_lacks("JXP1") and card_lacks("DR1"):
-        raise_cm_error("NO_JXP1", "Junctor crosspoints not closed.", required=["JXP1"], trigger=["SL"], bin="XPT_CHECK")
+    # DR0 only, light traffic JXP1
+    if card_has_all("JXPA", "DR0") and card_lacks("JXP1", "HTR"):
+        raise_cm_error("NO_JXP1", "Junctor switch hold magnet operated, but marker could not verify continuity.", 
+                        required=["JXP1"], trigger=["JXPA"], bin="NO_JXP1")
 
-    if card_has_all("SL", "JXP1", "LXP1") and card_lacks("GT2") and card_lacks("DR1", "HTR"):
+    # DR0 only, light traffic GLH
+    if card_has_all("JXP1", "DR0") and card_lacks("GLH", "HTR"):
+        raise_cm_error("NO_GLH", "The marker was unable to start grounding the line hold magnet.", required=["GLH"], trigger=["JXP1", "DR0"], bin="NO_GLH")
+
+    # DR0 only, light traffic LXPA
+    if card_has_all("GLH", "DR0") and card_lacks("LXPA", "HTR"):
+        raise_cm_error("NO_LXPA", "The marker attempted to operate the line switch hold magnet, but was unsuccessful.", 
+                        required=["LXPA"], trigger=["GLH"], bin="NO_LXPA")
+
+    # DR0 only, light traffic LXP1
+    if card_has_all("LXPA", "DR0") and card_lacks("LXP1", "HTR"):
+        raise_cm_error("NO_LXP1", "Line switch crosspoints closed, but marker could not verify continuity on LH- lead.", 
+                        required=["LXP1"], trigger=["LXPA"], bin="NO_LXP1")
+
+    # DR0 only, heavy traffic, line
+    if card_has_all("HTR", "HMS1", "DR0") and card_lacks("LXPA"):
+        raise_cm_error("NO_LXPA", "Marker could not operate LLF hold magnet", required=["LXPA"], trigger=["HTR", "HMS1"], bin="NO_LXPA")
+
+    # DR0 only, heavy traffic, junctor
+    if card_has_all("HTR", "HMS1", "DR0") and card_lacks("JXPA"):
+        raise_cm_error("NO_JXPA", "Marker could not operate junctor switch hold magnet", required=["JXPA"], trigger=["HTR", "HMS1"], bin="NO_JXPA")
+
+    # DR0 only.
+    if card_has_all("SL", "JXP1", "LXP1", "DR0") and card_lacks("GT2") and card_lacks("HTR"):
         raise_cm_error("NO_GT2", "GT2 indicates the operation of GT1. GT1 requires SL, JXP1, CON1, GLH, but not LXP1. "
                         "SFD-10-01-C531",
-                       required=["GT2"], trigger=["SL", "JXP1", "LXP1"], bin="XPT_CHECK")
+                       required=["GT2"], trigger=["SL", "JXP1", "LXP1"], bin="NO_GT2")
 
     if card_has(ch_punches) and card_lacks("HMS1"):
-        raise_cm_error("NO_HMS1", "CH0-9 requires HMS1", required=["HMS1"], trigger=ch_punches, bin="XPT_CHECK")
+        raise_cm_error("NO_HMS1", "CH0-9 indicates marker has selected an idle channel, but "
+                        "could not operate hold magnets.", required=["HMS1"], trigger=ch_punches, bin="NO_HMS1")
 
     if card_has(jc_punches) and card_lacks("JCK"):
-        raise_cm_error("NO_JCK", "JC0-9 requires JCK", required=["JCK"], trigger=jc_punches, bin="XPT_CHECK")
+        raise_cm_error("NO_JCK", "Marker applied battery to operate TLF JC- relay, but could not verify that "
+                        "it actually operated.", required=["JCK"], trigger=jc_punches, bin="JC_WITHOUT_JCK")
 
     if card_lacks("TER") and card_has(p_punches + ["PNR", "PA", "PB", "PC", "PE"]) and card_lacks("TCHK"):
-        raise_cm_error("NO_TCHK", "P/PNR/PA/PB/PC/PE activity requires TCHK",
-                       required=["TCHK"], trigger=p_punches + ["PNR", "PA", "PB", "PC", "PE"], bin="XPT_CHECK")
+        raise_cm_error("NO_TCHK", "One of the marker TCH0-9 relays failed to operate.",
+                       required=["TCHK"], trigger=p_punches + ["PNR", "PA", "PB", "PC", "PE"], bin="NO_TCHK")
 
     # --- Double Connection Tests ---
-    if card_has("GT2", "AVK1", "RCK3", "CLK") and card_lacks("DCT1"):
-        raise_cm_error("NO_DCT1", "DCT1 should have operated after one of GT2, AVK1, RCK3, or CLK",
-                       required=["DCT1"], trigger=["GT2", "AVK1", "RCK3", "CLK"], bin="DCT_FAILURES")
+    #CM1 only CON -> DCT
+    if card_has_all("CON", "DR1") and card_lacks("DCT", "DCT1"):
+        raise_cm_error("NO_DCT", "The marker was not able to successfully complete the double connection test on the called line.",
+                        required=["DCT"], trigger=["CON", "DR1"], bin="DCT_FAILURE")
+    #CM0 only LXP1 -> DCT
+    if card_has_all("LXP1", "DR0") and card_lacks("DCT", "DCT1"):
+        raise_cm_error("NO_DCT", "The marker was not able to successfully complete the double connection test on the called line.",
+                        required=["DCT"], trigger=["LXP1", "DR0"], bin="DCT_FAILURE")
 
-    if card_has("RCK3") and card_lacks("DCT1") and card_lacks("DCT"):
-        raise_cm_error("TER_NO_DCT", "RCK3 without DCT1 requires DCT",
-                       required=["DCT"], trigger=["RCK3"], context=["DCT1"], bin="DCT_FAILURES")
+    #DCT no DCT1
+    if card_has_all("DCT") and card_lacks("DCT1"):
+        raise_cm_error("NO_DCT1", "DCT without DCT1, HTR",
+                       required=["DCT1"], trigger=["DCT"], bin="DCT_FAILURE")
 
-    if card_has("DCT1") and (card_has( "DCT") or card_lacks("DIS1")):
-        raise_cm_error("DCT1_NO_DIS1", "DCT1 must have DIS1 and must not have DCT",
-                       required=["DIS1"], trigger=["DCT1"], context=["DCT"], bin="DCT_FAILURES")
+    #DCT1 and DCT
+    if card_has_all("DCT", "DCT1"):
+        raise_cm_error("DCT_and_DCT1", "DCT relay should release as soon as DCT1 operates.",
+                        required=["DCT1"], trigger=["DCT", "DCT1"], bin="DCT_FAILURE")
 
-    if card_has("DCT1") and card_lacks("LK1"):
-        raise_cm_error("NO_LK1", "DCT1 is punched without LK1", required=["LK1"], trigger=["DCT1"], bin="DCT_FAILURES")
+    if card_has("DCT1") and card_lacks("DIS1"):
+        raise_cm_error("DCT1_NO_DIS1", "DCT1 punched, but not DIS1",
+                       required=["DIS1"], trigger=["DCT1"], context=["DCT"], bin="NO_DISI")
+
+    if card_has_all("DCT1", "FLG") and card_lacks("LK1"):
+        raise_cm_error("NO_LK1", "DCT1 is punched without LK1", required=["LK1", "FLG"], trigger=["DCT1"], bin="NO_LK1")
 
     if (card_has_all("SCB", "DCT1", "LK1") or card_has("DCT2", "LK1")) and card_lacks("DIS1"):
         raise_cm_error("NO_DIS1", "DCT/LK combination requires DIS1",
@@ -1225,45 +1259,23 @@ def cm_check(card):
                         "suspect OGT trouble", trigger=["TGT"], bin="OGT_ISSUE")
 
     # --- Barebones checks if all others fall thru ---
-    if card_has("FLG") and card_lacks("JCK"):
-        raise_cm_error("NO_JCK", "FLG requires JCK", required=["JCK"], trigger=["FLG"], bin="XPT_CHECK")
+    if card_has("FLG", "SCB") and card_lacks("JCK"):
+        raise_cm_error("NO_JCK", "Marker could not verify the operation of the JC- relay in the TLF", required=["JCK"], trigger=["FLG"], bin="NO_JCK")
 
-    if card_has("FLG") and card_lacks("LCK"):
-        raise_cm_error("NO_LCK", "FLG requires LCK", required=["LCK"], trigger=["FLG"], bin="XPT_CHECK")
+    if card_has("FLG", "SCB") and card_lacks("LCK"):
+        raise_cm_error("NO_LCK", "Marker could not verify the operation of the LC- relay in the TLF", required=["LCK"], trigger=["FLG"], bin="NO_LCK")
 
-    if card_has("FLG") and card_lacks("HGK"):
-        raise_cm_error("NO_HGK", "FLG requires HGK", required=["HGK"], trigger=["FLG"], bin="XPT_CHECK")
+    if card_has("FLG", "SCB") and card_lacks("HGK"):
+        raise_cm_error("NO_HGK", "The marker could not verify the operation of the HG- relay in the LLF", required=["HGK"], trigger=["FLG"], bin="NO_HGK")
 
     if card_has("FLG") and card_lacks("TCHK"):
-        raise_cm_error("NO_TCHK", "FLG requires TCHK", required=["TCHK"], trigger=["FLG"], bin="XPT_CHECK")
+        raise_cm_error("NO_TCHK", "The marker could not verify the operation of the TCH- relay.", required=["TCHK"], trigger=["FLG"], bin="NO_TCHK")
 
     if card_has("FLG") and card_lacks("LK", "RK"):
-        raise_cm_error("NO_LK_RK", "FLG requires LK or RK", required=["LK", "RK"], trigger=["FLG"], requirement="any", bin="XPT_CHECK")
+        raise_cm_error("NO_LK_RK", "FLG requires LK or RK", required=["LK", "RK"], trigger=["FLG"], requirement="any", bin="NO_LK_RK")
 
-    if card_has("FLG") and card_lacks("RK3"):
-        raise_cm_error("NO_RK3", "FLG requires RK3", required=["RK3"], trigger=["FLG"], bin="XPT_CHECK")
-
-    if card_has_all("FLG", "JCK", "LCK", "HGK", "TCHK", "RK3") and card_has(["LK", "RK"]) and card_lacks("TK"):
-        raise_cm_error("NO_TK", "TK failed to operate when it should have on FLG",
-                       required=["TK"], trigger=["FLG", "JCK", "LCK", "HGK", "TCHK", "RK3"], context=["LK", "RK"], bin="NO_TK")
-
-    if card_has("SCB") and card_lacks("FAK"):
-        raise_cm_error("NO_FAK", "SCB requires FAK", required=["FAK"], trigger=["SCB"], bin="TLF_NO_FAK")
-
-    if card_has("SCB") and card_lacks("LCK"):
-        raise_cm_error("NO_LCK", "SCB requires LCK", required=["LCK"], trigger=["SCB"], bin="XPT_CHECK")
-
-    if card_has("SCB") and card_lacks("JCK"):
-        raise_cm_error("NO_JCK", "SCB requires JCK", required=["JCK"], trigger=["SCB"], bin="XPT_CHECK")
-
-    if card_has("SCB") and card_lacks("DTK"):
-        raise_cm_error("NO_DTK", "SCB requires DTK", required=["DTK"], trigger=["SCB"], bin="XPT_CHECK")
-
-    if card_has("SCB") and card_lacks("HGK"):
-        raise_cm_error("NO_HGK", "SCB requires HGK", required=["HGK"], trigger=["SCB"], bin="XPT_CHECK")
-
-    if card_has("SCB") and card_lacks("RK3"):
-        raise_cm_error("NO_RK3", "SCB requires RK3", required=["RK3"], trigger=["SCB"], bin="XPT_CHECK")
+    if card_has("FLG", "SCB") and card_lacks("RK3"):
+        raise_cm_error("NO_RK3", "FLG requires RK3", required=["RK3"], trigger=["FLG"], bin="NO_RK3")
 
     if card_has_all("SCB", "FAK", "LFK", "LCK", "JCK", "HGK", "RK3") and card_lacks("TK"):
         raise_cm_error("NO_TK", "TK failed to operate when it should have on SCB linkage",
@@ -1273,8 +1285,15 @@ def cm_check(card):
         raise_cm_error("NO_TK", "TK failed to operate when it should have on FLG linkage",
                        required=["TK"], trigger=["HGK", "JCK", "TCHK", "LCK", "FAK", "FBK"], bin="NO_TK")
 
-    if card_has("TK") and card_lacks("HMS1"):
-        raise_cm_error("NO_HMS1", "TK is punched without HMS1", required=["HMS1"], trigger=["TK"], bin="NO_HMS1")
+    if card_has("SCB") and card_lacks("FAK"):
+        raise_cm_error("NO_FAK", "SCB requires FAK", required=["FAK"], trigger=["SCB"], bin="TLF_NO_FAK")
+
+    if card_has("SCB") and card_lacks("DTK"):
+        raise_cm_error("NO_DTK", "SCB requires DTK", required=["DTK"], trigger=["SCB"], bin="NO_DTK")
+  
+    if card_has("TK") and card_lacks('HMS1'):
+        raise_cm_error("TK_NO_HMS1", "Card has TK, but no HMS1. Marker was unable to operate hold magnets.",
+                        required=["HMS1"], trigger=["TK"], bin="NO_HMS1")
 
     if card_has("HMS1") and card_lacks("DCT1"):
         raise_cm_error("NO_DCT1", "HMS1 is punched without DCT1", required=["DCT1"], trigger=["HMS1"], bin="DCT_FAILURE")
@@ -1314,7 +1333,7 @@ def cm_check(card):
 
     if card_has_all("TM", "CKG") and card_lacks("TK"):
         raise_cm_error("FALLTHROUGH", "TK check fallthrough. Please examine card and create a bin for this",
-                       required=["TK"], trigger=["FLG", "LB"], bin="NO_TK")
+                       required=["TK"], trigger=["TM", "CKG"], bin="NO_TK")
 
     return {"ok": True}
 

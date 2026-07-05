@@ -997,19 +997,20 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'CM0 only.'
     ),
     'JXPA': (
-        'Indicates operation of the LLF junctor switch hold magnet, and continuity of the sleeve lead.\n\n'
+        'Indicates the marker attempted to operate the junctor switch hold magnets.\n\n'
         'CM0 only.'
     ),
     'SL': (
         'Sleeve lead (TLF). Indicates the operation of the trunk switch hold magnet and continuity on the sleeve lead.'
     ),
     'JXP1': (
-        'CM0 or DTM0: Junctor Crosspoints. Indicates the operation of the TLF junctor switch hold magnets.\n\n'
-        'CM1: Channel Selection End. When punched, indicates channel selection not completed.'
+        'CM0 or DTM0: Junctor Crosspoints. Indicates operation of junctor hold magnet and crosspoint continuity.\n\n'
+        'CM1: Channel Selection End. When punched, indicates channel selection failed to complete.'
     ),
     'LXP1': (
-        'Line Crosspoints 1. When punched, indicates its friend, the LXP relay is released. When unpunched, '
-        'indicates that its friend, the LXP relay is operated.'
+        'Line Crosspoints 1. In CM0, punched indicates successful check of LH- lead continuity from marker to TLF to LLF, shunting down '
+        'the (LXP) relay in the marker.\n\n'
+        'In CM1, when punched, it is an indication that line crosspoint check failed.'
     ),
     'GLH': (
         'Ground Line Hold Magnet. The marker started to operate the hold magnet for the line on the LLF.'
@@ -1019,8 +1020,8 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'of the CCT key in the MTC.'
     ),
     'GT2': (
-        'Ground Test 2. Checks the operation of CON1, CON2, SL, and LLC1 and '
-        'the *non operation* of LXP1, LXP, and SP relays.'
+        'Ground Test 2. Checks the operation of CON1, CON2, SL, and LLC1 and the *non-operation* of LXP, and SP relays. Canceled in the museum.\n\n'
+        'When canceled, GT2 is always punched when the marker gets to that stage in CM0, and is never punched in CM1.'
     ),
     'DCT': (
         'Double Connection Test. Double connection did not exist on the selected channel. This is good. '
