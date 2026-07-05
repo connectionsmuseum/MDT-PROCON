@@ -1129,7 +1129,7 @@ def cm_check(card):
     # DR0 only, light traffic JXP1
     if card_has_all("JXPA", "DR0") and card_lacks("JXP1", "HTR"):
         raise_cm_error("NO_JXP1", "Junctor switch hold magnet operated, but marker could not verify continuity.", 
-                        required=["JXP1"], trigger=["JXPA"], bin="NO_JXP1")
+                        required=["JXP1"], trigger=["JXPA", "DR0"], bin="NO_JXP1")
 
     # DR0 only, light traffic GLH
     if card_has_all("JXP1", "DR0") and card_lacks("GLH", "HTR"):
@@ -1138,29 +1138,29 @@ def cm_check(card):
     # DR0 only, light traffic LXPA
     if card_has_all("GLH", "DR0") and card_lacks("LXPA", "HTR"):
         raise_cm_error("NO_LXPA", "The marker attempted to operate the line switch hold magnet, but was unsuccessful.", 
-                        required=["LXPA"], trigger=["GLH"], bin="NO_LXPA")
+                        required=["LXPA"], trigger=["GLH", "DR0"], bin="NO_LXPA")
 
     # DR0 only, light traffic LXP1
     if card_has_all("LXPA", "DR0") and card_lacks("LXP1", "HTR"):
         raise_cm_error("NO_LXP1", "Line switch crosspoints closed, but marker could not verify continuity on LH- lead.", 
-                        required=["LXP1"], trigger=["LXPA"], bin="NO_LXP1")
+                        required=["LXP1"], trigger=["LXPA", "DR0"], bin="NO_LXP1")
 
     # DR0 only, heavy traffic, line
     if card_has_all("HTR", "HMS1", "DR0") and card_lacks("LXPA"):
-        raise_cm_error("NO_LXPA", "Marker could not operate LLF hold magnet", required=["LXPA"], trigger=["HTR", "HMS1"], bin="NO_LXPA")
+        raise_cm_error("NO_LXPA", "Marker could not operate LLF hold magnet", required=["LXPA"], trigger=["HTR", "HMS1", "DR0"], bin="NO_LXPA")
 
     # DR0 only, heavy traffic, junctor
     if card_has_all("HTR", "HMS1", "DR0") and card_lacks("JXPA"):
-        raise_cm_error("NO_JXPA", "Marker could not operate junctor switch hold magnet", required=["JXPA"], trigger=["HTR", "HMS1"], bin="NO_JXPA")
+        raise_cm_error("NO_JXPA", "Marker could not operate junctor switch hold magnet", required=["JXPA"], trigger=["HTR", "HMS1", "DR0"], bin="NO_JXPA")
 
     # DR0 only.
     if card_has_all("SL", "JXP1", "LXP1", "DR0") and card_lacks("GT2") and card_lacks("HTR"):
         raise_cm_error("NO_GT2", "GT2 indicates the operation of GT1. GT1 requires SL, JXP1, CON1, GLH, but not LXP1. "
                         "SFD-10-01-C531",
-                       required=["GT2"], trigger=["SL", "JXP1", "LXP1"], bin="NO_GT2")
+                       required=["GT2"], trigger=["SL", "JXP1", "LXP1", "DR0"], bin="NO_GT2")
 
     if card_has(ch_punches) and card_lacks("HMS1"):
-        raise_cm_error("NO_HMS1", "CH0-9 indicates marker has selected an idle channel, but "
+        raise_cm_error("NO_HMS1", "CH0-9 punched without HMS1 indicates marker has selected an idle channel, but "
                         "could not operate hold magnets.", required=["HMS1"], trigger=ch_punches, bin="NO_HMS1")
 
     if card_has(jc_punches) and card_lacks("JCK"):

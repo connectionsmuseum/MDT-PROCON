@@ -993,24 +993,24 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'Hold Magnet Start 1. Marker initiated the operation of the selected channel hold magnets.'
     ),
     'LXPA': (
-        'Line Crosspoints. Indicates the operation of the line switch hold magnet, and continuity on the sleeve lead.\n\n'
+        'Line Crosspoints Auxiliary. Indicates the marker attempted to operate the line link switch hold magnets.\n\n'
         'CM0 only.'
     ),
     'JXPA': (
-        'Indicates the marker attempted to operate the junctor switch hold magnets.\n\n'
+        'Junctor Crosspoints Auxiliary. Indicates the marker attempted to operate the trunk link junctor switch hold magnets.\n\n'
         'CM0 only.'
     ),
     'SL': (
         'Sleeve lead (TLF). Indicates the operation of the trunk switch hold magnet and continuity on the sleeve lead.'
     ),
     'JXP1': (
-        'CM0 or DTM0: Junctor Crosspoints. Indicates operation of junctor hold magnet and crosspoint continuity.\n\n'
+        'CM0 or DTM0: Junctor Crosspoints. Indicates successful operation of junctor switch hold magnets and continuity on the sleeve lead.\n\n'
         'CM1: Channel Selection End. When punched, indicates channel selection failed to complete.'
     ),
     'LXP1': (
-        'Line Crosspoints 1. In CM0, punched indicates successful check of LH- lead continuity from marker to TLF to LLF, shunting down '
+        'CM0: Indicates successful operation of the line switch hold magnets and check of LH- lead continuity from marker to TLF to LLF, shunting down '
         'the (LXP) relay in the marker.\n\n'
-        'In CM1, when punched, it is an indication that line crosspoint check failed.'
+        'CM1: Is an indication that line crosspoint check failed.'
     ),
     'GLH': (
         'Ground Line Hold Magnet. The marker started to operate the hold magnet for the line on the LLF.'
