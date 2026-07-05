@@ -188,7 +188,7 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     ),
     'SD': (
         'Stations Delay. Pretranslator indicates wait for stations digit with CMA, CMB, CMC, '
-        'or call marker with coin return with CMA.'
+        'or call marker with coin return with CM3.'
     ),
     'PCK': (
         'Pretranslator Connector Check. When punched, PRTC was attached to OR.'
@@ -911,10 +911,10 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'Trunk Block Check. A TB- relay of the selected trunk link connector operated.'
     ),
     'ORK': (
-        'Originating Register Check. Also replaced by RK1 on dial tone calls. '
-        'RK1 indicates that no false ground is present on the calling-line identification '
-        'leads to the OR. ORK indicates that the called number from the OR/IR has been '
-        'properly received and validated.'
+        'CM0 or DTM: ORK indicates that the called number from the OR/IR has been '
+        'properly received and checked. \n\n'
+        'CM1: RK1 indicates that no false ground is present on the calling-line identification '
+        'leads to the OR. '
     ),
     'RK2': (
         'Register Check 2. Indicates that no false battery was detected on the calling line leads from the OR. '
@@ -993,17 +993,19 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'Hold Magnet Start 1. Marker initiated the operation of the selected channel hold magnets.'
     ),
     'LXPA': (
-        'Line Crosspoints. Indicates the operation of the line switch hold magnet, and continuity on the sleeve lead.'
+        'Line Crosspoints. Indicates the operation of the line switch hold magnet, and continuity on the sleeve lead.\n\n'
+        'CM0 only.'
     ),
     'JXPA': (
-        'Indicates operation of the LLF junctor switch hold magnet, and continuity of the sleeve lead.'
+        'Indicates operation of the LLF junctor switch hold magnet, and continuity of the sleeve lead.\n\n'
+        'CM0 only.'
     ),
     'SL': (
         'Sleeve lead (TLF). Indicates the operation of the trunk switch hold magnet and continuity on the sleeve lead.'
     ),
     'JXP1': (
-        'Junctor Crosspoints. Indicates the operation of the TLF junctor switch hold magnets.'
-
+        'CM0 or DTM0: Junctor Crosspoints. Indicates the operation of the TLF junctor switch hold magnets.\n\n'
+        'CM1: Channel Selection End. When punched, indicates channel selection not completed.'
     ),
     'LXP1': (
         'Line Crosspoints 1. When punched, indicates its friend, the LXP relay is released. When unpunched, '

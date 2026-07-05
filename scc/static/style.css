@@ -60,6 +60,7 @@ a:hover {
 }
 
 .card-tooltip-description {
+    white-space: pre-line;
     color: #d7dde3;
     font-size: 0.88rem;
     line-height: 1.35;

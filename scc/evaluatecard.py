@@ -937,9 +937,9 @@ def cm_check(card):
     * If no HMS1 then must not have SL: raise FALSE_SL
     * If no HTR and no HMS1 then must not have JXP1 or LXP1: raise FALSE_JXP1_LXP1
     * If HMS1 then must have SL: raise NO_SL
-    * If JXP1 then must have LXP1: raise NO_LXP1
-    * If SL then must have JXP1: raise NO_JXP1
-    * If SL and JXP1 and LXP1 then must have GT2: raise NO_GT2
+    * If JXP1 then must have LXP1: raise NO_LXP1. Ignore if DR1.
+    * If SL then must have JXP1: raise NO_JXP1. Ignore if DR1 or if HTR punched (test canceled).
+    * If SL and JXP1 and LXP1 then must have GT2: raise NO_GT2. Ignore if DR1.
     * If CH0-9 then must have HMS1: raise NO_HMS1
     * If JC0-9 then must have JCK: raise NO_JCK
     * If not TER and any of P0-9, PNR, PA, PB, PC, PE are present then must have TCHK: raise NO_TCHK
@@ -1127,13 +1127,13 @@ def cm_check(card):
     if card_has("HMS1") and card_lacks("SL"):
         raise_cm_error("NO_SL", "Trunk link crosspoints not closed.", required=["SL"], trigger=["HMS1"], bin="XPT_CHECK")
 
-    if card_has("JXP1") and card_lacks("LXP1"):
+    if card_has("JXP1") and card_lacks("LXP1") and card_lacks("DR1"):
         raise_cm_error("NO_LXP1", "Line link crosspoints not closed.", required=["LXP1"], trigger=["JXP1"], bin="XPT_CHECK")
 
-    if card_has("SL") and card_lacks("JXP1"):
+    if card_has("SL") and card_lacks("JXP1") and card_lacks("DR1"):
         raise_cm_error("NO_JXP1", "Junctor crosspoints not closed.", required=["JXP1"], trigger=["SL"], bin="XPT_CHECK")
 
-    if card_has_all("SL", "JXP1", "LXP1") and card_lacks("GT2"):
+    if card_has_all("SL", "JXP1", "LXP1") and card_lacks("GT2") and card_lacks("DR1", "HTR"):
         raise_cm_error("NO_GT2", "GT2 indicates the operation of GT1. GT1 requires SL, JXP1, CON1, GLH, but not LXP1. "
                         "SFD-10-01-C531",
                        required=["GT2"], trigger=["SL", "JXP1", "LXP1"], bin="XPT_CHECK")
