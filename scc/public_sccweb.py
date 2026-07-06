@@ -6,6 +6,7 @@ import os
 import json
 from datetime import datetime
 import cardmap
+import evaluatecard as ec
 import punch_descriptions
 import card_storage
 
@@ -200,6 +201,17 @@ def _get_bins():
     return bins
 
 
+def _get_available_bins(observed_bins=None):
+    """Return sorted bin names from evaluator definitions and observed card bins."""
+    available_bins = set(observed_bins or [])
+    try:
+        available_bins.update(ec.list_defined_bins())
+    except Exception:
+        # Keep the bins page usable even if evaluator bin discovery fails.
+        pass
+    return sorted(available_bins)
+
+
 @app.route('/eat_json', methods=['POST'])
 # Accepts a JSON representation of a card (same format as ``cardpack/cardout_sample.json``)
 def yumyum():
@@ -309,7 +321,8 @@ def get_cardnames():
 def view_bins():
     """Render an HTML report of all bins and their contents."""
     bins = _get_bins()
-    return render_template('bins.html', bins=bins)
+    available_bins = _get_available_bins(bins.keys())
+    return render_template('bins.html', bins=bins, available_bins=available_bins)
 
 def _load_card_metadata(name):
     """Load saved card JSON (card + metadata) by JPG name, JSON name, or base."""

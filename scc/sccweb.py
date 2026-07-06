@@ -132,6 +132,17 @@ def _get_bins():
     return bins
 
 
+def _get_available_bins(observed_bins=None):
+    """Return sorted bin names from evaluator definitions and observed card bins."""
+    available_bins = set(observed_bins or [])
+    try:
+        available_bins.update(ec.list_defined_bins())
+    except Exception:
+        # Keep the bins page usable even if evaluator bin discovery fails.
+        pass
+    return sorted(available_bins)
+
+
 def _get_offsets():
     """Magic numbers to align the holes on the card image"""
     global _offsets
@@ -419,7 +430,8 @@ def get_cardnames():
 def view_bins():
     """Render an HTML report of all bins and their contents."""
     bins = _get_bins()
-    return render_template('bins.html', bins=bins)
+    available_bins = _get_available_bins(bins.keys())
+    return render_template('bins.html', bins=bins, available_bins=available_bins)
 
 
 @app.route('/cardmeta/<name>', methods=['GET'])

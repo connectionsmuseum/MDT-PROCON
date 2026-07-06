@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import cardmap as cm
 import punch_descriptions as pd
+import re
 
 
 # Calling-line locations represented as AA-BB-CC and mapped to ORLM fields:
@@ -24,6 +25,27 @@ CALL_SIM_LINES = (
     "30-01-32",
     "30-02-24",
 )
+
+_BIN_NAME_PATTERN = re.compile(r"(?:set_bin_if_unbinned\(|bin\s*=)\s*['\"]([^'\"]+)['\"]")
+
+
+def list_defined_bins():
+    """Return sorted bin names explicitly assigned in this module.
+
+    This inspects evaluatecard source for values passed to ``set_bin_if_unbinned``
+    and ``bin=...`` keyword assignments used by error metadata.
+    """
+    bins = set()
+    with open(__file__, encoding='utf-8') as source_file:
+        source = source_file.read()
+
+    for match in _BIN_NAME_PATTERN.finditer(source):
+        bin_name = match.group(1).strip()
+        if bin_name:
+            bins.add(bin_name)
+
+    bins.add('unbinned')
+    return sorted(bins)
 
 # ---------------------------------------------------------------------------
 # these are used to generate card metadata
