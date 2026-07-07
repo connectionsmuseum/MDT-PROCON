@@ -341,6 +341,9 @@ def single_card(name):
     """Render a card view page, drawing the card from stored JSON data."""
     data = _load_card_metadata(name)
     orig_x, orig_y, off_x, off_y, _t_start_x, _t_start_y = get_offsets()
+    og_title = 'unknown'
+    if isinstance(data, dict):
+        og_title = str(data.get('metadata', {}).get('bin') or 'unknown')
 
     # Determine prev/next card by time (filename sort order)
     requested = _card_url_name(name)
@@ -358,12 +361,14 @@ def single_card(name):
                                card_data_json='null',
                                pretty_json=pretty_json,
                                prev_card=prev_card, next_card=next_card,
+                               og_title=og_title,
                                orig_x=orig_x, orig_y=orig_y,
                                off_x=off_x, off_y=off_y), 404
     return render_template('card_view.html', card_name=name,
                            card_data_json=json.dumps(data),
                            pretty_json=pretty_json,
                            prev_card=prev_card, next_card=next_card,
+                           og_title=og_title,
                            orig_x=orig_x, orig_y=orig_y,
                            off_x=off_x, off_y=off_y)
 
