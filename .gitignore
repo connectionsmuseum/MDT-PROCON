@@ -9,3 +9,4 @@ scc/pyvenv.cfg
 .pycache__/
 __pycache__/
 scc/gconfig.py
+.vscode/
