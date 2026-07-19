@@ -1111,6 +1111,10 @@ def cm_check(card):
         raise_cm_error("NO_RSK", "No ringing switch select magnet has operated. Check RS- punches",
                        required=["RSK"], trigger=rct_punches, bin="NO_RSK")
 
+    if card_has_all("FLG", "RSK") and card_lacks("SRK"):
+        raise_cm_error("NO_SRK", "Possible continuity issue on the RC lead to the trunk.",
+                       required=["SRK"], trigger=["FLG", "RSK"], bin="NO_SRK")
+
     if card_has_all("TER", "BY") and card_lacks("RS1"):
         raise_cm_error("BY_NO_RS1", "Horizontal 1 in the Ringing Selection Switch failed to operate",
                        required=["RS1"], trigger=["TER", "BY"], bin="BY_NO_RS1")
@@ -1119,17 +1123,45 @@ def cm_check(card):
         raise_cm_error("OV_NO_RS0", "Horizontal 0 in the Ringing Selection Switch failed to operate",
                        required=["RS0"], trigger=["TER", "OV"], bin="OV_NO_RS0")
 
-    if card_has_all("FLG", "SRK") and card_lacks("RCK2"):
+    if card_has_all("FLG", "HGK", "SRK") or card_has_all("FLG", "LB", "SRK") and card_lacks("RCK2"):
         raise_cm_error("NO_RCK2", "No RCK2. Looks like the ringing selection switch crosspoints didn't close...",
-                       required=["RCK2"], trigger=["FLG", "SRK"], bin="RSS_CHECK")
+                       required=["RCK2"], trigger=["FLG", "HGK", "LB", "SRK"], bin="RSS_CHECK")
 
-    if card_has_all("FLG", "RCK2") and card_lacks("RCK3"):
+    if card_has_all("FLG", "HGK", "RCK2") or card_has_all("FLG", "LB", "RCK2") and card_lacks("RCK3"):
         raise_cm_error("NO_RCK3", "TER with RCK2 requires RCK3",
-                       required=["RCK3"], trigger=["FLG", "RCK2"], bin="RSS_CHECK")
+                       required=["RCK3"], trigger=["FLG", "HGK", "LB", "RCK2"], bin="RSS_CHECK")
 
-    if card_has_all("FLG", "RSK") and card_lacks("SRK"):
-        raise_cm_error("NO_SRK", "Possible continuity issue on the RC lead to the trunk.",
-                       required=["SRK"], trigger=["FLG", "RSK"], bin="RSS_CHECK")
+     # --- LLF Checks ---
+    if card_lacks("LB") and card_has_all('VTK1', 'HTK1', 'FTK1') and card_lacks("LFK"):
+         raise_cm_error("NO_LFK", "Line location has been registered from the NG, but no LLF seizure took place",
+                        required=["LFK"], trigger=["VTK1", "HTK1", "FTK1"], bin="NO_LLF_SEIZURE")
+
+    # --- TLF checks ---
+    if card_has(lv_punches) and card_lacks("FAK", "FBK"):
+        raise_cm_error("NO_FAK_FBK", "LV2-9 requires FAK or FBK",
+                       required=["FAK", "FBK"], trigger=lv_punches, requirement="any", bin="NO_FAK_FBK")
+
+    if card_has(fut_punches + jg_0_4_punches):
+        lk_rk_found = found(["LK", "RK"])
+        if len(lk_rk_found) != 0 and len(lk_rk_found) != 1:
+            raise_cm_error("LK_RK_CONFLICT", "FUT-/JG- requires zero or one (but not both) of LK or RK",
+                           required=["LK", "RK"], trigger=fut_punches + jg_0_4_punches,
+                           context=["LK", "RK"], requirement="exactly_one", bin="LK_RK_CONFLICT")
+
+    if card_lacks("TER") and card_has("MAK1") and found_count(ts_punches) != 1:
+        raise_cm_error("NO_TS", "Missing TS punch. Should have that by now.",
+                       trigger=["MAK1"], context=ts_punches, requirement="exactly_one", bin="INV_TS")
+
+    if card_has(ts_punches) and found_count(lv_punches) != 1:
+        raise_cm_error("NO_LV", "No LV- relay operated in the TLF. Should have one of LV2-9",
+                       trigger=ts_punches, context=lv_punches, requirement="exactly_one", bin="INV_LV")
+
+    if card_has(lv_punches) and found_count(lc_punches) != 1:
+        raise_cm_error("NO_LC", "No LC- relay operated in the TLF. Should have one of LC0-9",
+                       trigger=lv_punches, context=lc_punches, requirement="exactly_one", bin="INV_LC")
+
+    if card_has(lc_punches) and card_lacks("LCK"):
+        raise_cm_error("NO_LCK", "LCK not punched. LC- operate check failed.", required=["LCK"], trigger=lc_punches, bin="NO_LCK")
 
     # --- Crosspoint checks ---
     if card_has("SL") and card_lacks("HMS1"):
@@ -1223,38 +1255,6 @@ def cm_check(card):
     if (card_has_all("SCB", "DCT1", "LK1") or card_has("DCT2", "LK1")) and card_lacks("DIS1"):
         raise_cm_error("NO_DIS1", "DCT/LK combination requires DIS1",
                        required=["DIS1"], trigger=["SCB", "DCT1", "DCT2", "LK1"], bin="NO_DIS1")
-
-    # --- TLF checks ---
-    if card_has(lv_punches) and card_lacks("FAK", "FBK"):
-        raise_cm_error("NO_FAK_FBK", "LV2-9 requires FAK or FBK",
-                       required=["FAK", "FBK"], trigger=lv_punches, requirement="any", bin="NO_FAK_FBK")
-
-    if card_has(fut_punches + jg_0_4_punches):
-        lk_rk_found = found(["LK", "RK"])
-        if len(lk_rk_found) != 0 and len(lk_rk_found) != 1:
-            raise_cm_error("LK_RK_CONFLICT", "FUT-/JG- requires zero or one (but not both) of LK or RK",
-                           required=["LK", "RK"], trigger=fut_punches + jg_0_4_punches,
-                           context=["LK", "RK"], requirement="exactly_one", bin="LK_RK_CONFLICT")
-
-    if card_lacks("TER") and card_has("MAK1") and found_count(ts_punches) != 1:
-        raise_cm_error("NO_TS", "Missing TS punch. Should have that at this point in the call.",
-                       trigger=["MAK1"], context=ts_punches, requirement="exactly_one", bin="INV_TS")
-
-    if card_has(ts_punches) and found_count(lv_punches) != 1:
-        raise_cm_error("NO_LV", "No LV- relay operated in the TLF. Should have one of LV2-9",
-                       trigger=ts_punches, context=lv_punches, requirement="exactly_one", bin="INV_LV")
-
-    if card_has(lv_punches) and found_count(lc_punches) != 1:
-        raise_cm_error("NO_LC", "No LC- relay operated in the TLF. Should have one of LC0-9",
-                       trigger=lv_punches, context=lc_punches, requirement="exactly_one", bin="INV_LC")
-
-    if card_has(lc_punches) and card_lacks("LCK"):
-        raise_cm_error("NO_LCK", "LCK not punched. LC- operate check failed.", required=["LCK"], trigger=lc_punches, bin="NO_LCK")
-
-     # --- LLF Checks ---
-    if card_lacks("LB") and card_has_all('VTK1', 'HTK1', 'FTK1') and card_lacks("LFK"):
-         raise_cm_error("NO_LFK", "Line location has been registered from the NG, but no LLF seizure took place",
-                        required=["LFK"], trigger=["VTK1", "HTK1", "FTK1"], bin="NO_LLF_SEIZURE")
 
     # --- Outgoing calls with sender ---
     if card_has(osg_punches) and card_lacks("SOG"):

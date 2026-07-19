@@ -63,17 +63,17 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'There will be no further attempts after this.'
     ),
     'WT': (
-        'Work Timer expired. This usually indicates that the marker timed out while '
-        'trying to complete an internal function or functions.'
+        'Work Timer expired. This indicates that the marker timed out while '
+        'trying to complete an internal function. \nSee CD-25550-01 p. 397'
     ),
     'SDT': (
         'Short Delay Timer expired. This indicates that the marker timed out while '
-        'trying to seize a line link, trunk link, sender group, or number group.'
+        'trying to seize a line link, trunk link, sender group, or number group. \nSee CD-25550-01 p. 398'
     ),
     'LDT': (
         'Long Delay Timer expired. This timer supersedes the SDT when the marker has '
         'encountered trouble but was waiting on another marker to complete '
-        'its trouble record.'
+        'its trouble record. \nSee CD-25550-01 p. 401'
     ),
     'TRS': (
         'Transfer Start Lead. This indicates a possible issue in the marker '
@@ -81,7 +81,8 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     ),
     'TGT': (
         'Trunk Guard Test. The outgoing sender failed to complete its trunk guard (TG) '
-        'test in the allotted time. This may indicate a problem with the outgoing trunk.'
+        'test in the allotted time. This may indicate a problem with the outgoing trunk.\n\n'
+        'TGT can cause an SDT timeout if punched.'
     ),
     'FCG': (
         'False Cross or Ground. The marker FCG relay operated due to trouble on tip '
@@ -861,7 +862,7 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'VF\'2': 'Vertical File 2. The vertical file as registered in the sender.',
     'VF\'3': 'Vertical File 3. The vertical file as registered in the sender.',
     'VF\'4': 'Vertical File 4. The vertical file as registered in the sender.',
-    'TM': 'Timing. The timing lead has been grounded by the marker connector.',
+    'TM': 'Timing. The timing start lead has been grounded by the marker connector, and the marker is now off-normal.',
     'CKG': (
         'Checking Ground is closed from marker connector relays to provide '
         'off-normal grounds and remove certain standing tests.'
@@ -892,20 +893,22 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     ),
     'FTCK': (
         'Frame Test Check. Trunk link frames have been tested for the presence of an idle trunk '
-        'for the selected route, and at least one frame has an idle route available.'
+        'for the selected route, and at least one frame has an idle route available.\n\n'
+        'FTCK starts the SDT timer interval for CK.'
     ),
     'SNK': (
         'Selections Normal Check. Releases on a Recycle call when the marker has cleared '
         'the information used in its previous attempt. If not a recycle, this punch doesn\'t matter.'
     ),
-    'CK': 'Marker preference (MP or E) relay on the selected trunk link frame operated.',
+    'CK': 'Marker preference (MP or E) relay on the selected trunk link frame operated.\n\n'
+            'Stops the SDT timer interval started by FTCK.',
     'FML': (
         'Frame Memory Lock relay in the marker operated to insure a different trunk link frame '
         'is selected on the next call. Ineffective at museum.'
     ),
     'MAK1': (
         'Marker Connector Cut-In Check. Both halves of the MCA relay operated in the selected '
-        'Trunk Link Connector (TLC).'
+        'Trunk Link Connector (TLC). \n\nMAK1 starts the SDT timer interval for LFK or SNG.'
     ),
     'TBK': (
         'Trunk Block Check. A TB- relay of the selected trunk link connector operated.'
@@ -933,9 +936,9 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'Vertical File Test Check. When punched, indicates that only one of the VFT0-4 relays is locked operated for '
         'vertical file selection. VF- selection is valid.'
     ),
-    'LFK1': (
+    'LFK': (
         'Line Link Frame Check. Indicates that the associated Marker Cut In (MCA) relay has operated in the selected '
-        'line link frame (LLF).'
+        'line link frame (LLF). \n\nLFK stops the MAK1 SDT cycle when operated.'
     ),
     'DTK': (
         'Dial Tone Check. Used only by the dial tone marker (DTM). Indicates that the DT relay in the associated '
@@ -1990,6 +1993,9 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'STP2': (
         'Junctor Step 2. The marker made another test of the junctor subgroup, as all were busy on the first attempt.'
     ),
+    'PAN': '🥘',
+    'RIP': '🪦',
+    'BLT': '🥪',
     'NGCT0': 'Number group connector tens digit 0.',
     'NGCT1': 'Number group connector tens digit 1,',
     'NGCT2': 'Number group connector tens digit 2.',
@@ -2035,7 +2041,10 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'U8': 'The marker applied battery to the U8 relay in the number group.',
     'U9': 'The marker applied battery to the U9 relay in the number group.',
     'SNG': 'The marker is attempting to Seize the Number Group.',
-    'NGK': 'Number Group Check. The marker has seized the number group and operated its MCA relay.',
+    'NGK': (
+        'Number Group Check. The marker has seized the number group and operated its MCA relay\n\n'
+        'NGK stops the SDT timer started by MAK1 on TER or ITR calls.'
+    ),
     'NGK1': 'Number Group Check Auxiliary. Battery has been supplied to the F, L, and G leads to the NG.',
     'UK': 'Units Check. The U- (units) relay in the number group operated.',
     'HTUK': 'Satisfactory operation of the Hundreds, Tens, and Units relays in the number group.',
