@@ -83,7 +83,8 @@
                     <option value="last-hour">Last hour</option>
                     <option value="today">Today</option>
                     <option value="yesterday">Yesterday</option>
-                    <option value="this-week">This week</option>
+                    <option value="7-days">Last 7 days</option>
+                    <option value="last-30-days">Last 30 days</option>
                     <option value="all" selected>All</option>
                 </select>
                 <label for="sort-mode-filter">Sort cards by:</label>
@@ -161,12 +162,9 @@
                     return startOfDay;
                 }
 
-                function getStartOfWeek(now) {
-                    var start = new Date(now);
-                    var day = start.getDay();
-                    var diffToSunday = day;
-                    start.setHours(0, 0, 0, 0);
-                    start.setDate(start.getDate() - diffToSunday);
+                function getStartOfRollingDays(now, days) {
+                    var start = getStartOfDay(now);
+                    start.setDate(start.getDate() - (days - 1));
                     return start;
                 }
 
@@ -185,8 +183,11 @@
                         startOfDay.setHours(0, 0, 0, 0);
                         return startOfDay;
                     }
-                    if (filter === 'this-week') {
-                        return getStartOfWeek(now);
+                    if (filter === '7-days') {
+                        return getStartOfRollingDays(now, 7);
+                    }
+                    if (filter === 'last-30-days') {
+                        return getStartOfRollingDays(now, 30);
                     }
                     return null;
                 }
@@ -351,6 +352,9 @@
                 if (filterSelect && sortSelect) {
                     try {
                         var savedFilter = localStorage.getItem(FILTER_STORAGE_KEY);
+                        if (savedFilter === 'this-week') {
+                            savedFilter = '7-days';
+                        }
                         if (savedFilter && filterSelect.querySelector('option[value="' + savedFilter + '"]')) {
                             filterSelect.value = savedFilter;
                         }
