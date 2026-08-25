@@ -620,7 +620,7 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'M\'7': 'The M-digit passed to the outsender, or the M digit registered in the monitor. Not used at museum.',
     'GS1': (
            'Ground Supply 1. The marker has advanced to Ground Supply 3, since it was unable to establish '
-           'a route for the call in GS1. GS3 contains route relays 10-19. '
+           'a route for the call in GS1. GS3 contains route relays 20-29. '
            'Ground Supply 3 is used for second-choice routes when the marker is unable to establish a connection using '
            'a first choice route. Routes here include Kercheep, and any primary route that does not have its '
            'own alternate.'
@@ -914,10 +914,12 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'Trunk Block Check. A TB- relay of the selected trunk link connector operated.'
     ),
     'ORK': (
-        'CM0 or DTM: ORK indicates that the called number from the OR/IR has been '
+        'CM0: ORK indicates that the called number from the OR/IR has been '
         'properly received and checked. \n\n'
         'CM1: RK1 indicates that no false ground is present on the calling-line identification '
-        'leads to the OR. '
+        'leads from the OR\n\n'
+        'DTM: RK1 indicates that the line identification and the class information of the calling customer has been '
+        'transferred to the originating register.'
     ),
     'RK2': (
         'Register Check 2. Indicates that no false battery was detected on the calling line leads from the OR. '
@@ -1013,7 +1015,7 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'LXP1': (
         'CM0: Indicates successful operation of the line switch hold magnets and check of LH- lead continuity from marker to TLF to LLF, shunting down '
         'the (LXP) relay in the marker.\n\n'
-        'CM1: Is an indication that line crosspoint check failed.'
+        'CM1: Is an indication that line crosspoint check failed, or has not yet begun.'
     ),
     'GLH': (
         'Ground Line Hold Magnet. The marker started to operate the hold magnet for the line on the LLF.'
@@ -1505,125 +1507,125 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'Ringing Control Test 15. The marker RCT- relay operated from the number group to control '
         'the ringing of the called line.'
     ),
-    'CS0': (
+    'CS00': (
         'Class of Service 0. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test. CS00 is a coin line.'
     ),
-    'CS1': (
+    'CS01': (
         'Class of Service 1. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test. CS01 is a flat rate line.'
     ),
-    'CS2': (
+    'CS02': (
         'Class of Service 2. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
-    'CS3': (
+    'CS03': (
         'Class of Service 3. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
-    'CS4': (
+    'CS04': (
         'Class of Service 4. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
-    'CS5': (
+    'CS05': (
         'Class of Service 5. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
-    'CS6': (
+    'CS06': (
         'Class of Service 6. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
-    'CS7': (
+    'CS07': (
         'Class of Service 7. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
-    'CS8': (
+    'CS08': (
         'Class of Service 8. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
-    'CS9': (
+    'CS09': (
         'Class of Service 9. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
     'CS10' :(
         'Class of Service 10. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
     'CS11': (
         'Class of Service 11. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
     'CS12': (
         'Class of Service 12. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
     'CS13': (
         'Class of Service 13. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
     'CS14': (
         'Class of Service 14. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
     'CS15': (
         'Class of Service 15. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
     'CS16': (
         'Class of Service 16. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
     'CS17': (
         'Class of Service 17. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
     'CS18': (
         'Class of Service 18. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
     'CS19': (
         'Class of Service 19. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
     'CS20': (
         'Class of Service 20. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
     'CS21': (
         'Class of Service 21. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
     'CS22': (
         'Class of Service 22. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
     'CS23': (
         'Class of Service 23. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
     'CS24': (
         'Class of Service 24. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
     'CS25': (
         'Class of Service 25. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
     'CS26': (
         'Class of Service 26. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
     'CS27': (
         'Class of Service 27. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
     'CS28': (
         'Class of Service 28. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
     'CS29': (
         'Class of Service 29. Class of service of the calling line on a dial tone connection, '
-        'or class of service of a called coin ground start line on a terminating connection.'
+        'or class of service on a verified line on a Line Verification test.'
     ),
     'TB0': (
         'Trunk Block 0. Part of the process of trunk selection. Operated by the chosen route relay '

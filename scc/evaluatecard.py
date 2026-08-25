@@ -74,16 +74,245 @@ def trial_getmeta(card):
 
     return next((n for n in names if card_has(n)), None)
 
-def timer_getmeta(card):
+def timer_check(card):
     '''
-    Evaluates which timer expired, if any.
+    Evaluate timer punches and, for SDT, diagnose likely missing punch by call type.
 
-    returns that punch if true
+    Returns:
+      None when no timer punch is present.
+      dict metadata otherwise:
+        {
+            "timer": str,
+            "detected": list[str],
+            "sdt"|"wt"|"ldt"|"tgt"|"trs": dict,
+        }
     '''
+    cm.set_current_card(card)
     print('>>> evaluating marker timers...')
-    names = (['WT', 'SDT', 'LDT', 'TRS'])
+    timer_names = ['WT', 'SDT', 'LDT', 'TGT', 'TRS']
+    detected = [n for n in timer_names if card_has(n)]
+    if not detected:
+        return None
 
-    return next((n for n in names if card_has(n)), None)
+    timer = detected[0]
+    result = {
+        "timer": timer,
+        "detected": detected,
+    }
+
+    def raise_timer_error(code, message, required=None, trigger=None, context=None, requirement="all", bin="yellow"):
+        required = list(required or [])
+        trigger = list(trigger or [])
+        context = list(context or [])
+        checked = []
+        for name in trigger + required + context:
+            if name not in checked:
+                checked.append(name)
+        details = {
+            "timer": timer,
+            "required": required,
+            "found": [name for name in checked if card_has(name)],
+            "missing": [name for name in required if card_lacks(name)],
+        }
+        if trigger:
+            details["triggered_by"] = [name for name in trigger if card_has(name)]
+        if context:
+            details["context"] = [name for name in context if card_has(name)]
+        if requirement != "all":
+            details["requirement"] = requirement
+        raise TimerCheckError(message, code=code, details=details, bin=bin)
+
+    if timer != 'SDT':
+        result[timer.lower()] = {
+            "implemented": False,
+            "reason": f"{timer} timer-specific evaluation rules not implemented yet",
+        }
+        return result
+
+    osg_punches = [f'OSG{i}' for i in range(12)]
+    fs_punches = [f'FS{i}' for i in range(30)]
+
+    timer_meta = {
+        "call_type": "unknown",
+        "matched_rules": [],
+        "failing_rule": None,
+        "reason": "unknown",
+    }
+
+    def check_rule(code, when, required=None, requirement="all", reason="", force_fail=False):
+        """Evaluate one rule and capture normalized metadata for diagnostics."""
+        if not when:
+            return
+
+        required = required or []
+        present = [name for name in required if card_has(name)]
+
+        if force_fail:
+            ok = False
+        elif requirement == "any":
+            ok = bool(present)
+        else:
+            ok = len(present) == len(required)
+
+        rule_meta = {
+            "code": code,
+            "required": required,
+            "present": present,
+            "missing": [name for name in required if name not in present],
+            "requirement": requirement,
+            "ok": ok,
+            "reason": reason,
+        }
+        timer_meta["matched_rules"].append(rule_meta)
+
+        if not ok and timer_meta["failing_rule"] is None:
+            timer_meta["failing_rule"] = rule_meta
+            timer_meta["reason"] = reason
+
+    # Branch by call type before checking specific expected punches.
+    if card_has('DR8'):
+        timer_meta["call_type"] = "Dial Tone"
+        check_rule(
+            "DR8_FTCK_REQUIRES_CK",
+            when=card_has('FTCK'),
+            required=['CK'],
+            reason="Short timer expired while waiting for CK",
+        )
+        check_rule(
+            "DR8_MAK1_REQUIRES_LFK",
+            when=card_has('MAK1'),
+            required=['LFK'],
+            reason="Short timer expired while waiting for LFK",
+        )
+    elif card_has('SOG'):
+        timer_meta["call_type"] = "Subscriber Outgoing"
+        check_rule(
+            "SOG_OSG_REQUIRES_OSK",
+            when=card_has(osg_punches),
+            required=['OSK'],
+            reason="Short timer expired while attaching sender",
+        )
+        check_rule(
+            "SOG_FTCK_REQUIRES_FS",
+            when=card_has('FTCK'),
+            required=fs_punches,
+            requirement="any",
+            reason="Short timer expired while seizing TLF",
+        )
+        check_rule(
+            "SOG_MAK1_REQUIRES_LFK",
+            when=card_has('MAK1'),
+            required=['LFK'],
+            reason="Short timer expired while seizing LLF",
+        )
+        check_rule(
+            "SOG_TGT_TIMEOUT",
+            when=card_has('TGT'),
+            required=[],
+            reason="Sender failed to complete trunk guard test in allotted time",
+            force_fail=True,
+        )
+    elif card_has('TER'):
+        timer_meta["call_type"] = "Terminating"
+        check_rule(
+            "TER_REQUIRES_CK",
+            when=True,
+            required=['CK'],
+            reason="Short timer expired while seizing TLF",
+        )
+        check_rule(
+            "TER_MAK1_SNG_REQUIRES_NGK",
+            when=card_has_all('MAK1', 'SNG'),
+            required=['NGK'],
+            reason="Short timer expired while seizing number group",
+        )
+        check_rule(
+            "TER_RNG_REQUIRES_LFK",
+            when=card_has('RNG'),
+            required=['LFK'],
+            reason="Short timer expired while seizing LLF",
+        )
+    elif card_has('ITR'):
+        timer_meta["call_type"] = "Intraoffice"
+        check_rule(
+            "ITR_FLG_FTCK_REQUIRES_FS",
+            when=card_has_all('FLG', 'FTCK'),
+            required=fs_punches,
+            requirement="any",
+            reason="Short timer expired while seizing TLF",
+        )
+        check_rule(
+            "ITR_FLG_MAK1_REQUIRES_NGK",
+            when=card_has_all('FLG', 'MAK1'),
+            required=['NGK'],
+            reason="Short timer expired while working with number group",
+        )
+        check_rule(
+            "ITR_MAK1_NO_SNG_REQUIRES_LFK",
+            when=card_has('MAK1') and card_lacks('SNG'),
+            required=['LFK'],
+            reason="Short timer expired because of delay in LLF seizure",
+        )
+        check_rule(
+            "ITR_SCB_OSG_REQUIRES_OSK",
+            when=card_has('SCB') and card_has(osg_punches),
+            required=['OSK'],
+            reason="Short timer expired while attaching sender on SCB",
+        )
+        check_rule(
+            "ITR_SCB_MAK1_NO_SNG_REQUIRES_LFK",
+            when=card_has_all('SCB', 'MAK1') and card_lacks('SNG'),
+            required=['LFK'],
+            reason="Short timer expired because of delay in LLF seizure",
+        )
+    elif card_has('TOG'):
+        timer_meta["call_type"] = "Tandem Outgoing"
+        check_rule(
+            "TOG_OSG_REQUIRES_OSK",
+            when=card_has(osg_punches),
+            required=['OSK'],
+            reason="Short timer expired while attaching sender",
+        )
+        check_rule(
+            "TOG_FTCK_REQUIRES_FS",
+            when=card_has('FTCK'),
+            required=fs_punches,
+            requirement="any",
+            reason="Short timer expired while seizing TLF",
+        )
+        check_rule(
+            "TOG_MAK1_REQUIRES_NGK",
+            when=card_has('MAK1'),
+            required=['NGK'],
+            reason="Short timer expired while working with number group",
+        )
+        check_rule(
+            "TOG_MAK1_NO_SNG_REQUIRES_LFK",
+            when=card_has('MAK1') and card_lacks('SNG'),
+            required=['LFK'],
+            reason="Short timer expired because of delay in LLF seizure",
+        )
+
+    if timer_meta["failing_rule"] is not None:
+        failing_rule = timer_meta["failing_rule"]
+        raise_timer_error(
+            failing_rule["code"],
+            failing_rule["reason"],
+            required=failing_rule["required"],
+            trigger=[timer],
+            context=failing_rule.get("missing", []),
+            requirement=failing_rule["requirement"],
+            bin="SDT_FAILURE",
+        )
+
+    if timer_meta["failing_rule"] is None:
+        if timer_meta["matched_rules"]:
+            timer_meta["reason"] = "no missing required punches detected"
+        else:
+            timer_meta["reason"] = "unknown"
+
+    result["sdt"] = timer_meta
+    return result
 
 def channel_getmeta(card):
     '''
@@ -1383,7 +1612,7 @@ def evaluate(card):
         "ground_supply": ground_supply_getmeta(card),
         "trial": trial_getmeta(card),
         "orlm": {},
-        "timer": timer_getmeta(card),
+        "timer": None,
         "status_flag": status_flag_getmeta(card),
         "line_verification": None,                                      # checked and binned below
         "register": {"number": None, "digits": None, "reg_kind": None, "IR_kind": None}, # checked and binned below
@@ -1502,6 +1731,17 @@ def evaluate(card):
         meta["cm_check"] = cm_check_result
     except CMCheckError as exc:
         meta["cm_check"] = {
+            "error": str(exc),
+            "code": exc.code,
+            "details": exc.details,
+        }
+        set_bin_if_unbinned(exc.bin)
+
+    try:
+        timer_result = timer_check(card)
+        meta["timer"] = timer_result
+    except TimerCheckError as exc:
+        meta["timer"] = {
             "error": str(exc),
             "code": exc.code,
             "details": exc.details,
@@ -1680,6 +1920,15 @@ class NumberGroupCheckError(ValueError):
 
     def __init__(self, message, details=None, bin=None):
         super().__init__(message)
+        self.details = details or {}
+        self.bin = bin
+
+class TimerCheckError(ValueError):
+    """Raised when :func:`timer_check` detects an invalid timer state."""
+
+    def __init__(self, message, code=None, details=None, bin=None):
+        super().__init__(message)
+        self.code = code
         self.details = details or {}
         self.bin = bin
 
