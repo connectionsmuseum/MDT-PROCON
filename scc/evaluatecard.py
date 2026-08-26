@@ -1239,7 +1239,7 @@ def cm_check(card):
     # Number group registration checks
     * If SNG then must have NGK: raise NO_NGK
     * If NGK then must have HTUK: raise NO_HTUK
-    * If HTUK and WT: raise WT_WHILE_IN_NG
+    * If HTUK and WT and no RNG: raise SNG_NO_RNG
     * If FLG and SNG then must have RNG: raise SNG_NO_RNG
 
     # TER calls
@@ -1392,9 +1392,9 @@ def cm_check(card):
         raise_cm_error("NO_HTUK", "number group seized, but one or more H T U relays failed to operate",
                         required=["HTUK"], trigger=["NGK"], bin="NG_FAILURE")
 
-    if card_has_all("HTUK", "WT"):
-        raise_cm_error("WT_WHILE_IN_NG", "WT timed out while recording called line information from number group",
-                        trigger=["HTUK", "WT"], bin="NG_FAILURE")
+    if card_has_all("HTUK", "WT") and card_lacks("RNG"):
+        raise_cm_error("SNG_NO_RNG", "HTUK but no RNG. Possibly missing FTT, FUT in number group.",
+                       required=["RNG"], trigger=["HTUK", "WT"], bin="NG_FAILURE")
 
     if card_has_all("FLG", "SNG") and card_lacks("RNG"):
         raise_cm_error("SNG_NO_RNG", "Number group has been seized but not release. Possible translation failure.",
