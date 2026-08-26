@@ -74,9 +74,27 @@ def trial_getmeta(card):
 
     return next((n for n in names if card_has(n)), None)
 
+def call_type_getmeta(card):
+    cm.set_current_card(card)
+    print(">>> evaluating call type...")
+
+    if card_has_all('ITR', 'FLG'):
+        return "Intraoffice Forward Linkage"
+    if card_has_all('ITR', 'SCB'):
+        return "Intraoffice Callback Linkage"
+    if card_has('DR8'):
+        return "Dial Tone"
+    if card_has('SOG'):
+        return "Subscriber Outgoing"
+    if card_has('TER'):
+        return "Terminating"
+    if card_has('TOG'):
+        return "Tandem Outgoing"
+    return None
+
 def timer_check(card):
     '''
-    Evaluate timer punches and, for SDT, diagnose likely missing punch by call type.
+    Evaluate timer punches and, for SDT and LDT, diagnose likely missing punch by call type.
 
     Returns:
       None when no timer punch is present.
@@ -86,7 +104,8 @@ def timer_check(card):
             "detected": list[str],
             "sdt"|"wt"|"ldt"|"tgt"|"trs": dict,
         }
-    '''
+'''
+
     cm.set_current_card(card)
     print('>>> evaluating marker timers...')
     timer_names = ['WT', 'SDT', 'LDT', 'TGT', 'TRS']
@@ -95,15 +114,17 @@ def timer_check(card):
         return None
 
     timer = detected[0]
+    call_type = call_type_getmeta(card)
     result = {
         "timer": timer,
         "detected": detected,
     }
 
-    def raise_timer_error(code, message, required=None, trigger=None, context=None, requirement="all", bin="yellow"):
+    def raise_timer_error(code, message, required=None, trigger=None, context=None, requirement="all", bin="yellow", metadata=None, satisfied=None):
         required = list(required or [])
         trigger = list(trigger or [])
         context = list(context or [])
+        satisfied = set(satisfied or [])
         checked = []
         for name in trigger + required + context:
             if name not in checked:
@@ -111,29 +132,81 @@ def timer_check(card):
         details = {
             "timer": timer,
             "required": required,
-            "found": [name for name in checked if card_has(name)],
-            "missing": [name for name in required if card_lacks(name)],
+            "found": [name for name in checked if name in satisfied or card_has(name)],
+            "missing": [name for name in required if name not in satisfied and card_lacks(name)],
         }
-        if trigger:
-            details["triggered_by"] = [name for name in trigger if card_has(name)]
         if context:
             details["context"] = [name for name in context if card_has(name)]
         if requirement != "all":
             details["requirement"] = requirement
+        if metadata:
+            details.update(metadata)
         raise TimerCheckError(message, code=code, details=details, bin=bin)
 
-    if timer != 'SDT':
+    if timer == 'WT':
+        wt_rules = (
+            ("Dial Tone", card_has('DR8'), ['TK', 'GLH']),
+            ("Subscriber Outgoing", card_has('SOG'), ['TK', 'GLH']),
+            ("Terminating", card_has('TER'), ['HTUK', 'GLH']),
+            ("Intraoffice Forward Linkage", card_has_all('ITR', 'FLG'), ['HTUK', 'GLH']),
+            ("Intraoffice Callback Linkage", card_has_all('ITR', 'SCB'), ['TK', 'GLH']),
+            ("Tandem Outgoing", card_has('TOG'), ['HTUK', 'GLH']),
+        )
+        wt_rule = next((rule for rule in wt_rules if rule[1]), None)
+
+        if wt_rule:
+            _, _, required_recycles = wt_rule
+            satisfied_recycles = ['HTUK'] if card_has('RNG') else []
+            missing_recycles = [
+                name for name in required_recycles
+                if name not in satisfied_recycles and card_lacks(name)
+            ]
+            if missing_recycles:
+                first_missing = missing_recycles[0]
+                raise_timer_error(
+                    "WT_FAILURE",
+                    f"Work timer expired before {first_missing} recycle",
+                    required=required_recycles,
+                    trigger=[timer],
+                    bin="WT_FAILURE",
+                    metadata={
+                        "first_missing_recycle": first_missing,
+                    },
+                    satisfied=satisfied_recycles,
+                )
+
+            result["wt"] = {
+                "implemented": True,
+                "required": required_recycles,
+                "missing": [],
+                "reason": "unknown work timer expiration",
+            }
+            return result
+
+        raise_timer_error(
+            "WT_FAILURE",
+            "Work timer expired for an unknown reason",
+            trigger=[timer],
+            bin="WT_FAILURE",
+            metadata={
+                "first_missing_recycle": None,
+            },
+        )
+
+    if timer not in ('WT', 'SDT', 'LDT'):
         result[timer.lower()] = {
             "implemented": False,
             "reason": f"{timer} timer-specific evaluation rules not implemented yet",
         }
         return result
 
+    # SDT and LDT share the same evaluation rules; only the wording differs.
+    timer_label = "Short" if timer == 'SDT' else "Long"
+
     osg_punches = [f'OSG{i}' for i in range(12)]
     fs_punches = [f'FS{i}' for i in range(30)]
 
     timer_meta = {
-        "call_type": "unknown",
         "matched_rules": [],
         "failing_rule": None,
         "reason": "unknown",
@@ -145,7 +218,11 @@ def timer_check(card):
             return
 
         required = required or []
-        present = [name for name in required if card_has(name)]
+        present = [
+            name for name in required
+            # RNG replaces NGK if RNG is present. NGK only active while we are working in the number group.
+            if card_has(name) or (name == 'NGK' and card_has('RNG'))
+        ]
 
         if force_fail:
             ok = False
@@ -170,40 +247,38 @@ def timer_check(card):
             timer_meta["reason"] = reason
 
     # Branch by call type before checking specific expected punches.
-    if card_has('DR8'):
-        timer_meta["call_type"] = "Dial Tone"
+    if call_type == "Dial Tone":
         check_rule(
             "DR8_FTCK_REQUIRES_CK",
             when=card_has('FTCK'),
             required=['CK'],
-            reason="Short timer expired while waiting for CK",
+            reason=f"{timer_label} timer expired while waiting for CK",
         )
         check_rule(
             "DR8_MAK1_REQUIRES_LFK",
             when=card_has('MAK1'),
             required=['LFK'],
-            reason="Short timer expired while waiting for LFK",
+            reason=f"{timer_label} timer expired while waiting for LFK",
         )
-    elif card_has('SOG'):
-        timer_meta["call_type"] = "Subscriber Outgoing"
+    elif call_type == "Subscriber Outgoing":
         check_rule(
             "SOG_OSG_REQUIRES_OSK",
             when=card_has(osg_punches),
             required=['OSK'],
-            reason="Short timer expired while attaching sender",
+            reason=f"{timer_label} timer expired while attaching sender",
         )
         check_rule(
             "SOG_FTCK_REQUIRES_FS",
             when=card_has('FTCK'),
             required=fs_punches,
             requirement="any",
-            reason="Short timer expired while seizing TLF",
+            reason=f"{timer_label} timer expired while seizing TLF",
         )
         check_rule(
             "SOG_MAK1_REQUIRES_LFK",
             when=card_has('MAK1'),
             required=['LFK'],
-            reason="Short timer expired while seizing LLF",
+            reason=f"{timer_label} timer expired while seizing LLF",
         )
         check_rule(
             "SOG_TGT_TIMEOUT",
@@ -212,85 +287,82 @@ def timer_check(card):
             reason="Sender failed to complete trunk guard test in allotted time",
             force_fail=True,
         )
-    elif card_has('TER'):
-        timer_meta["call_type"] = "Terminating"
+    elif call_type == "Terminating":
         check_rule(
             "TER_REQUIRES_CK",
             when=True,
             required=['CK'],
-            reason="Short timer expired while seizing TLF",
+            reason=f"{timer_label} timer expired while seizing TLF",
         )
         check_rule(
             "TER_MAK1_SNG_REQUIRES_NGK",
             when=card_has_all('MAK1', 'SNG'),
             required=['NGK'],
-            reason="Short timer expired while seizing number group",
+            reason=f"{timer_label} timer expired while seizing number group",
         )
         check_rule(
             "TER_RNG_REQUIRES_LFK",
             when=card_has('RNG'),
             required=['LFK'],
-            reason="Short timer expired while seizing LLF",
+            reason=f"{timer_label} timer expired while seizing LLF",
         )
-    elif card_has('ITR'):
-        timer_meta["call_type"] = "Intraoffice"
+    elif call_type in ("Intraoffice Forward Linkage", "Intraoffice Callback Linkage"):
         check_rule(
             "ITR_FLG_FTCK_REQUIRES_FS",
             when=card_has_all('FLG', 'FTCK'),
             required=fs_punches,
             requirement="any",
-            reason="Short timer expired while seizing TLF",
+            reason=f"{timer_label} timer expired while seizing TLF",
         )
         check_rule(
             "ITR_FLG_MAK1_REQUIRES_NGK",
             when=card_has_all('FLG', 'MAK1'),
             required=['NGK'],
-            reason="Short timer expired while working with number group",
+            reason=f"{timer_label} timer expired while working with number group",
         )
         check_rule(
             "ITR_MAK1_NO_SNG_REQUIRES_LFK",
             when=card_has('MAK1') and card_lacks('SNG'),
             required=['LFK'],
-            reason="Short timer expired because of delay in LLF seizure",
+            reason=f"{timer_label} timer expired because of delay in LLF seizure",
         )
         check_rule(
             "ITR_SCB_OSG_REQUIRES_OSK",
             when=card_has('SCB') and card_has(osg_punches),
             required=['OSK'],
-            reason="Short timer expired while attaching sender on SCB",
+            reason=f"{timer_label} timer expired while attaching sender on SCB",
         )
         check_rule(
             "ITR_SCB_MAK1_NO_SNG_REQUIRES_LFK",
             when=card_has_all('SCB', 'MAK1') and card_lacks('SNG'),
             required=['LFK'],
-            reason="Short timer expired because of delay in LLF seizure",
+            reason=f"{timer_label} timer expired because of delay in LLF seizure",
         )
-    elif card_has('TOG'):
-        timer_meta["call_type"] = "Tandem Outgoing"
+    elif call_type == "Tandem Outgoing":
         check_rule(
             "TOG_OSG_REQUIRES_OSK",
             when=card_has(osg_punches),
             required=['OSK'],
-            reason="Short timer expired while attaching sender",
+            reason=f"{timer_label} timer expired while attaching sender",
         )
         check_rule(
             "TOG_FTCK_REQUIRES_FS",
             when=card_has('FTCK'),
             required=fs_punches,
             requirement="any",
-            reason="Short timer expired while seizing TLF",
+            reason=f"{timer_label} timer expired while seizing TLF",
         )
         check_rule(
             "TOG_MAK1_REQUIRES_NGK",
             when=card_has('MAK1'),
             required=['NGK'],
-            reason="Short timer expired while working with number group",
+            reason=f"{timer_label} timer expired while working with number group",
         )
         check_rule(
             "TOG_MAK1_NO_SNG_REQUIRES_LFK",
             when=card_has('MAK1') and card_lacks('SNG'),
             required=['LFK'],
-            reason="Short timer expired because of delay in LLF seizure",
+            reason=f"{timer_label} timer expired because of delay in LLF seizure",
         )
 
     if timer_meta["failing_rule"] is not None:
@@ -302,7 +374,7 @@ def timer_check(card):
             trigger=[timer],
             context=failing_rule.get("missing", []),
             requirement=failing_rule["requirement"],
-            bin="SDT_FAILURE",
+            bin=f"{timer}_FAILURE",
         )
 
     if timer_meta["failing_rule"] is None:
@@ -311,7 +383,7 @@ def timer_check(card):
         else:
             timer_meta["reason"] = "unknown"
 
-    result["sdt"] = timer_meta
+    result[timer.lower()] = timer_meta
     return result
 
 def channel_getmeta(card):
@@ -443,7 +515,7 @@ def status_flag_getmeta(card):
     '''
     print(">>> evaluating marker status flags...")
     cm.set_current_card(card)
-    names = ['TRS', 'TGT', 'FCG', 'LR', 'DCK', 'GT5', 'SQA']
+    names = ['TRS', 'TGT', 'FCG', 'LR', 'DCK', 'GT5', 'SQA', 'RCY']
 
     status_flags = [n for n in names if card_has(n)]
     if not status_flags:
@@ -1156,7 +1228,7 @@ def cm_check(card):
     """Evaluates a whole bunch of things to ensure that the completing marker's operation is sane.
     Source: BSP 218-404-50_ and various 5XB troubleshooting books.
 
-    Checks below are listed in the same order as the function body.
+    Checks below are grouped by function and listed in evaluation order within each group.
 
     # IRL LR Checks
     * If LR and no DCK: raise LR_INC_XPTS
@@ -1176,8 +1248,8 @@ def cm_check(card):
     * If RCT1-9 then must have RSK: raise NO_RSK
     * If TER and BY then must have RS1: raise BY_NO_RS1
     * If TER and OV then must have RS0: raise OV_NO_RS0
-    * If FLG and SRK then must have RCK2: raise NO_RCK2
-    * If FLG and RCK2 then must have RCK3: raise NO_RCK3
+    * If FLG and HGK and SRK, or FLG and LB and SRK, then must have RCK2: raise NO_RCK2
+    * If FLG and HGK and RCK2, or FLG and LB and RCK2, then must have RCK3: raise NO_RCK3
     * If FLG and RSK then must have SRK: raise NO_SRK
 
     # Crosspoint checks
@@ -1185,10 +1257,10 @@ def cm_check(card):
     * If JXP1 and LXP1, and neither HTR nor HMS1: raise FALSE_JXP1_LXP1
     * If HMS1 and no SL: raise NO_SL
     * If HMS1 and SL and LXP1 and DR1, and no HTR: raise LXP1
-    * If JXPA and DR0, and neither JXP1 nor HTR: raise NO_JXP1
+    * If JXPA and DR0, and no JXP1: raise NO_JXP1
     * If JXP1 and DR0, and neither GLH nor HTR: raise NO_GLH
-    * If GLH and DR0, and neither LXPA nor HTR: raise NO_LXPA
-    * If LXPA and DR0, and neither LXP1 nor HTR: raise NO_LXP1
+    * If GLH and DR0, and no LXPA: raise NO_LXPA
+    * If LXPA and DR0, and no LXP1: raise NO_LXP1
     * If HTR and HMS1 and DR0, and no LXPA: raise NO_LXPA
     * If HTR and HMS1 and DR0, and no JXPA: raise NO_JXPA
     * If SL and JXP1 and LXP1 and DR0, and neither GT2 nor HTR: raise NO_GT2
@@ -1231,7 +1303,7 @@ def cm_check(card):
     * If FLG or SCB then must have HGK: raise NO_HGK
     * If FLG then must have TCHK: raise NO_TCHK
     * If FLG then must have LK or RK: raise NO_LK_RK
-    * If FLG or SCB then must have RK3: raise NO_RK3
+    * If DR8 then must have RK3: raise NO_RK3
     * If SCB and FAK and LFK and LCK and JCK and HGK and RK3 are all present then must have TK: raise NO_TK
     * If FLG and HGK and JCK and TCHK and LCK are all present, and either FAK or FBK is present, then must have TK: raise NO_TK
     * If SCB then must have FAK: raise NO_FAK
@@ -1352,11 +1424,11 @@ def cm_check(card):
         raise_cm_error("OV_NO_RS0", "Horizontal 0 in the Ringing Selection Switch failed to operate",
                        required=["RS0"], trigger=["TER", "OV"], bin="OV_NO_RS0")
 
-    if card_has_all("FLG", "HGK", "SRK") or card_has_all("FLG", "LB", "SRK") and card_lacks("RCK2"):
+    if (card_has_all("FLG", "HGK", "SRK") or card_has_all("FLG", "LB", "SRK")) and card_lacks("RCK2"):
         raise_cm_error("NO_RCK2", "No RCK2. Looks like the ringing selection switch crosspoints didn't close...",
                        required=["RCK2"], trigger=["FLG", "HGK", "LB", "SRK"], bin="RSS_CHECK")
 
-    if card_has_all("FLG", "HGK", "RCK2") or card_has_all("FLG", "LB", "RCK2") and card_lacks("RCK3"):
+    if card_has_all(("FLG", "HGK", "RCK2") or card_has_all("FLG", "LB", "RCK2")) and card_lacks("RCK3"):
         raise_cm_error("NO_RCK3", "TER with RCK2 requires RCK3",
                        required=["RCK3"], trigger=["FLG", "HGK", "LB", "RCK2"], bin="RSS_CHECK")
 
@@ -1409,8 +1481,8 @@ def cm_check(card):
         raise_cm_error("LXP1 punched. Possible issue closing LLF crosspoints.",
                        required=["NO_LXP1"], trigger=["HMS1", "SL", "DR1", "LXP1"], bin="LXP1")
 
-    # DR0 only, light traffic JXP1
-    if card_has_all("JXPA", "DR0") and card_lacks("JXP1", "HTR"):
+    # DR0 only, JXP1
+    if card_has_all("JXPA", "DR0") and card_lacks("JXP1"):
         raise_cm_error("NO_JXP1", "Junctor switch hold magnet operated, but marker could not verify continuity.", 
                         required=["JXP1"], trigger=["JXPA", "DR0"], bin="NO_JXP1")
 
@@ -1418,13 +1490,13 @@ def cm_check(card):
     if card_has_all("JXP1", "DR0") and card_lacks("GLH", "HTR"):
         raise_cm_error("NO_GLH", "The marker was unable to start grounding the line hold magnet.", required=["GLH"], trigger=["JXP1", "DR0"], bin="NO_GLH")
 
-    # DR0 only, light traffic LXPA
-    if card_has_all("GLH", "DR0") and card_lacks("LXPA", "HTR"):
+    # DR0 only, LXPA
+    if card_has_all("GLH", "DR0") and card_lacks("LXPA"):
         raise_cm_error("NO_LXPA", "The marker attempted to operate the line switch hold magnet, but was unsuccessful.", 
                         required=["LXPA"], trigger=["GLH", "DR0"], bin="NO_LXPA")
 
-    # DR0 only, light traffic LXP1
-    if card_has_all("LXPA", "DR0") and card_lacks("LXP1", "HTR"):
+    # DR0 only, LXP1
+    if card_has_all("LXPA", "DR0") and card_lacks("LXP1"):
         raise_cm_error("NO_LXP1", "Line switch crosspoints closed, but marker could not verify continuity on LH- lead.", 
                         required=["LXP1"], trigger=["LXPA", "DR0"], bin="NO_LXP1")
 
@@ -1438,7 +1510,7 @@ def cm_check(card):
 
     # DR0 only.
     if card_has_all("SL", "JXP1", "LXP1", "DR0") and card_lacks("GT2") and card_lacks("HTR"):
-        raise_cm_error("NO_GT2", "GT2 indicates the operation of GT1. GT1 requires SL, JXP1, CON1, GLH, but not LXP1. "
+        raise_cm_error("NO_GT2", "GT2 indicates the operation of GT1. GT1 requires SL, JXP1, CON1, GLH, LXP1. "
                         "SFD-10-01-C531",
                        required=["GT2"], trigger=["SL", "JXP1", "LXP1", "DR0"], bin="NO_GT2")
 
@@ -1525,7 +1597,7 @@ def cm_check(card):
     if card_has("FLG") and card_lacks("LK", "RK"):
         raise_cm_error("NO_LK_RK", "FLG requires LK or RK", required=["LK", "RK"], trigger=["FLG"], requirement="any", bin="NO_LK_RK")
 
-    if card_has("FLG", "SCB") and card_lacks("RK3"):
+    if card_has("DR8") and card_lacks("RK3"):   # Dial tone calls only
         raise_cm_error("NO_RK3", "FLG requires RK3", required=["RK3"], trigger=["FLG"], bin="NO_RK3")
 
     if card_has_all("SCB", "FAK", "LFK", "LCK", "JCK", "HGK", "RK3") and card_lacks("TK"):
@@ -1611,6 +1683,7 @@ def evaluate(card):
         "trunk": trunk_getmeta(card),
         "ground_supply": ground_supply_getmeta(card),
         "trial": trial_getmeta(card),
+        "call_type": call_type_getmeta(card),
         "orlm": {},
         "timer": None,
         "status_flag": status_flag_getmeta(card),
