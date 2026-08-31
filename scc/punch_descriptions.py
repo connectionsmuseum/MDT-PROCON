@@ -105,6 +105,9 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
         'SQA1 relay to release (an abnormal length of time), thus indicating a '
         'failure in the sequence advance circuit.'
     ),
+    'PSR':(
+        'Permanent Signal Record. This card was dropped due to a permanent signal condition.'
+    ),
     'ITR': (
         'This call was an Intraoffice call. It was from a 5XB line to a different '
         '5XB line.'
@@ -864,8 +867,8 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     'VF\'4': 'Vertical File 4. The vertical file as registered in the sender.',
     'TM': 'Timing. The timing start lead has been grounded by the marker connector, and the marker is now off-normal.',
     'CKG': (
-        'Checking Ground is closed from marker connector relays to provide '
-        'off-normal grounds and remove certain standing tests.'
+        'Connector Check Ground (CKG2) relay has operated in the marker. ' 
+        'Checking Ground is closed from marker connector relays to provide off-normal grounds and remove certain standing tests.'
     ),
     'TC1': (
         'Traffic Control 1. Used for dial tone calls only. Marker has assumed control of the LLMC.'
@@ -2049,7 +2052,10 @@ PUNCH_DESCRIPTIONS: dict[str, str] = {
     ),
     'NGK1': 'Number Group Check Auxiliary. Battery has been supplied to the F, L, and G leads to the NG.',
     'UK': 'Units Check. The U- (units) relay in the number group operated.',
-    'HTUK': 'Satisfactory operation of the Hundreds, Tens, and Units relays in the number group.',
+    'HTUK': (
+        'Satisfactory operation of the Hundreds, Tens, and Units relays in the number group. '
+        'This recycles the work timer.'
+    ),
     'TNK': 'Trunk Number Check. That on a toll/tandem or coin junctor call, that a trunk number is involved.',
     'PTK': (
         'Physical Theoretical Check. The connection has satisfactorily completed the physical and theoretical office check.'

@@ -1597,8 +1597,7 @@ def cm_check(card):
     if card_has("FLG") and card_lacks("LK", "RK"):
         raise_cm_error("NO_LK_RK", "FLG requires LK or RK", required=["LK", "RK"], trigger=["FLG"], requirement="any", bin="NO_LK_RK")
 
-    if card_has("DR8") and card_lacks("RK3"):   # Dial tone calls only
-        raise_cm_error("NO_RK3", "FLG requires RK3", required=["RK3"], trigger=["FLG"], bin="NO_RK3")
+
 
     if card_has_all("SCB", "FAK", "LFK", "LCK", "JCK", "HGK", "RK3") and card_lacks("TK"):
         raise_cm_error("NO_TK", "TK failed to operate when it should have on SCB linkage",
