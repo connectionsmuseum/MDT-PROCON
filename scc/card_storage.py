@@ -153,6 +153,17 @@ def load_card_payload(name):
     return json.loads(row["payload_json"])
 
 
+def delete_card_payload(name):
+    """Delete one card by ID, filename, or URL path and report whether it existed."""
+    punchdate = _normalize_name_to_punchdate(name)
+    with _connect() as conn:
+        cursor = conn.execute(
+            "DELETE FROM cards WHERE punchdate = ?",
+            (punchdate,),
+        )
+    return cursor.rowcount == 1
+
+
 def list_cards_with_payload(limit=None):
     query = "SELECT punchdate, payload_json FROM cards ORDER BY punchdate DESC"
     params = ()
