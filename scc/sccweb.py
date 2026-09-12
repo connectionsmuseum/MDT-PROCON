@@ -296,10 +296,23 @@ def save_card_metadata(punchdate, card, metadata):
 def receive_trouble_card():
     if request.content_length < 2**16:
         try:
-            data = request.get_data(as_text=True)
-            split_data = data.split(',')
-            print(f"Received card data: {split_data}")
-            decoded_data = list(map(lambda x: int(x, 16), split_data))
+            payload = request.get_json()
+            success = payload["success"]
+            relays = payload["relays"]
+        except Exception as e:
+            print(f"Error parsing card payload: {e}")
+            return {"error": "invalid card data"}, 400
+
+        if not success:
+            print(
+                f"Trouble card scan failed at group {payload.get('failed_group')}, "
+                f"row {payload.get('failed_row')}; discarding partial card"
+            )
+            return {}, 200
+
+        try:
+            print(f"Received card data: {relays}")
+            decoded_data = list(map(lambda x: int(x, 16), relays))
             print(f"Decoded card data: {decoded_data}")
             card = convert_to_card(decoded_data)
             # update cardmap so punchValue() works without an explicit card arg
