@@ -187,11 +187,19 @@ def _get_bins():
             register_digits_display = None
         else:
             register_digits_display = str(register_digits)
+        marker = data.get('metadata', {}).get('marker')
+        if isinstance(marker, dict):
+            marker_display = marker.get('error') or None
+        elif not marker:
+            marker_display = None
+        else:
+            marker_display = str(marker)
         bins.setdefault(bin_name, []).append({
             'filename': json_name,
             'date': formatted_date,
             'register_digits': register_digits,
             'register_digits_display': register_digits_display,
+            'marker': marker_display,
         })
 
     # Sort by filename (timestamp-prefixed), backwards

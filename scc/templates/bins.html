@@ -30,6 +30,10 @@
             }
             .card-list li {
                 margin: 2px 0;
+                display: grid;
+                grid-template-columns: 11em 12em 8em;
+                align-items: baseline;
+                gap: 8px;
             }
             .meta {
                 opacity: 0.7;
@@ -105,6 +109,7 @@
                                 <li data-bin-name="{{ bin_name }}" data-card-date="{{ card.date }}" data-card-href="/card/{{ card.filename }}" data-card-display-date="{{ card.date }}" data-register-digits-display="{{ card.register_digits_display if card.register_digits_display is not none else '' }}">
                                     <a href="/card/{{ card.filename }}">{{ card.date }}</a>
                                     <span class="meta">Dialed number: {{ card.register_digits_display if card.register_digits_display is not none else 'None' }}</span>
+                                    <span class="meta">Marker: {{ card.marker if card.marker is not none else 'None' }}</span>
                                 </li>
                             {% endfor %}
                         </ul>
@@ -151,7 +156,8 @@
                             cardDate: cardDate,
                             displayDate: cardItem.getAttribute('data-card-display-date') || (link ? link.textContent : ''),
                             href: cardItem.getAttribute('data-card-href') || (link ? link.getAttribute('href') : '#'),
-                            registerDigitsDisplay: cardItem.getAttribute('data-register-digits-display') || ''
+                            registerDigitsDisplay: cardItem.getAttribute('data-register-digits-display') || '',
+                            marker: cardItem.getAttribute('data-marker') || ''
                         };
                     });
                 }

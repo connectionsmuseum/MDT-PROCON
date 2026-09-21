@@ -120,11 +120,19 @@ def _get_bins():
             register_digits_display = None
         else:
             register_digits_display = str(register_digits)
+        marker = data.get('metadata', {}).get('marker')
+        if isinstance(marker, dict):
+            marker_display = marker.get('error') or None
+        elif not marker:
+            marker_display = None
+        else:
+            marker_display = str(marker)
         bins.setdefault(bin_name, []).append({
             'filename': card_name,
             'date': formatted_date,
             'register_digits': register_digits,
             'register_digits_display': register_digits_display,
+            'marker': marker_display,
         })
     # Sort by filename (timestamp-prefixed), backwards
     for cards in bins.values():
@@ -297,6 +305,7 @@ def receive_trouble_card():
     if request.content_length < 2**16:
         try:
             payload = request.get_json()
+            # print(f"Payload: {payload}")
             success = payload["success"]
             relays = payload["relays"]
         except Exception as e:
