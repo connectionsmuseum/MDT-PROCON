@@ -96,9 +96,10 @@
                     <option value="bin" selected>Bin</option>
                     <option value="time">Time</option>
                 </select>
+                <label for="hide-test-cards">  Hide test cards <input type="checkbox" id="hide-test-cards"> </label>
             </div>
 
-            <p id="empty-filter-result" class="empty-filter-result" style="display: none;">No bins found for the selected time range.</p>
+            <p id="empty-filter-result" class="empty-filter-result" style="display: none;">No bins found for the selected filters.</p>
 
             <div id="bins-view">
                 {% for bin_name, cards in bins|dictsort %}
@@ -125,7 +126,12 @@
             (function () {
                 var FILTER_STORAGE_KEY = 'cardBinsTimeFilter';
                 var SORT_STORAGE_KEY = 'cardBinsSortMode';
+                var HIDE_TEST_CARDS_STORAGE_KEY = 'cardBinsHideTestCards';
                 var allCards = [];
+
+                function isTestBin(binName) {
+                    return String(binName || '').toUpperCase().indexOf('TEST_CARD') !== -1;
+                }
 
                 function parseCardDate(value) {
                     if (!value) {
@@ -216,9 +222,11 @@
                     var now = new Date();
                     var rangeStart = getRangeStart(filter, now);
                     var startOfToday = getStartOfDay(now);
+                    var hideTestCards = document.getElementById('hide-test-cards').checked;
 
                     return allCards.filter(function (card) {
-                        return cardMatchesFilter(card, filter, rangeStart, startOfToday);
+                        return cardMatchesFilter(card, filter, rangeStart, startOfToday) &&
+                            (!hideTestCards || !isTestBin(card.binName));
                     });
                 }
 
@@ -289,6 +297,7 @@
                     var now = new Date();
                     var rangeStart = getRangeStart(filter, now);
                     var startOfToday = getStartOfDay(now);
+                    var hideTestCards = document.getElementById('hide-test-cards').checked;
                     var bins = document.querySelectorAll('#bins-view .bin');
                     var visibleBinCount = 0;
 
@@ -298,7 +307,8 @@
 
                         cards.forEach(function (cardItem) {
                             var cardDate = parseCardDate(cardItem.getAttribute('data-card-date'));
-                            var showCard = cardMatchesFilter({ cardDate: cardDate }, filter, rangeStart, startOfToday);
+                            var showCard = cardMatchesFilter({ cardDate: cardDate }, filter, rangeStart, startOfToday) &&
+                                (!hideTestCards || !isTestBin(bin.querySelector('.bin-name').textContent));
 
                             cardItem.style.display = showCard ? '' : 'none';
                             if (showCard) {
@@ -355,7 +365,8 @@
 
                 var filterSelect = document.getElementById('time-filter');
                 var sortSelect = document.getElementById('sort-mode-filter');
-                if (filterSelect && sortSelect) {
+                var hideTestCardsCheckbox = document.getElementById('hide-test-cards');
+                if (filterSelect && sortSelect && hideTestCardsCheckbox) {
                     try {
                         var savedFilter = localStorage.getItem(FILTER_STORAGE_KEY);
                         if (savedFilter === 'this-week') {
@@ -368,6 +379,7 @@
                         if (savedSortMode && sortSelect.querySelector('option[value="' + savedSortMode + '"]')) {
                             sortSelect.value = savedSortMode;
                         }
+                        hideTestCardsCheckbox.checked = localStorage.getItem(HIDE_TEST_CARDS_STORAGE_KEY) === 'true';
                     } catch (err) {
                         // Ignore storage access errors and continue with default filter.
                     }
@@ -385,6 +397,14 @@
                             localStorage.setItem(SORT_STORAGE_KEY, sortSelect.value);
                         } catch (err) {
                             // Ignore storage write errors and still apply the view.
+                        }
+                        applyView();
+                    });
+                    hideTestCardsCheckbox.addEventListener('change', function () {
+                        try {
+                            localStorage.setItem(HIDE_TEST_CARDS_STORAGE_KEY, String(hideTestCardsCheckbox.checked));
+                        } catch (err) {
+                            // Ignore storage write errors and still apply the filter.
                         }
                         applyView();
                     });
