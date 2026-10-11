@@ -1476,6 +1476,11 @@ def cm_check(card):
     if card_has("HMS1") and card_lacks("SL"):
         raise_cm_error("NO_SL", "Trunk link crosspoints not closed.", required=["SL"], trigger=["HMS1"], bin="NO_SL")
 
+    # Light traffic, HMS1 -> SL -> GLH
+    if card_has_all("TK", "HMS1", "SL") and card_lacks("HTR", "GLH"):
+        raise_cm_error("NO_HTR_GLH", "Marker did not start to ground line hold magnets after HMS1-> SL.", 
+                        required=["HTR", "GLH"], trigger=["TK", "HMS1", "SL"], bin="NO_GLH")
+
     # DR1 LTR only. OTOH HTR causes GLH up, SL up, LXP1 down in parallel
     if card_has_all("HMS1", "SL", "LXP1", "DR1") and card_lacks("HTR"):
         raise_cm_error("LXP1 punched. Possible issue closing LLF crosspoints.",
@@ -1597,8 +1602,6 @@ def cm_check(card):
     if card_has("FLG") and card_lacks("LK", "RK"):
         raise_cm_error("NO_LK_RK", "FLG requires LK or RK", required=["LK", "RK"], trigger=["FLG"], requirement="any", bin="NO_LK_RK")
 
-
-
     if card_has_all("SCB", "FAK", "LFK", "LCK", "JCK", "HGK", "RK3") and card_lacks("TK"):
         raise_cm_error("NO_TK", "TK failed to operate when it should have on SCB linkage",
                        required=["TK"], trigger=["SCB", "FAK", "LFK", "LCK", "JCK", "HGK", "RK3"], bin="NO_TK")
@@ -1617,7 +1620,7 @@ def cm_check(card):
         raise_cm_error("TK_NO_HMS1", "Card has TK, but no HMS1. Marker was unable to operate hold magnets.",
                         required=["HMS1"], trigger=["TK"], bin="NO_HMS1")
 
-    if card_has("HMS1") and card_lacks("DCT1"):
+    if card_has("HMS1") and card_lacks("DCT1"): # note that CM0 requires SL, JXPA after HMS1. This should be caught up there.
         raise_cm_error("NO_DCT1", "HMS1 is punched without DCT1", required=["DCT1"], trigger=["HMS1"], bin="DCT_FAILURE")
 
     if card_has("TK") and card_lacks("CK"):
