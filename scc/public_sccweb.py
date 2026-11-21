@@ -145,7 +145,7 @@ def _list_saved_card_json_entries(limit=30):
 
 def _format_card_timestamp(filename):
     """Extract and format timestamp from card filename.
-    
+
     Converts '26-03-22_21-32-16_front.json' to
     '2026-03-22 21:32:16'
     """
@@ -155,10 +155,10 @@ def _format_card_timestamp(filename):
         date_part, time_part = timestamp_part.split('_')
         yy, mm, dd = date_part.split('-')
         hh, minute, ss = time_part.split('-')
-        
+
         # Convert YY to YYYY
         yyyy = f"20{yy}"
-        
+
         # Format as YYYY-MM-DD HH:MM:SS
         return f"{yyyy}-{mm}-{dd} {hh}:{minute}:{ss}"
     except Exception:
@@ -294,7 +294,7 @@ def settings():
 @app.route('/blank-card', methods=['GET'])
 def blank_card():
     """Serve the blank (unpunched) card template image."""
-    return send_from_directory('cardpack', 'front_23782PrkjZDC.jpg')
+    return send_from_directory('cardpack', 'front1126.jpg')
 
 @app.route('/punch-tooltip-data', methods=['GET'])
 def punch_tooltip_data():
