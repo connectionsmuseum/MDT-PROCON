@@ -412,7 +412,7 @@ def settings():
 @app.route('/blank-card', methods=['GET'])
 def blank_card():
     """Serve the blank (unpunched) card template image."""
-    return send_from_directory('cardpack', 'front1126.jpg')
+    return send_from_directory('cardpack', 'front1126a.jpg')
 
 
 @app.route('/punch-tooltip-data', methods=['GET'])
